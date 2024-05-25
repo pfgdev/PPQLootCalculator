@@ -7,6 +7,7 @@ var MAX_LOG_SIZE = 100; // Set a maximum log size
 var logMessages = []; // Store log messages
 var initializationCompleteFlag = 'initializationComplete';
 
+// constant strings
 const CHECK_RESULT_HIGH = 'High Success';
 const CHECK_RESULT_MEDIUM = 'Medium Success';
 const CHECK_RESULT_LOW = 'Low Success';

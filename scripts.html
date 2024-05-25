@@ -1,0 +1,247 @@
+<script>
+    // Page Load Initialization
+    function onPageLoad() {
+        google.script.run.withSuccessHandler(updateLog).initializeData();
+    }
+
+    // Update Log Area
+    function updateLog(message) {
+        const logArea = document.getElementById("logArea");
+        if (logArea) {
+            logArea.value += message + "\n"; // Append new messages
+            logArea.scrollTop = logArea.scrollHeight; // Automatically scroll to the bottom
+
+            const logCount = document.getElementById("logCount");
+            if (logCount) {
+                logCount.innerText = `Log Count: ${message.split("\n").length}`;
+            }
+        }
+    }
+
+    // Update Calculation Result
+    function updateResult(message, timeDelta) {
+        document.getElementById("expectedGold").innerText = message.expectedGold;
+        document.getElementById("diceNotation").innerText = message.diceNotation;
+        document.getElementById("timeDelta").innerText = `${timeDelta.toFixed(2)} ms`;
+        updateLog(message.logMessages);
+    }
+
+    // Add a New Row to the Table
+    function addRow() {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        const rowCount = table.rows.length;
+        const row = table.insertRow(rowCount);
+
+        // Create CR Cell
+        const crCell = row.insertCell(0);
+        const crInput = document.createElement("input");
+        crInput.type = "number";
+        crInput.name = `cr${rowCount}`;
+        crInput.value = 1;
+        crInput.min = 1;
+        crInput.max = 20;
+        crCell.appendChild(crInput);
+
+        // Create Remove Button
+        const removeButton = document.createElement("button");
+        removeButton.innerText = "-";
+        removeButton.className = "button-remove";
+        removeButton.style.display = "inline-block";
+        removeButton.style.visibility = "visible";
+        removeButton.onclick = function () {
+            removeRow(row.rowIndex);
+        };
+        crCell.appendChild(removeButton);
+
+        // Create Killed Cell
+        const killedCell = row.insertCell(1);
+        const killedInput = document.createElement("input");
+        killedInput.type = "number";
+        killedInput.name = `killed${rowCount}`;
+        killedInput.value = 1;
+        killedInput.min = 1;
+        killedCell.appendChild(killedInput);
+
+        updateRemoveButtonsVisibility();
+    }
+
+    // Remove a Row from the Table
+    function removeRow(index) {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        table.deleteRow(index - 1); // Adjust for 0-based index
+        updateRowIndices();
+        updateRemoveButtonsVisibility();
+    }
+
+    // Update Row Indices
+    function updateRowIndices() {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        const rows = table.rows;
+        for (let i = 0; i < rows.length; i++) {
+            const crInput = rows[i].cells[0].querySelector("input");
+            const killedInput = rows[i].cells[1].querySelector("input");
+            crInput.name = `cr${i}`;
+            killedInput.name = `killed${i}`;
+        }
+    }
+
+    // Update Visibility of Remove Buttons
+    function updateRemoveButtonsVisibility() {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        const rowCount = table.rows.length;
+        const removeButtons = document.querySelectorAll(".button-remove");
+
+        removeButtons.forEach((button) => {
+            button.style.display = rowCount > 1 ? "inline-block" : "none";
+        });
+    }
+
+    // Show and Hide Spinner and Progress Message
+    function showSpinner() {
+        document.getElementById("spinner").style.display = "block";
+    }
+    function hideSpinner() {
+        document.getElementById("spinner").style.display = "none";
+    }
+    function showProgressMessage() {
+        document.getElementById("progressMessage").style.display = "block";
+    }
+    function hideProgressMessage() {
+        document.getElementById("progressMessage").style.display = "none";
+    }
+
+    // Reset the Form to Initial State
+    function resetForm() {
+        // Reset the investigation check value
+        const investigationCheck = document.getElementById("investigationCheckDisplay");
+        if (investigationCheck) {
+            investigationCheck.innerText = 10;
+        }
+
+        // Get the table and reset its rows, except the header row
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        if (table) {
+            while (table.rows.length > 0) {
+                table.deleteRow(0);
+            }
+
+            // Add the initial row
+            const row = table.insertRow(0);
+
+            // Create the CR cell
+            const crCell = row.insertCell(0);
+            const crInput = document.createElement("input");
+            crInput.type = "number";
+            crInput.name = "cr0";
+            crInput.value = 1;
+            crInput.min = 1;
+            crInput.max = 20;
+            crCell.appendChild(crInput);
+
+            // Create the remove button but don't show it initially
+            const removeButton = document.createElement("button");
+            removeButton.innerText = "-";
+            removeButton.className = "button-remove";
+            removeButton.style.display = "none"; // Hide initially
+            removeButton.onclick = function () {
+                removeRow(1);
+            };
+            crCell.appendChild(removeButton);
+
+            // Create the Killed cell
+            const killedCell = row.insertCell(1);
+            const killedInput = document.createElement("input");
+            killedInput.type = "number";
+            killedInput.name = "killed0";
+            killedInput.value = 1;
+            killedInput.min = 1;
+            killedCell.appendChild(killedInput);
+        }
+
+        // Clear the results
+        const expectedGold = document.getElementById("expectedGold");
+        if (expectedGold) {
+            expectedGold.innerHTML = '&nbsp;';
+        }
+
+        const diceNotation = document.getElementById("diceNotation");
+        if (diceNotation) {
+            diceNotation.innerHTML = '&nbsp;';
+        }
+
+        const timeDelta = document.getElementById("timeDelta");
+        if (timeDelta) {
+            timeDelta.innerHTML = '&nbsp;';
+        }
+
+        // Update the visibility of the remove buttons
+        updateRemoveButtonsVisibility();
+    }
+
+    // Calculation Function
+    function calculate() {
+        showSpinner();
+        showProgressMessage();
+        const startTime = performance.now(); // Start timing
+
+        const table = document.getElementById("inputTable");
+        const rows = table.rows;
+        let inputs = [];
+
+        const investigationCheckDisplay = document.getElementById('investigationCheckDisplay');
+        const investigationCheck = Math.max(1, Math.min(parseInt(investigationCheckDisplay.innerText), 40));
+
+        for (let i = 1; i < rows.length; i++) {
+            const cr = Math.max(1, Math.min(parseInt(rows[i].cells[0].children[0].value), 20));
+            const killed = Math.max(1, parseInt(rows[i].cells[1].children[0].value));
+
+            inputs.push({ cr, killed, check: investigationCheck });
+        }
+
+        google.script.run.withSuccessHandler(function (response) {
+            hideSpinner();
+            hideProgressMessage();
+            const endTime = performance.now(); // End timing
+            const timeDelta = endTime - startTime;
+            updateResult(response, timeDelta); // Ensure this is always called
+        }).calculateGoldAndLog(inputs);
+    }
+
+    // Tab Navigation
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+
+        // Hide all tab contents
+        tabcontent = document.getElementsByClassName("tab-section");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+
+        // Remove the active class from all tab links
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+
+        // Show the current tab and add an "active" class to the clicked tab
+        document.getElementById(tabName).style.display = "block";
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.className += " active";
+    }
+
+    // Default Tab on Page Load
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementsByClassName("tablinks")[0].click();
+        updateRemoveButtonsVisibility();
+    });
+
+    // Increment/Decrement Investigation Check Value
+    function changeInvestigationCheck(change) {
+        const investigationCheckDisplay = document.getElementById('investigationCheckDisplay');
+        let currentValue = parseInt(investigationCheckDisplay.innerText);
+        currentValue = isNaN(currentValue) ? 10 : currentValue;
+        currentValue = Math.max(1, Math.min(currentValue + change, 40)); // Ensure the value stays between 1 and 40
+        investigationCheckDisplay.innerText = currentValue;
+    }
+</script>

@@ -1,0 +1,23 @@
+<!-- table.html -->
+<div class="table-wrapper">
+  <table id="inputTable">
+    <thead>
+      <tr>
+        <th>Enemy CR</th>
+        <th>Number Killed</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="cr-cell">
+          <input type="number" name="cr0" value="1" min="1" max="20">
+          <button class="button-remove" onclick="removeRow(1)">-</button>
+        </td>
+        <td><input type="number" name="killed0" value="1" min="1"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="button-container">
+  <button id="addEnemyButton" class="button button-add" onclick="addRow()">Add Enemy</button>
+</div>

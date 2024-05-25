@@ -1,0 +1,39 @@
+<!-- main-scripts.html -->
+<script>
+
+    // Page Load Initialization
+    function onPageLoad() {
+        google.script.run.withSuccessHandler(updateLog).initializeData();
+    }
+
+
+    // Show and Hide Spinner and Progress Message
+    function showSpinner() {
+        document.getElementById("spinner").style.display = "block";
+    }
+    function hideSpinner() {
+        document.getElementById("spinner").style.display = "none";
+    }
+    function showProgressMessage() {
+        document.getElementById("progressMessage").style.display = "block";
+    }
+    function hideProgressMessage() {
+        document.getElementById("progressMessage").style.display = "none";
+    }
+
+
+    // Update Log Area
+    function updateLog(message) {
+        const logArea = document.getElementById("logArea");
+        if (logArea) {
+            logArea.value += message + "\n"; // Append new messages
+            logArea.scrollTop = logArea.scrollHeight; // Automatically scroll to the bottom
+
+            const logCount = document.getElementById("logCount");
+            if (logCount) {
+                logCount.innerText = `Log Count: ${message.split("\n").length}`;
+            }
+        }
+    }
+
+</script>

@@ -1,0 +1,281 @@
+<!-- styles.css.html -->
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f9;
+  }
+  h1 {
+    color: #333;
+    margin-bottom: 30px;
+  }
+  /* Add all your other styles here */
+
+  /* Fixed width container */
+  .fixed-width-container {
+    width: 100%;
+    max-width: 800px; /* Adjust the max-width as necessary */
+    margin: 0 auto; /* Center the container */
+    padding: 20px; /* Add some padding if needed */
+    box-sizing: border-box; /* Ensure padding is included in the width */
+  }
+
+  /* Container for the investigation check input */
+  #investigation-check-container {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  /* Label inside the investigation check container */
+  #investigation-check-container label {
+    font-size: 1.5em;
+    font-weight: bold;
+    display: block;
+  }
+
+  /* Label specifically for the investigation check text */
+  label[for="investigationCheck"] {
+    font-size: 1.5em;
+    font-weight: bold;
+    display: block;
+    text-align: center;
+    margin-top: 20px; /* Margin between title and investigation check label */
+    margin-bottom: 20px; /* Margin between investigation check label text and investigation check input field */
+  }
+
+  /* Styles for the investigation check input field */
+  input#investigationCheck {
+    font-size: 1.2em;
+    height: 2em;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  /* Styles for the results section */
+  #results {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    margin: 0 auto; /* Center the elements */
+  }
+
+  /* Styles for the result values */
+  .result-value {
+    padding-top: 10px; /* Adjust the value as needed */
+  }
+
+  /* Individual result boxes inside the results section */
+  #results div {
+    text-align: center;
+  }
+
+  /* Styles for the input table */
+  #inputTable {
+    width: 100%;
+    max-width: 600px;
+    margin: 20px 0;
+    border-collapse: collapse;
+  }
+
+  /* Table header and cell styles */
+  #inputTable th, #inputTable td {
+    padding: 15px;
+    text-align: center;
+  }
+
+  /* Header background and text color */
+  #inputTable th {
+    background-color: #555;
+    color: #fff;
+  }
+
+  /* Alternate row background color */
+  #inputTable tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+
+  /* Input fields inside the table */
+  #inputTable input {
+    width: 90%; /* Increase width if necessary */
+    padding: 10px; /* Increase padding if necessary */
+    font-size: 1.0em; /* Increase font size */
+    margin: 0 auto; /* Center the elements */
+  }
+
+  /* Container for the table to ensure width consistency */
+  .table-container {
+    width: 100%;
+    max-width: 600px; /* Ensure the container matches the table */
+    margin: 0 auto; /* Center the elements */
+  }
+
+  /* General button styles */
+  .button {
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  /* Calculate button styles */
+  .button-calculate {
+    background-color: #007BFF;
+    color: #fff;
+    margin: 10px;
+    width: 400px;
+    font-size: 1.2em;
+  }
+  .button-calculate:hover {
+    background-color: #0056b3;
+  }
+
+  /* Custom styles for the calculate button with image */
+.button-image {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.button-image img {
+  width: 50px;
+  height: 50px;
+}
+
+.button-image:hover {
+  transform: scale(1.1);
+}
+
+  /* Reset button styles */
+  .button-reset {
+    background-color: #FF6347;
+    color: #fff;
+    margin: 10px;
+  }
+  .button-reset:hover {
+    background-color: #FF4500;
+  }
+
+  /* Remove button styles */
+  .button-remove {
+    background-color: #FF6347;
+    color: #fff;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  .button-remove:hover {
+    background-color: #FF4500;
+  }
+
+  /* Text alignment for individual result boxes */
+  #results div {
+    text-align: center;
+  }
+
+  /* Styles for the log area */
+  #logArea {
+    width: 80%;
+    height: 200px;
+    margin: 20px 0;
+  }
+
+  /* Spinner keyframes for loading animation */
+  @keyframes spinner {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Spinner styles for loading animation */
+  #spinner {
+    display: none;
+    width: 50px;
+    height: 50px;
+    border: 6px solid #ccc;
+    border-top-color: #007BFF;
+    border-radius: 50%;
+    animation: spinner 0.6s linear infinite;
+    margin: 20px auto;
+  }
+
+  /* Styles for the button row at the bottom */
+  .button-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 40px auto;
+    margin: 0 auto; /* Center the elements */
+  }
+
+  /* Styles for the add enemy button */
+  .add-enemy-button {
+    width: 60%;
+    margin: 20px auto;
+    display: block;
+    text-align: center;
+    font-size: 1.2em;
+    margin: 0 auto; /* Center the elements */
+    padding: 5px; /* Adjust padding for better appearance */
+    background-color: #ccc;
+    border: 1px solid #777;
+    color: #333; /* Dark grey text color */
+    transition: background-color 0.3s, color 0.3s; /* Smooth transition for hover effects */
+  }
+
+  .add-enemy-button:hover {
+    background-color: #999;
+    color: #fff;
+  }
+
+  #log-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 20px 0;
+  text-align: center;
+  }
+
+  #logArea {
+    width: 100%;
+    height: 200px;
+    margin-top: 10px;
+    padding: 10px;
+    font-size: 1em;
+    resize: none;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .tabcontent {
+    display: none; /* Hide all tab content by default */
+  }
+
+  /* Ensure the first tab content is visible */
+  #GoldCalculator {
+    display: block;
+  }
+
+  /* Header styles */
+  .header-content {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .header-content h3 {
+    font-size: 24px;
+    margin: 0;
+  }
+
+  .header-content p {
+    font-size: 18px;
+    margin: 0;
+  }
+</style>

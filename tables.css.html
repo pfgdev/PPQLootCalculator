@@ -1,0 +1,70 @@
+<style>
+/*
+  tables.css.html
+  This file contains styles for the table and its elements.
+*/
+
+/* General table styles */
+.table-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+  margin: 0 auto; /* Center the table within the wrapper */
+}
+
+.table-wrapper table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 auto; /* Center the table */
+}
+
+.table-wrapper th, .table-wrapper td {
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  text-align: center;
+}
+
+.table-wrapper th {
+  background-color: #555;
+  color: #fff;
+}
+
+/* Ensure the table rows and buttons align */
+#inputTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#inputTable th, #inputTable td {
+  padding: 10px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  position: relative; /* Allow positioning of remove button */
+}
+
+#inputTable th {
+  background-color: #555;
+  color: #fff;
+}
+
+#inputTable tr:hover {
+  background-color: #f1f1f1;
+}
+
+#inputTable tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+#inputTable input {
+  width: 90%;
+  padding: 10px;
+  font-size: 1.0em;
+  margin: 0 auto;
+}
+
+/* ====================== */
+/* End of Table Styles */
+/* ====================== */
+
+</style>

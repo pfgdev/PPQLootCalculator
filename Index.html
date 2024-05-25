@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gold Calculator</title>
+  
+  <!-- Importing our styles -->
+  <?!= include('base.css.html') ?>
+  <?!= include('layout.css.html') ?>
+
+  <!-- Base components and specific styles -->
+  <?!= include('components.css.html') ?>
+  <?!= include('buttons.css.html') ?>
+  <?!= include('spinner.css.html') ?>
+  <?!= include('debug-log.css.html') ?>
+  <?!= include('custom-input.css.html') ?>
+  <?!= include('tables.css.html') ?>
+
+  <?!= include('utilities.css.html') ?>
+  
+  <!-- Importing our scripts -->
+  <?!= include('scripts.html') ?>
+  <?!= include('table-scripts.html') ?>
+  <?!= include('calculation-scripts.html') ?>
+  <?!= include('main-scripts.html') ?>
+  <?!= include('tab-scripts.html') ?>
+
+</head>
+<body>
+  <?!= include('header.html') ?>
+
+  <!-- Gold Calculator Tab Content -->
+  <section id="GoldCalculator" class="tab-section active">
+    <?!= include('goldcalculatorheader.html') ?>
+    <?!= include('investigation.html') ?>
+    <?!= include('results.html') ?>
+    <?!= include('table.html') ?>
+    <?!= include('footer.html') ?>
+    <? if (loggingEnabled) { ?>
+      <div class="debug-log">
+        <textarea id="logArea" readonly></textarea>
+      </div>
+    <? } ?>
+  </section>
+
+  <!-- Beta Version Tab Content -->
+  <section id="BetaVersion" class="tab-section">
+    <?!= include('betaversionheader.html') ?>
+    <button class="button-image" onclick="calculate()">
+      <img src="https://i.ibb.co/dQSHrf4/d20-test.png" alt="Calculate" class="button-image">
+    </button>
+    <label for="investigationCheck">What is this d20? <span title="I am testing how to reference custom images. :)">(?)</span></label>
+  </section>
+
+  <!-- Spell Scrolls Tab Content -->
+  <section id="SpellScrolls" class="tab-section">
+    <?!= include('spellscrollsheader.html') ?>
+  </section>
+</body>
+</html>

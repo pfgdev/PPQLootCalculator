@@ -8,6 +8,7 @@
 .table-wrapper {
   display: flex;
   justify-content: center;
+  width: 100%;
   align-items: flex-start;
   position: relative;
   margin: 0 auto; /* Center the table within the wrapper */
@@ -15,6 +16,7 @@
 
 .table-wrapper table {
   border-collapse: collapse;
+  max-width: 800px; /*  locking in the table container narrower than the tab section */
   width: 100%;
   margin: 0 auto; /* Center the table */
 }
@@ -48,12 +50,12 @@
   color: #fff;
 }
 
-#inputTable tr:hover {
+#inputTable tr:nth-child(even) {
   background-color: #f1f1f1;
 }
 
-#inputTable tr:nth-child(even) {
-  background-color: #f2f2f2;
+#inputTable tr:hover {
+  background-color: #e0e0e0;
 }
 
 #inputTable input {

@@ -4,12 +4,12 @@
     This file contains utility classes and styles for specific functional groupings.
     It includes styles for form groups, results sections, and text alignment.
   */
-
+  
   /* Utility class for center-aligned text */
   .text-center {
     text-align: center;
   }
-
+  
   /* Form group styles for consistent layout of labels and inputs */
   .form-group {
     display: flex;
@@ -17,59 +17,65 @@
     align-items: center;
     margin-bottom: 20px;
   }
-
+  
   .form-group label {
-    font-size: 20px;
-    margin-bottom: 10px;
+    font-size: 20px;  /* Increase font size */
+    font-weight: bold;  /* Make the text bold */
+    color: #333;  /* Set the text color */
+    margin-bottom: 10px;  /* Add space below the label */
+    display: block;  /* Ensure it's a block element */
+    text-align: center;  /* Center-align the text */
   }
-
+  
   .form-group input {
     padding: 10px;
     font-size: 18px;
     text-align: center;
     width: 100px;
   }
-
+  
   /* Results section styles for displaying calculation results */
   .results-section {
     display: flex;
     justify-content: space-around;
-    margin-bottom: 30px;
+    margin: 30px auto; /* Keep vertical margin, center horizontally */
+    max-width: 800px;
   }
-
+  
   .results-section .result-item {
     flex: 1;
     margin: 0 20px;
   }
-
+  
   .results-section .result-item strong {
     display: block;
     font-size: 18px;
     margin-bottom: 5px;
   }
-
+  
   .results-section .result-item span {
     font-size: 18px;
   }
-
+  
   /* Header styles specific to the gold calculator */
   .gold-calculator-header {
     text-align: center;
     margin-bottom: 30px;
   }
-
+  
   .gold-calculator-header h2 {
     font-size: 28px;
     margin-bottom: 10px;
   }
-
+  
   .gold-calculator-header p {
     font-size: 18px;
     margin-bottom: 20px;
   }
-
+  
   /* Keyframe animation for spinner */
   @keyframes spinner {
     to { transform: rotate(360deg); }
   }
-</style>
+  </style>
+  

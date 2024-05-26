@@ -16,35 +16,39 @@
   border: none;
   cursor: pointer;
   position: absolute;
-  left: -40px; /* Adjust this value to position the button outside the cell */
+  left: -40px; /* Ensure correct alignment */
   top: 50%;
-  transform: translateY(-50%);
-  display: inline-block; /* Ensure button is displayed */
-  visibility: visible;  /* Ensure button is visible */
+  transform: translateY(-50%); /* Maintain vertical alignment */
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .button-remove:hover {
   background-color: #FF4500;
+  transform: translateY(-50%) scale(1.05); /* Add growth while maintaining alignment */
 }
 
 /* Calculate Button */
 .button-calculate {
   background-color: var(--primary-color);
   color: #fff;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .button-calculate:hover {
   background-color: #0056b3;
+  transform: scale(1.05); /* Apply growth on hover */
 }
 
 /* Reset Button */
 .button-reset {
   background-color: var(--secondary-color);
   color: #fff;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .button-reset:hover {
   background-color: #FF4500;
+  transform: scale(1.05); /* Apply growth on hover */
 }
 
 /* Add Button */
@@ -52,32 +56,38 @@
   background-color: #6c757d;
   color: #fff;
   margin: 10px 0;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .button-add:hover {
   background-color: #5a6268;
+  transform: scale(1.05); /* Apply growth on hover */
 }
 
 /* Decrement Button */
 .decrement-button {
-  padding: 10px 15px; /* Adjust padding for smaller buttons */
+  padding: 10px 15px;
   background-color: var(--secondary-color);
   color: #fff;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .decrement-button:hover {
   background-color: #FF4500;
+  transform: scale(1.05); /* Apply growth on hover */
 }
 
 /* Increment Button */
 .increment-button {
-  padding: 10px 15px; /* Adjust padding for smaller buttons */
+  padding: 10px 15px;
   background-color: var(--primary-color);
   color: #fff;
+  transition: background-color 0.3s, transform 0.2s; /* Ensure transition is applied */
 }
 
 .increment-button:hover {
   background-color: #0056b3;
+  transform: scale(1.05); /* Apply growth on hover */
 }
 
 /* ====================== */

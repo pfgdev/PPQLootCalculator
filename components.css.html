@@ -1,43 +1,44 @@
 <style>
-/*
-  components.css.html
-  Base styles and general component styles.
-*/
-
-/* ====================== */
-/* General Button Styles  */
-/* ====================== */
-.button {
-  padding: 15px 25px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
-  margin: 10px;
-  font-size: 1.0em;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.button:hover {
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.button:focus {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 4px;
-}
-
-.button:active {
-  transform: scale(0.98);
-}
-
-.button-container {
-  margin-top: 20px;
-  text-align: center;
-}
-
-/* ====================== */
-/* End General Button Styles */
-/* ====================== */
+  /*
+    components.css.html
+    Base styles and general component styles.
+  */
+  
+  /* ====================== */
+  /* General Button Styles  */
+  /* ====================== */
+  .button {
+    padding: 15px 25px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+    margin: 10px;
+    font-size: 1.0em;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .button:hover {
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    transform: scale(1.05); /* Apply growth on hover */
+  }
+  
+  .button:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 4px;
+  }
+  
+  .button:active {
+    transform: scale(0.98);
+  }
+  
+  .button-container {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  /* ====================== */
+  /* End General Button Styles */
+  /* ====================== */
 </style>
+  

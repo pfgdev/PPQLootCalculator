@@ -36,4 +36,13 @@
         }
     }
 
+    // Increment/Decrement Investigation Check Value
+    function changeInvestigationCheck(change) {
+        const investigationCheckDisplay = document.getElementById('investigationCheckDisplay');
+        let currentValue = parseInt(investigationCheckDisplay.innerText);
+        currentValue = isNaN(currentValue) ? 10 : currentValue;
+        currentValue = Math.max(1, Math.min(currentValue + change, 40)); // Ensure the value stays between 1 and 40
+        investigationCheckDisplay.innerText = currentValue;
+    }
+
 </script>

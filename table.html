@@ -4,6 +4,7 @@
     <thead>
       <tr>
         <th>Enemy CR</th>
+        <th>Enemy Icon</th>
         <th>Number Killed</th>
       </tr>
     </thead>
@@ -12,6 +13,12 @@
         <td class="cr-cell">
           <input type="number" name="cr0" value="1" min="1" max="20">
           <button class="button-remove" onclick="removeRow(1)">-</button>
+        </td>
+        <td class="cr-indicator-cell">
+          <div class="icon icon-cr-indicator">
+            <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
+            <span class="cr-number">1</span>
+          </div>
         </td>
         <td><input type="number" name="killed0" value="1" min="1"></td>
       </tr>

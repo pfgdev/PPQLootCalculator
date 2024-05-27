@@ -1,144 +1,205 @@
 <!-- table-scripts.html -->
 <script>
+    // Add a New Row to the Table
+    function addRow() {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        const rowCount = table.rows.length;
+        const row = table.insertRow(rowCount);
 
-  // Add a New Row to the Table
-  function addRow() {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
-      const rowCount = table.rows.length;
-      const row = table.insertRow(rowCount);
+        // Create CR Cell
+        const crCell = row.insertCell(0);
+        crCell.classList.add('cr-cell');
+        crCell.innerHTML = `
+            <div class="input-group">
+                <button class="button-cr-minus" onclick="decreaseCR(this)">-</button>
+                <input type="number" name="cr${rowCount}" value="1" min="1" max="20" oninput="updateCRIndicator(this)">
+                <button class="button-cr-plus" onclick="increaseCR(this)">+</button>
+            </div>
+        `;
 
-      // Create CR Cell
-      const crCell = row.insertCell(0);
-      const crInput = document.createElement("input");
-      crInput.type = "number";
-      crInput.name = `cr${rowCount}`;
-      crInput.value = 1;
-      crInput.min = 1;
-      crInput.max = 20;
-      crCell.appendChild(crInput);
+        // Create CR Indicator Cell
+        const crIndicatorCell = row.insertCell(1);
+        crIndicatorCell.className = 'cr-indicator-cell';
+        crIndicatorCell.innerHTML = `
+            <div class="icon icon-cr-indicator">
+                <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="CR Indicator Icon">
+                <span class="cr-number">1</span>
+            </div>
+        `;
 
-      // Create Remove Button
-      const removeButton = document.createElement("button");
-      removeButton.innerText = "-";
-      removeButton.className = "button-remove";
-      removeButton.style.display = "inline-block";
-      removeButton.style.visibility = "visible";
-      removeButton.onclick = function () {
-          removeRow(row.rowIndex);
-      };
-      crCell.appendChild(removeButton);
-      
-      // Create Killed Cell
-      const killedCell = row.insertCell(1);
-      const killedInput = document.createElement("input");
-      killedInput.type = "number";
-      killedInput.name = `killed${rowCount}`;
-      killedInput.value = 1;
-      killedInput.min = 1;
-      killedCell.appendChild(killedInput);
+        // Create Killed Cell
+        const killedCell = row.insertCell(2);
+        killedCell.innerHTML = `<input type="number" name="killed${rowCount}" value="1" min="1">`;
 
-      updateRemoveButtonsVisibility();
-  }
+        updateRemoveButtonsVisibility();
+    }
 
-  // Remove a Row from the Table
-  function removeRow(index) {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
-      table.deleteRow(index - 1); // Adjust for 0-based index
-      updateRowIndices();
-      updateRemoveButtonsVisibility();
-  }
-
-  // Update Row Indices
-  function updateRowIndices() {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
-      const rows = table.rows;
-      for (let i = 0; i < rows.length; i++) {
-          const crInput = rows[i].cells[0].querySelector("input");
-          const killedInput = rows[i].cells[1].querySelector("input");
-          crInput.name = `cr${i}`;
-          killedInput.name = `killed${i}`;
-      }
-  }
-
-  // Update Visibility of Remove Buttons
-  function updateRemoveButtonsVisibility() {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
-      const rowCount = table.rows.length;
-      const removeButtons = document.querySelectorAll(".button-remove");
-
-      removeButtons.forEach((button) => {
-          button.style.display = rowCount > 1 ? "inline-block" : "none";
-      });
-  }
+  
+    // Remove a Row from the Table
+    function removeRow(index) {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        table.deleteRow(index - 1); // Adjust for 0-based index
+        updateRowIndices();
+        updateRemoveButtonsVisibility();
+    }
+  
+    // Update Row Indices
+    function updateRowIndices() {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        const rows = table.rows;
+        for (let i = 0; i < rows.length; i++) {
+            const crInput = rows[i].cells[0].querySelector("input");
+            const killedInput = rows[i].cells[2].querySelector("input");
+            crInput.name = `cr${i}`;
+            killedInput.name = `killed${i}`;
+        }
+    }
+  
+    // Update Visibility of Remove Buttons
+    function updateRemoveButtonsVisibility() {
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        const rowCount = table.rows.length;
+        const removeButtons = document.querySelectorAll(".button-remove");
+  
+        removeButtons.forEach((button) => {
+            button.style.display = rowCount > 1 ? "inline-block" : "none";
+        });
+    }
 
 
+
+
+  
     // Reset the Form to Initial State
-  function resetForm() {
-      // Reset the investigation check value
-      const investigationCheck = document.getElementById("investigationCheckDisplay");
-      if (investigationCheck) {
-          investigationCheck.innerText = 10;
-      }
+    function resetForm() {
+        // Reset the investigation check value
+        const investigationCheck = document.getElementById("investigationCheckDisplay");
+        if (investigationCheck) {
+            investigationCheck.innerText = 10;
+        }
+  
+        // Get the table and reset its rows, except the header row
+        const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+        if (table) {
+            while (table.rows.length > 0) {
+                table.deleteRow(0);
+            }
+  
+            // Add the initial row
+            const row = table.insertRow(0);
+  
+            // Create the CR cell
+            const crCell = row.insertCell(0);
+            const crInput = document.createElement("input");
+            crInput.type = "number";
+            crInput.name = "cr0";
+            crInput.value = 1;
+            crInput.min = 1;
+            crInput.max = 20;
+            crInput.oninput = function() { updateCRIndicator(crInput); };
+            crCell.appendChild(crInput);
+  
+            // Create the remove button but don't show it initially
+            const removeButton = document.createElement("button");
+            removeButton.innerText = "-";
+            removeButton.className = "button-remove";
+            removeButton.style.display = "none"; // Hide initially
+            removeButton.onclick = function () {
+                removeRow(1);
+            };
+            crCell.appendChild(removeButton);
+  
+            // Create CR Indicator Cell
+            const crIndicatorCell = row.insertCell(1);
+            crIndicatorCell.className = 'cr-indicator-cell';
+            crIndicatorCell.innerHTML = `
+              <div class="icon icon-cr-indicator">
+                <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="CR Indicator Icon">
+                <span class="cr-number">1</span>
+              </div>
+            `;
+  
+            // Create the Killed cell
+            const killedCell = row.insertCell(2);
+            const killedInput = document.createElement("input");
+            killedInput.type = "number";
+            killedInput.name = "killed0";
+            killedInput.value = 1;
+            killedInput.min = 1;
+            killedCell.appendChild(killedInput);
+        }
+  
+        // Clear the results
+        const expectedGold = document.getElementById("expectedGold");
+        if (expectedGold) {
+            expectedGold.innerHTML = '&nbsp;';
+        }
+  
+        const diceNotation = document.getElementById("diceNotation");
+        if (diceNotation) {
+            diceNotation.innerHTML = '&nbsp;';
+        }
+  
+        const timeDelta = document.getElementById("timeDelta");
+        if (timeDelta) {
+            timeDelta.innerHTML = '&nbsp;';
+        }
+  
+        // Update the visibility of the remove buttons
+        updateRemoveButtonsVisibility();
+    }
+  
 
-      // Get the table and reset its rows, except the header row
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
-      if (table) {
-          while (table.rows.length > 0) {
-              table.deleteRow(0);
-          }
-
-          // Add the initial row
-          const row = table.insertRow(0);
-
-          // Create the CR cell
-          const crCell = row.insertCell(0);
-          const crInput = document.createElement("input");
-          crInput.type = "number";
-          crInput.name = "cr0";
-          crInput.value = 1;
-          crInput.min = 1;
-          crInput.max = 20;
-          crCell.appendChild(crInput);
-
-          // Create the remove button but don't show it initially
-          const removeButton = document.createElement("button");
-          removeButton.innerText = "-";
-          removeButton.className = "button-remove";
-          removeButton.style.display = "none"; // Hide initially
-          removeButton.onclick = function () {
-              removeRow(1);
-          };
-          crCell.appendChild(removeButton);
-
-          // Create the Killed cell
-          const killedCell = row.insertCell(1);
-          const killedInput = document.createElement("input");
-          killedInput.type = "number";
-          killedInput.name = "killed0";
-          killedInput.value = 1;
-          killedInput.min = 1;
-          killedCell.appendChild(killedInput);
-      }
-
-      // Clear the results
-      const expectedGold = document.getElementById("expectedGold");
-      if (expectedGold) {
-          expectedGold.innerHTML = '&nbsp;';
-      }
-
-      const diceNotation = document.getElementById("diceNotation");
-      if (diceNotation) {
-          diceNotation.innerHTML = '&nbsp;';
-      }
-
-      const timeDelta = document.getElementById("timeDelta");
-      if (timeDelta) {
-          timeDelta.innerHTML = '&nbsp;';
-      }
-
-      // Update the visibility of the remove buttons
-      updateRemoveButtonsVisibility();
-  }
 
 
-</script>
+
+
+
+
+
+
+    // Decrease CR Value
+    function decreaseCR(button) {
+    const input = button.nextElementSibling;
+    if (input.value > input.min) {
+        input.value--;
+        updateCRIndicator(input);
+    }
+    }
+
+    // Increase CR Value
+    function increaseCR(button) {
+        const input = button.previousElementSibling;
+        if (input.value < input.max) {
+            input.value++;
+            updateCRIndicator(input);
+        }
+    }
+
+    function updateCRIndicator(input) {
+        const crValue = input.value;
+        const crIndicatorCell = input.closest('tr').querySelector('.cr-indicator-cell .cr-number');
+        crIndicatorCell.textContent = crValue;
+    }
+  
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputTable = document.getElementById('inputTable');
+  
+        // Initial population of CR indicators based on existing values
+        const rows = inputTable.rows;
+        for (let i = 1; i < rows.length; i++) {
+            const crInput = rows[i].querySelector('input[type="number"][name^="cr"]');
+            if (crInput) {
+                updateCRIndicator(crInput);
+            }
+        }
+  
+        // Event listeners for updating CR indicators dynamically
+        inputTable.addEventListener('input', function(event) {
+            if (event.target.matches('input[type="number"][name^="cr"]')) {
+                updateCRIndicator(event.target);
+            }
+        });
+    });
+  </script>
+  

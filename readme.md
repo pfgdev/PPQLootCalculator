@@ -107,6 +107,78 @@ Note2: Some minor files and/or depreciated files are not included in this breakd
     - It includes styles for form groups, results sections, and text alignment.
 
 
+
+
+
+## Using ChatGPT for Assistance
+
+### Project Overview
+This project is a Gold Calculator tool built using HTML, CSS, and JavaScript. It includes features such as adding enemies, calculating expected gold, and displaying results in a user-friendly interface.
+
+### Key Files and Their Purpose
+- `index.html`: Main HTML file containing the structure of the application.
+- `styles.css`: Contains the main styling rules for the application.
+- `scripts.js`: Contains the JavaScript logic for the application.
+- `custom-input.css.html`: Styles for custom input elements.
+- `layout.css.html`: Styles related to the overall layout.
+- `utilities.css.html`: Utility classes and styles for specific functional groupings.
+
+### Common Tasks
+1. **Adjusting Styles**:
+   - To modify styles for specific elements, refer to the corresponding CSS files.
+   - Example: To change the button styles, update `styles.css`.
+
+2. **Enhancing Layout**:
+   - To adjust the layout, use `layout.css.html` and `utilities.css.html`.
+   - Example: To center a container, ensure it has `margin: 0 auto;`.
+
+3. **Debugging UI Issues**:
+   - When facing UI issues, inspect the elements using browser developer tools.
+   - Example: To fix alignment issues, check the applied styles in developer tools.
+
+### Specific Instructions for ChatGPT
+To assist effectively with this project, please consider the following:
+- **Review the Key Files**: Before making suggestions, review the key CSS and HTML files provided.
+- **Maintain Accessibility**: Ensure that any changes proposed maintain or improve accessibility.
+- **Provide Detailed Examples**: When suggesting code, provide detailed examples and explanations.
+
+### Example Interaction
+```markdown
+**Question**: How can I make the "Investigation Check" label stand out more?
+
+**Current Code**:
+```html
+<!-- investigation.html -->
+<div class="form-group">
+  <label for="investigationCheck">Investigation Check: <span title="Investigation Check tooltip">(?)</span></label>
+  <div class="custom-number-input">
+    <button class="button decrement-button" onclick="changeInvestigationCheck(-1)">&#9664;</button>
+    <div id="investigationCheckDisplay" class="value-display">12</div>
+    <button class="button increment-button" onclick="changeInvestigationCheck(1)">&#9654;</button>
+  </div>
+</div>
+```
+
+**Desired Outcome**:
+I want the label to be larger and bold.
+
+**ChatGPT's Suggested CSS**:
+
+```css
+.form-group label {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+  display: block;
+  text-align: center;
+}
+```
+
+
+
+
+
 ### Installation
 1. No installation, it's just a web app!
 

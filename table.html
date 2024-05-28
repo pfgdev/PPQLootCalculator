@@ -4,27 +4,48 @@
     <thead>
       <tr>
         <th>Enemy CR</th>
-        <th>Enemy Icon</th>
+        <th>Icon</th>
         <th>Number Killed</th>
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td class="cr-cell">
-          <input type="number" name="cr0" value="1" min="1" max="20">
-          <button class="button-remove" onclick="removeRow(1)">-</button>
-        </td>
-        <td class="cr-indicator-cell">
-          <div class="icon icon-cr-indicator">
-            <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
-            <span class="cr-number">1</span>
-          </div>
-        </td>
-        <td><input type="number" name="killed0" value="1" min="1"></td>
-      </tr>
+      <!-- Initial row will be inserted by JavaScript -->
     </tbody>
   </table>
 </div>
 <div class="button-container">
   <button id="addEnemyButton" class="button button-add" onclick="addRow()">Add Enemy</button>
 </div>
+
+<template id="row-template">
+  <tr>
+    <td class="cr-cell">
+      <div class="custom-input cr-value">
+        <button class="decrement-button" onclick="decreaseValue(this)">-</button>
+        <div class="value-display" data-name="cr">1</div>
+        <button class="increment-button" onclick="increaseValue(this)">+</button>
+      </div>
+      <button class="button-remove" onclick="removeRow()">-</button>
+    </td>
+    <td class="cr-indicator-cell">
+      <div class="icon icon-cr-indicator">
+        <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="CR Indicator Icon">
+        <span class="cr-number">1</span>
+      </div>
+    </td>
+    <td class="killed-cell">
+      <div class="custom-input enemies-killed">
+        <button class="decrement-button" onclick="decreaseKilled(this)">-</button>
+        <div class="value-display" data-name="killed">1</div>
+        <button class="increment-button" onclick="increaseKilled(this)">+</button>
+      </div>
+    </td>
+  </tr>
+</template>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    addInitialRow();
+    updateRemoveButtonsVisibility(); // Ensure the remove button visibility is updated
+  });
+</script>

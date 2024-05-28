@@ -1,42 +1,44 @@
 <!-- calculation-scripts.html -->
 <script>
+    // Calculation Function
+    function calculate() {
+        showSpinner();
+        showProgressMessage();
+        const startTime = performance.now(); // Start timing
 
-  // Calculation Function
-  function calculate() {
-      showSpinner();
-      showProgressMessage();
-      const startTime = performance.now(); // Start timing
+        const table = document.getElementById("inputTable");
+        const rows = table.getElementsByTagName("tbody")[0].rows;
+        let inputs = [];
 
-      const table = document.getElementById("inputTable");
-      const rows = table.rows;
-      let inputs = [];
+        const investigationCheckDisplay = document.getElementById('investigationCheckDisplay');
+        const investigationCheck = Math.max(1, Math.min(parseInt(investigationCheckDisplay.innerText), 40));
 
-      const investigationCheckDisplay = document.getElementById('investigationCheckDisplay');
-      const investigationCheck = Math.max(1, Math.min(parseInt(investigationCheckDisplay.innerText), 40));
+        for (let i = 0; i < rows.length; i++) {
+            const cr = Math.max(1, Math.min(parseInt(rows[i].querySelector(".value-display[data-name='cr']").innerText), 20));
+            const killed = Math.max(1, Math.min(parseInt(rows[i].querySelector(".value-display[data-name='killed']").innerText), 100)); // Updated to use enemies-killed value display
 
-      for (let i = 1; i < rows.length; i++) {
-          const cr = Math.max(1, Math.min(parseInt(rows[i].cells[0].children[0].value), 20));
-          const killed = Math.max(1, parseInt(rows[i].cells[1].children[0].value));
+            inputs.push({ cr, killed, check: investigationCheck });
+        }
 
-          inputs.push({ cr, killed, check: investigationCheck });
-      }
+        google.script.run.withSuccessHandler(function (response) {
+            hideSpinner();
+            hideProgressMessage();
+            const endTime = performance.now(); // End timing
+            const timeDelta = endTime - startTime;
+            updateResult(response, timeDelta); // Ensure this is always called
+        }).calculateGoldAndLog(inputs);
+    }
 
-      google.script.run.withSuccessHandler(function (response) {
-          hideSpinner();
-          hideProgressMessage();
-          const endTime = performance.now(); // End timing
-          const timeDelta = endTime - startTime;
-          updateResult(response, timeDelta); // Ensure this is always called
-      }).calculateGoldAndLog(inputs);
-  }
+    // Update Calculation Result
+    function updateResult(message, timeDelta) {
+        document.getElementById("expectedGold").innerText = message.expectedGold;
+        document.getElementById("diceNotation").innerText = message.diceNotation;
+        document.getElementById("timeDelta").innerText = `${timeDelta.toFixed(2)} ms`;
+        updateLog(message.logMessages);
+    }
 
-
-  // Update Calculation Result
-  function updateResult(message, timeDelta) {
-      document.getElementById("expectedGold").innerText = message.expectedGold;
-      document.getElementById("diceNotation").innerText = message.diceNotation;
-      document.getElementById("timeDelta").innerText = `${timeDelta.toFixed(2)} ms`;
-      updateLog(message.logMessages);
-  }
-
+    function updateLog(messages) {
+        const logElement = document.getElementById("logMessages");
+        logElement.innerText = messages.join("\n");
+    }
 </script>

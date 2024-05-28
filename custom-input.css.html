@@ -4,49 +4,159 @@
     Styles for custom number inputs.
   */
   
-  /* Custom Number Input Styles */
-  .custom-number-input {
+  /* Base styles for custom number inputs and buttons */
+  .custom-input {
+    display: flex;
+    align-items: center; /* Vertically centers the content */
+    justify-content: center; /* Horizontally centers the content */
+    margin-top: 0; /* Ensure no top margin affects alignment */
+    margin-bottom: 0; /* Ensure no bottom margin affects alignment */
+    padding: 0; /* Ensure no padding affects alignment */
+    height: 100%; /* Make sure it takes the full height of the cell */
+    box-sizing: border-box; /* Ensure padding and border are included in the element's total width and height */
+  }
+
+  .custom-input .value-display {
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin: 0 5px;
+    background-color: #fff; /* Bright background */
+    color: #444; /* Slightly lighter text color */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex; /* Flex display for centering */
+    align-items: center; /* Vertically centers the content */
+    justify-content: center; /* Horizontally centers the content */
+    padding: 0 5px; /* Adjusted padding to remove top and bottom padding */
+    line-height: normal; /* Ensure line-height doesn't interfere */
+  }
+
+  .custom-input button {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 10px;
+    background-color: #e0e0e0;
+    color: #333;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0; /* Remove top and bottom padding */
+    display: flex; /* Flex display for centering */
+    align-items: center; /* Vertically centers the content */
+    justify-content: center; /* Horizontally centers the content */
   }
-  
-  .custom-number-input .value-display {
-    text-align: center;
+
+  .custom-input button:hover {
+    background-color: #d4d4d4;
+    transform: scale(1.05);
+  }
+
+  .custom-input button:active {
+    background-color: #c8c8c8;
+    transform: scale(0.95);
+  }
+
+  /* Specific styles for investigation check input */
+  .investigation-check {
+    --border-color: #aaa;
+  }
+
+  .investigation-check .value-display {
     width: 80px;
     padding: 10px;
-    font-size: 1.5em;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    margin: 0 10px;
-    background-color: #fff; /* Ensure the background is white */
-    color: #333; /* Text color */
-    line-height: 1.5em; /* Adjust line-height for better centering */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+    font-size: 2.2em; /* Slightly reduced font size */
+    font-weight: 600; /* Adjusted font weight */
+    height: 60px;
   }
-  
-  .custom-number-input button {
-    display: flex; /* Ensure content is centered */
-    align-items: center; /* Center content vertically */
-    justify-content: center; /* Center content horizontally */
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    font-size: 1.5em; /* Larger font size */
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.3s; /* Adjusted transition duration */
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
-    transform-origin: center; /* Ensure scaling is from the center */
-    height: 50px; /* Fixed height to maintain consistency */
-    line-height: 50px; /* Match line-height to the height */
+
+  .investigation-check .decrement-button,
+  .investigation-check .increment-button {
+    background-color: #ff8a80;
+    color: #fff;
+    height: 50px;
+    width: 50px;
+    line-height: 50px;
+    padding: 0 20px;
+    font-size: 1.6em;
   }
-  
-  .custom-number-input button:hover {
-    background-color: #0056b3;
-    transform: scale(1.05); /* Apply growth on hover */
+
+  .investigation-check .increment-button {
+    background-color: #80d8ff;
   }
-  </style>
-  
+
+  .investigation-check .decrement-button:hover,
+  .investigation-check .increment-button:hover {
+    transform: scale(1.05);
+  }
+
+  .investigation-check .decrement-button:active,
+  .investigation-check .increment-button:active {
+    transform: scale(0.95);
+  }
+
+  /* Specific styles for CR value input */
+  .cr-value {
+    --border-color: #bbb;
+  }
+
+  .cr-value .value-display {
+    width: 60px; /* Fixed width for consistency */
+    font-size: 1.7em; /* Consistent font size */
+    font-weight: 600; /* Consistent font weight */
+    height: 48px; /* Fixed height */
+  }
+
+  .cr-value .decrement-button,
+  .cr-value .increment-button {
+    font-size: 2.0em;
+    height: 40px; /* Fixed height */
+    width: 40px; /* Fixed width */
+    line-height: 40px;
+  }
+
+  .cr-value .decrement-button:hover,
+  .cr-value .increment-button:hover {
+    background-color: #d4d4d4;
+  }
+
+  .cr-value .decrement-button:active,
+  .cr-value .increment-button:active {
+    background-color: #c8c8c8;
+  }
+
+
+
+    /* Specific styles for Enemies Killed input */
+    .enemies-killed {
+    --border-color: #ccc;
+  }
+
+  .enemies-killed .value-display {
+    width: 60px; /* Fixed width for consistency */
+    font-size: 1.7em; /* Consistent font size */
+    font-weight: 600; /* Consistent font weight */
+    height: 48px; /* Fixed height */
+  }
+
+  .enemies-killed .decrement-button,
+  .enemies-killed .increment-button {
+    font-size: 2.0em;
+    height: 40px; /* Fixed height */
+    width: 40px; /* Fixed width */
+    line-height: 40px;
+  }
+
+  .enemies-killed .decrement-button:hover,
+  .enemies-killed .increment-button:hover {
+    background-color: #d4d4d4;
+  }
+
+  .enemies-killed .decrement-button:active,
+  .enemies-killed .increment-button:active {
+    background-color: #c8c8c8;
+  }
+
+
+</style>

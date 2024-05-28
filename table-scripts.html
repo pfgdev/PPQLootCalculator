@@ -76,20 +76,7 @@
       }
   
       // Clear the results
-      const expectedGold = document.getElementById("expectedGold");
-      if (expectedGold) {
-        expectedGold.innerHTML = '&nbsp;';
-      }
-  
-      const diceNotation = document.getElementById("diceNotation");
-      if (diceNotation) {
-        diceNotation.innerHTML = '&nbsp;';
-      }
-  
-      const timeDelta = document.getElementById("timeDelta");
-      if (timeDelta) {
-        timeDelta.innerHTML = '&nbsp;';
-      }
+      setResultsToZero();
   
       // Update the visibility of the remove buttons
       updateRemoveButtonsVisibility();

@@ -1,10 +1,20 @@
 <!-- investigation.html -->
+<div class="result-title">Step 2: Check</div>
 <div class="form-group">
-  <label for="investigationCheck">Investigation Check: <span title="Enter the party's highest investigation check when searching for loot.">(?)</span></label>
+  <!-- <label for="investigationCheck">Investigation Check: <span title="Enter the party's highest investigation check when searching for loot.">(?)</span></label> -->
   <div class="custom-input investigation-check">
     <button class="decrement-button" onclick="changeInvestigationCheck(-1)">&#9664;</button>
     <div id="investigationCheckDisplay" class="value-display">10</div>
     <button class="increment-button" onclick="changeInvestigationCheck(1)">&#9654;</button>
   </div>
+  <div class="button-container">
+    <button class="button button-calculate" onclick="calculate()">Calculate</button>
+    <button class="button button-reset" onclick="resetForm()">Reset</button>
+  </div>
+  <br>
+  <div class="loading-container">
+    <div id="progressMessage" class="progress-message" style="display: none;">Calculating, please wait...</div>
+    <div id="spinner" class="spinner" style="display: none;"></div>
+  </div>
 </div>
-<br>
+

@@ -12,10 +12,12 @@
   
   /* Form group styles for consistent layout of labels and inputs */
   .form-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   }
   
   .form-group label {
@@ -34,28 +36,103 @@
     width: 100px;
   }
   
-  /* Results section styles for displaying calculation results */
-  .results-section {
-    display: flex;
-    justify-content: space-around;
-    margin: 30px auto; /* Keep vertical margin, center horizontally */
-    max-width: 800px;
-  }
+  .form-group .custom-input {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 5px 0;  /* Reduce vertical margins */
+}
+
+.form-group .button-container {
+  display: flex;
+  justify-content: center;
+  margin: 5px 0;  /* Reduce vertical margins */
+}
+
   
-  .results-section .result-item {
-    flex: 1;
-    margin: 0 20px;
-  }
-  
-  .results-section .result-item strong {
-    display: block;
-    font-size: 18px;
-    margin-bottom: 5px;
-  }
-  
-  .results-section .result-item span {
-    font-size: 18px;
-  }
+/* Results section styles for displaying calculation results */
+.results-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center-align items */
+  margin: 5px auto; /* Keep vertical margin, center horizontally */
+  max-width: 900px; /* Increase max-width to accommodate more content */
+  padding: 15px; /* Add padding for space around items */
+  background-color: #fffaf0; /* Paler gold background color for prominence */
+  border: 1px solid #e0c068; /* Border for definition */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Light shadow for depth */
+  min-height: 100px; /* Reserve space for content */
+}
+
+.result-title {
+  font-size: 32px; /* Increased text size */
+  font-weight: bold;
+  margin-bottom: 10px; /* Reduced space below the title */
+  color: #000; /* Black color */
+  text-align: center; /* Center-align the title */
+}
+
+.results-section .result-row {
+  display: flex;
+  justify-content: space-between; /* Space items evenly */
+  width: 100%; /* Use full width */
+  margin-bottom: 0px; /* Reduce space below the row */
+  margin-top: 15px; /* Add margin above the row for spacing */
+}
+
+.results-section .result-item {
+  text-align: center; /* Center-align text */
+  flex: 1; /* Allow items to take up equal space */
+  max-width: 350px;
+}
+
+.results-section .result-item strong {
+  display: block;
+  font-size: 24px; /* Increase font size for emphasis */
+  margin-bottom: 5px; /* Add space below the label */
+}
+
+.results-section .result-value {
+  display: flex;
+  justify-content: center;
+  width: 100%; /* Ensure the container takes full width */
+  padding: 0 10px; /* Add padding to center the content properly */
+}
+
+.results-section .result-value span {
+  font-size: 28px; /* Increase font size for values */
+  color: #8a6d3b; /* Darker gold color for text */
+  word-wrap: break-word; /* Allow text to wrap if needed */
+  white-space: normal; /* Allow text to wrap */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ellipsis for overflow */
+}
+
+.results-section .result-item.query-time {
+  font-size: 12px; /* Smaller font size for query time */
+  color: #888; /* Softer color for query time */
+  margin-top: 15px; /* Add margin above for spacing */
+}
+
+.results-section .result-item.query-time strong {
+  font-size: 14px; /* Smaller font size for query time title */
+}
+
+.results-section .result-item.query-time span {
+  font-size: 12px; /* Smaller font size for query time value */
+}
+
+
+
+
+
+
+
+
+
+
+
   
   /* Header styles specific to the gold calculator */
   .gold-calculator-header {
@@ -72,10 +149,6 @@
     font-size: 18px;
     margin-bottom: 20px;
   }
-  
-  /* Keyframe animation for spinner */
-  @keyframes spinner {
-    to { transform: rotate(360deg); }
-  }
+
   </style>
   

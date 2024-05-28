@@ -34,10 +34,17 @@
   <!-- Gold Calculator Tab Content -->
   <section id="GoldCalculator" class="tab-section active">
     <?!= include('goldcalculatorheader.html') ?>
-    <?!= include('investigation.html') ?>
+    <div class="content">
+      <div class="combined-container">
+        <div class="table-container">
+          <?!= include('table.html') ?>
+        </div>
+        <div class="investigation-container">
+          <?!= include('investigation.html') ?>
+        </div>
+      </div>
+    </div>
     <?!= include('results.html') ?>
-    <?!= include('table.html') ?>
-    <?!= include('footer.html') ?>
     <? if (loggingEnabled) { ?>
       <div class="debug-log">
         <textarea id="logArea" readonly></textarea>
@@ -51,42 +58,31 @@
     <button class="button-image" onclick="calculate()">
       <img src="https://i.ibb.co/dQSHrf4/d20-test.png" alt="Calculate" class="button-image">
     </button>
-
-
-
-
-
-  <div class="icon icon-cr-indicator icon-small">
-    <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
-    <span class="cr-number">7</span>
-  </div>
-
-  <div class="icon icon-cr-indicator">
-    <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
-    <span class="cr-number">8</span>
-  </div>
-
-  <div class="icon icon-cr-indicator icon-large">
-    <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
-    <span class="cr-number">9</span>
-  </div>
-
-  <div class="icon icon-cr-indicator icon-small">
-    <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
-    <span class="cr-number">10</span>
-  </div>
-
-  <div class="icon icon-cr-indicator">
-    <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
-    <span class="cr-number">11</span>
-  </div>
-
-  <div class="icon icon-cr-indicator icon-large">
-    <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
-    <span class="cr-number">12</span>
-  </div>
-
-  <label for="investigationCheck">What is this d20? <span title="I am testing how to reference custom images. :)">(?)</span></label>
+    <div class="icon icon-cr-indicator icon-small">
+      <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
+      <span class="cr-number">7</span>
+    </div>
+    <div class="icon icon-cr-indicator">
+      <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
+      <span class="cr-number">8</span>
+    </div>
+    <div class="icon icon-cr-indicator icon-large">
+      <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
+      <span class="cr-number">9</span>
+    </div>
+    <div class="icon icon-cr-indicator icon-small">
+      <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
+      <span class="cr-number">10</span>
+    </div>
+    <div class="icon icon-cr-indicator">
+      <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
+      <span class="cr-number">11</span>
+    </div>
+    <div class="icon icon-cr-indicator icon-large">
+      <img src="https://i.ibb.co/r2H3xMQ/transparent-beholder-icon.png" alt="Enemy CR Indicator Icon">
+      <span class="cr-number">12</span>
+    </div>
+    <label for="investigationCheck">What is this d20? <span title="I am testing how to reference custom images. :)">(?)</span></label>
   </section>
 
   <!-- Spell Scrolls Tab Content -->

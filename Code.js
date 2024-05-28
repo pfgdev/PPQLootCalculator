@@ -2,7 +2,7 @@
 // Define global variables
 var investigationData, goldData, cleanedInvestigationData, cleanedGoldData;
 var highSuccessMod, mediumSuccessMod, lowSuccessMod, failedCheckMod;
-var LOGGING_ENABLED = true; // Toggle to enable/disable logging
+var LOGGING_ENABLED = false; // Toggle to enable/disable logging
 var MAX_LOG_SIZE = 100; // Set a maximum log size
 var logMessages = []; // Store log messages
 var initializationCompleteFlag = 'initializationComplete';

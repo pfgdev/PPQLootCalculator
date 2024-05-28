@@ -33,7 +33,7 @@
     function updateResult(message, timeDelta) {
         document.getElementById("expectedGold").innerText = message.expectedGold;
         document.getElementById("diceNotation").innerText = message.diceNotation;
-        document.getElementById("timeDelta").innerText = `${timeDelta.toFixed(2)} ms`;
+        document.getElementById("queryTime").innerText = `${timeDelta.toFixed(2)} ms`; // Corrected from timeDelta to queryTime
         updateLog(message.logMessages);
     }
 

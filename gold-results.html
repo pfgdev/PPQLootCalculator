@@ -1,0 +1,37 @@
+<!-- gold-results.html -->
+<div class="section-container">
+    <div class="section-head">Step 3: Results</div>
+    <div class="section-body">
+        <div class="flex-row">
+            <div class="element-container">
+                <div id="beta_expectedGoldContainer">
+                    <strong>Expected Gold:</strong>
+                    <div id="beta_expectedGold">0.00</div>
+                </div>
+            </div>
+            <div class="element-container">
+                <div id="beta_diceNotationContainer">
+                    <strong>Dice Notation:</strong>
+                    <div id="beta_diceNotation">0d0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="section-footer">
+        <div id="beta_queryTimeContainer">
+            <strong>Query Time:</strong>
+            <div id="beta_queryTime">0.00 ms</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function beta_updateResult(expectedGold, diceNotation, queryTime) {
+    document.getElementById('beta_expectedGold').innerText = expectedGold.toFixed(3);
+    document.getElementById('beta_diceNotation').innerText = diceNotation;
+    document.getElementById('beta_queryTime').innerText = queryTime.toFixed(2) + ' ms';
+}
+
+// Example usage of the function (replace this with your actual function call)
+beta_updateResult(123.456, '1d6 Gold', 25.67);
+</script>

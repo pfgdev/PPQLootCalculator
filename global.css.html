@@ -1,0 +1,174 @@
+<!-- global.css.html -->
+<style>
+    /* 
+        Global CSS Variables
+        Define global CSS variables for common properties. 
+        These variables allow easy and consistent changes throughout the entire stylesheet.
+    */
+    :root {
+        --default-padding: 20px; /* Default padding used for sections and elements */
+        --default-margin: 20px; /* Default margin used for sections and elements */
+        --section-width: 1000px; /* Default width for section containers */
+        --element-spacing: var(--default-padding); /* Default spacing between elements within a section */
+        --background-color: #f9f9f9; /* Background color for sections */
+        --border-color: #ddd; /* Border color for sections and elements */
+        --text-color: #333; /* Default text color */
+        --heading-font-size: 24px; /* Font size for section headings (e.g., "Step 1: Enemies") */
+        --heading-font-weight: bold; /* Font weight for section headings */
+    }
+    /*
+        End: Global CSS variables
+    */
+
+    /* Category container styles
+        Category containers are used to organize multiple sections horizontally within a tab or page.
+        These styles ensure that sections are laid out side by side with consistent spacing and alignment.
+    */
+    .category-container {
+        display: flex; /* Uses flexbox to layout child elements in a flexible manner. */
+        flex-direction: row; /* Aligns items horizontally, from left to right. */
+        justify-content: space-between; /* Distributes space between items, ensuring they are spaced evenly across the container. */
+        align-items: flex-start; /* Aligns items to the top of the container, ensuring they start from the same vertical point. */
+        gap: var(--default-padding); /* Adds space between the child elements, using the default padding variable defined in :root. */
+        max-width: var(--section-width); /* Ensures the total width of the container does not exceed the default section width variable defined in :root. */
+        margin: 0 auto; /* Centers the container horizontally within its parent container by setting the left and right margins to auto. */
+    }
+    /* End category container styles */
+
+    /* Section container styles
+        Section containers are designed to encapsulate heads, bodies, and footers.
+        These styles ensure a consistent appearance across all sections.
+    */
+    .section-container {
+        width: var(--section-width); /* The width of the section container is set to the default section width variable defined in :root. */
+        margin: 0 auto; /* The section container is centered horizontally within its parent container by setting the left and right margins to auto. */
+        padding: var(--default-padding); /* The padding inside the section container is set to the default padding variable defined in :root. */
+        border: 1px solid var(--border-color); /* A 1-pixel solid border is applied, with the color set to the default border color variable defined in :root. */
+        border-radius: 8px; /* The border-radius property rounds the corners of the section container. A value of 8px gives the corners a slight curve. */
+        background-color: var(--background-color); /* The background color of the section container is set to the default background color variable defined in :root. */
+        margin-bottom: var(--default-margin); /* Add margin-bottom to create vertical space between sections */
+    }
+    /* End section container styles */
+
+    /* Section head styles
+        The section head is intended for the title or heading of the section.
+        These styles ensure consistent appearance and spacing for all section titles.
+    */
+    .section-head {
+        font-size: var(--heading-font-size); /* Apply the heading font size using the variable defined in :root. */
+        font-weight: var(--heading-font-weight); /* Apply the heading font weight using the variable defined in :root. */
+        margin-bottom: var(--default-padding); /* Add space below the section head using the default padding variable. */
+        color: var(--text-color); /* Set the text color using the default text color variable. */
+    }
+    /* End section head styles */
+
+    /* Section body styles
+        The section body contains the main content of the section.
+        Flexbox is used to arrange the content elements within the body.
+    */
+    .section-body {
+        display: flex; /* Use Flexbox layout to arrange elements horizontally. */
+        justify-content: center; /* Center elements horizontally within the section body. */
+        flex-direction: column /* Stacks rows vertically */;
+        gap: var(--element-spacing); /* Space between elements using the default element spacing variable. */
+    }
+    /* End section body styles */
+
+    /* Flex-row styles
+        Flex-row is used to create horizontal groups of elements within the section body.
+        These styles ensure the elements are spaced evenly within the row.
+    */
+    .flex-row {
+        display: flex; /* Use Flexbox layout for horizontal arrangement. */
+        width: 100%; /* The width of the flex-row is set to 100% of its parent container. */
+        justify-content: space-between; /* Distribute space evenly between elements. */
+        margin-bottom: var(--default-padding); /* Add space below the flex-row using the default padding variable. */
+    }
+    /* End flex-row styles */
+
+    /* Element container styles
+        The element container holds individual content items within the section body.
+        These styles ensure each element has a consistent appearance and spacing.
+    */
+    .element-container {
+        flex: 1; /* Elements grow to take up equal space within the Flexbox layout, based on available space. */
+        padding: 10px; /* Add padding inside the element container. */
+        border: 1px solid var(--border-color); /* Apply a 1-pixel solid border using the default border color variable. */
+        border-radius: 4px; /* Round the corners of the element container with a radius of 4px. */
+        background-color: #fff; /* Set the background color of the element container to white. */
+    }
+    /* End element container styles */
+
+    /* Section footer styles
+        The section footer is optional and can hold additional content or notes.
+        These styles ensure a consistent appearance and spacing for all section footers.
+    */
+    .section-footer {
+        margin-top: var(--default-padding); /* Add space above the footer using the default padding variable. */
+        font-size: 14px; /* Set the font size for the footer text. */
+        color: #666; /* Set the text color for the footer to a gray color. */
+    }
+    /* End section footer styles */
+
+    /* Control button styles
+        Control buttons for adjusting values inside element containers.
+    */
+    .control-button {
+        padding: 5px 10px; /* Set padding inside the button. */
+        margin: 0 5px; /* Add space on the left and right of the button. */
+        font-size: 16px; /* Set font size. */
+        cursor: pointer; /* Set cursor to pointer for clickable effect. */
+        border: 1px solid var(--border-color); /* Set border color. */
+        border-radius: 4px; /* Set rounded corners for the border. */
+        background-color: #eee; /* Set background color. */
+    }
+
+    /* Control button hover styles
+        Change background color when hovering over the button.
+    */
+    .control-button:hover {
+        background-color: #ddd; /* Darker background color on hover. */
+    }
+
+    /* Value display styles
+        Styles for the value display inside element containers.
+    */
+    .value-display {
+        padding: 0 10px; /* Set padding on the left and right of the value display. */
+        font-size: 16px; /* Set font size. */
+    }
+
+    /* Content title styles
+        Styles for the titles inside element containers.
+    */
+    .content-title {
+        font-size: 18px; /* Set font size for the content title. */
+        font-weight: bold; /* Set font weight for the content title. */
+        margin-bottom: var(--default-padding); /* Add space below the content title. */
+    }
+
+    /* Content body styles
+        Styles for the main content inside element containers.
+    */
+    .content-body {
+        display: flex; /* Use flexbox layout for the content body. */
+        align-items: center; /* Center align items vertically. */
+        justify-content: center; /* Center align items horizontally. */
+    }
+
+    /* 
+        Utility classes for common adjustments to padding and margins.
+        These classes provide a quick way to override the default padding and margin settings.
+    */
+
+    /* Padding utility classes */
+    .p-0 { padding: 0; }
+    .p-1 { padding: 10px; }
+    .p-2 { padding: 20px; }
+
+    /* Margin utility classes */
+    .m-0 { margin: 0; }
+    .m-1 { margin: 10px; }
+    .m-2 { margin: 20px; }
+
+</style>

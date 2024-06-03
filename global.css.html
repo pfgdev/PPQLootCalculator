@@ -13,14 +13,16 @@
         --background-color: #f9f9f9; /* Background color for sections */
         --border-color: #ddd; /* Border color for sections and elements */
         --text-color: #333; /* Default text color */
-        --heading-font-size: 24px; /* Font size for section headings (e.g., "Step 1: Enemies") */
+        --heading-font-size: 32px; /* Font size for section headings (e.g., "Step 1: Enemies") */
         --heading-font-weight: bold; /* Font weight for section headings */
+        --heading-margin-bottom: 10px; /* Margin between the head (title) and the body */
+        --footer-margin-bottom: 10px; /* Margin between the head (title) and the body */
     }
     /*
         End: Global CSS variables
     */
 
-    /* Category container styles
+    /*  Category container styles
         Category containers are used to organize multiple sections horizontally within a tab or page.
         These styles ensure that sections are laid out side by side with consistent spacing and alignment.
     */
@@ -35,11 +37,22 @@
     }
     /* End category container styles */
 
-    /* Section container styles
+    /*  Section container styles
         Section containers are designed to encapsulate heads, bodies, and footers.
         These styles ensure a consistent appearance across all sections.
     */
     .section-container {
+        width: var(--section-width); /* The width of the section container is set to the default section width variable defined in :root. */
+        margin: 0 auto; /* The section container is centered horizontally within its parent container by setting the left and right margins to auto. */
+        padding: var(--default-padding); /* The padding inside the section container is set to the default padding variable defined in :root. */
+        margin-bottom: var(--default-margin); /* Add margin-bottom to create vertical space between sections */
+    }
+
+    /*  Framed container styles
+        Framed Section containers are designed to encapsulate heads, bodies, and footers.
+        This version has a visible background and is useful for debugging.
+    */
+    .framed-section-container {
         width: var(--section-width); /* The width of the section container is set to the default section width variable defined in :root. */
         margin: 0 auto; /* The section container is centered horizontally within its parent container by setting the left and right margins to auto. */
         padding: var(--default-padding); /* The padding inside the section container is set to the default padding variable defined in :root. */
@@ -57,7 +70,7 @@
     .section-head {
         font-size: var(--heading-font-size); /* Apply the heading font size using the variable defined in :root. */
         font-weight: var(--heading-font-weight); /* Apply the heading font weight using the variable defined in :root. */
-        margin-bottom: var(--default-padding); /* Add space below the section head using the default padding variable. */
+        margin-bottom: var(--heading-margin-bottom); /* Add space below the section head using the default padding variable. */
         color: var(--text-color); /* Set the text color using the default text color variable. */
     }
     /* End section head styles */
@@ -82,7 +95,7 @@
         display: flex; /* Use Flexbox layout for horizontal arrangement. */
         width: 100%; /* The width of the flex-row is set to 100% of its parent container. */
         justify-content: space-between; /* Distribute space evenly between elements. */
-        margin-bottom: var(--default-padding); /* Add space below the flex-row using the default padding variable. */
+        /* margin-bottom: var(--default-padding); */ /* Add space below the flex-row using the default padding variable. */ /* Disabled to prevent weird alignment when using flex rows*/
     }
     /* End flex-row styles */
 
@@ -91,6 +104,15 @@
         These styles ensure each element has a consistent appearance and spacing.
     */
     .element-container {
+        flex: 1; /* Elements grow to take up equal space within the Flexbox layout, based on available space. */
+        padding: 10px; /* Add padding inside the element container. */
+        /* No border or background color for a more integrated look */
+    }
+
+    /* Framed element container styles
+        The framed element container has additional styles for border and background.
+    */
+    .framed-element-container {
         flex: 1; /* Elements grow to take up equal space within the Flexbox layout, based on available space. */
         padding: 10px; /* Add padding inside the element container. */
         border: 1px solid var(--border-color); /* Apply a 1-pixel solid border using the default border color variable. */
@@ -104,7 +126,7 @@
         These styles ensure a consistent appearance and spacing for all section footers.
     */
     .section-footer {
-        margin-top: var(--default-padding); /* Add space above the footer using the default padding variable. */
+        margin-top: var(--footer-margin-bottom); /* Add space above the footer using the default padding variable. */
         font-size: 14px; /* Set the font size for the footer text. */
         color: #666; /* Set the text color for the footer to a gray color. */
     }

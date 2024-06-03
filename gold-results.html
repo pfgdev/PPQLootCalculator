@@ -1,18 +1,52 @@
+<!-- Style variables for this html-->
+<style>
+    :root {
+        --section-padding: 20px 0; /* Inner space within the section container, between the content and the border */
+        --section-margin: 20px 0; /* Outer space outside the section container, between the section and surrounding elements. Vertical, then horizontal. */
+
+        --element-padding: 0px 0;
+        --element-margin: 20px;
+        --element-min-height: 110px;
+
+        --results-background-color: #fffaf0;
+        --results-border-color: #e0c068;
+        --results-border-radius: 8px;
+    }
+
+    /* Styles for result labels */
+    .result-label {
+        font-size: 24px; /* Adjust font size for labels */
+        font-weight: bold; /* Make labels bold */
+        color: #333; /* Dark color for better readability */
+        margin-bottom: 10px; /* Space below labels */
+        display: block; /* Change display to block for proper margin/padding handling */
+    }
+
+    /* Styles for result values */
+    .result-value {
+        font-size: 28px; /* Larger font size for values */
+        color: #8a6d3b; /* Darker gold color for values */
+    }
+
+
+</style>
+
 <!-- gold-results.html -->
-<div class="section-container">
+<div class="section-container" style="padding: var(--section-padding); margin: var(--section-margin);">
     <div class="section-head">Step 3: Results</div>
-    <div class="section-body">
+    <div class="section-body" style="background-color: var(--results-background-color); border: 1px solid var(--results-border-color); border-radius: var(--results-border-radius);">
         <div class="flex-row">
-            <div class="element-container">
+            <div class="element-container" style="padding: var(--element-padding); margin: var(--element-margin); min-height: var(--element-min-height);">
                 <div id="beta_expectedGoldContainer">
-                    <strong>Expected Gold:</strong>
-                    <div id="beta_expectedGold">0.00</div>
+                    <div class="result-label">Expected Gold:</div>
+                    <div id="beta_expectedGold" class="result-value">0.00</div>
                 </div>
             </div>
-            <div class="element-container">
+            <div class="element-container" style="padding: var(--element-padding); margin: var(--element-margin); min-height: var(--element-min-height);">
                 <div id="beta_diceNotationContainer">
-                    <strong>Dice Notation:</strong>
-                    <div id="beta_diceNotation">0d0</div>
+                    <div class="result-label">Dice Notation:</div>
+                    <div id="beta_diceNotation" class="result-value">0d0</div>
+                    <div id="beta_diceNotation" class="result-value">0d0</div>
                 </div>
             </div>
         </div>
@@ -34,4 +68,5 @@ function beta_updateResult(expectedGold, diceNotation, queryTime) {
 
 // Example usage of the function (replace this with your actual function call)
 beta_updateResult(123.456, '1d6 Gold', 25.67);
+
 </script>

@@ -22,7 +22,6 @@
 
 .table-wrapper table {
   border-collapse: collapse;
-  max-width: 600px; /*  locking in the table container narrower than the tab section */
   width: 100%;
   margin: 0 auto; /* Center the table */
 }
@@ -55,6 +54,10 @@
 #inputTable th {
   background-color: #555;
   color: #fff;
+}
+
+#inputTable tr:nth-child(odd) {
+  background-color: #f9f9f9;
 }
 
 #inputTable tr:nth-child(even) {

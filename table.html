@@ -1,20 +1,40 @@
-<!-- table.html -->
-<div class="result-title">Step 1: Enemies</div>
-<div class="table-wrapper">
-  <table id="inputTable">
-    <thead>
-      <tr>
-        <th>Enemy CR</th>
-        <th>Icon</th>
-        <th>Number Killed</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Initial row will be inserted by JavaScript -->
-    </tbody>
-  </table>
-  <div class="button-container">
-    <button id="addEnemyButton" class="button button-add" onclick="addRow()">Add Enemy</button>
+<!-- Style variables for this html-->
+<style>
+  :root {
+      --table-section-padding: 20px 0; /* Inner space within the section container, between the content and the border */
+      --table-section-margin: 20px 0; /* Outer space outside the section container, between the section and surrounding elements. Vertical, then horizontal. */
+
+      --table-element-padding: 0px 0;
+      --table-element-margin: 20px;
+
+      --table-background-color: #f8f1f1;
+      --table-border-color: #f3d0d2;
+      --table-border-radius: 8px;
+
+  }
+</style>
+
+<!-- Table Section for Step 1: Enemies -->
+<div class="section-container" style="padding: var(--table-section-padding); margin: var(--table-section-margin); flex-grow: 1;">
+  <div class="section-head">Step 1: Enemies</div>
+  <div class="section-body"style="background-color: var(--table-background-color); border: 1px solid var(--table-border-color); border-radius: var(--table-border-radius);">
+    <div class="table-wrapper">
+      <table id="inputTable">
+        <thead>
+          <tr>
+            <th>Enemy CR</th>
+            <th>Icon</th>
+            <th>Number Killed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Initial row will be inserted by JavaScript -->
+        </tbody>
+      </table>
+      <div class="button-container">
+        <button id="addEnemyButton" class="button button-add" onclick="addRow()">Add Enemy</button>
+      </div>
+    </div>
   </div>
 </div>
 

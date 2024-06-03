@@ -4,8 +4,8 @@
       --investigation-section-padding: 20px 0; /* Inner space within the section container, between the content and the border */
       --investigation-section-margin: 20px 0; /* Outer space outside the section container, between the section and surrounding elements. Vertical, then horizontal. */
 
-      --investigation-element-padding: 0px 0;
-      --investigation-element-margin: 20px;
+      --investigation-element-padding: 0;
+      --investigation-element-margin: 0;
 
       --investigation-background-color: #eaf5fa;
       --investigation-border-color: #d5ecf4;
@@ -15,22 +15,25 @@
 </style>
 
 <!-- Investigation Section for Step 2: Check -->
-<div class="section-container" style="padding: var(--investigation-section-padding); margin: var(--investigation-section-margin); flex-grow: 0; flex-shrink: 2;">
+<div class="section-container" style="padding: var(--investigation-section-padding); margin: var(--investigation-section-margin); flex-grow: 0; flex-shrink: 2; width: auto;">
   <div class="section-head">Step 2: Check</div>
-  <div class="section-body" style="background-color: var(--investigation-background-color); border: 1px solid var(--investigation-border-color); border-radius: var(--investigation-border-radius);">
-    <div class="flex-row">
-      <div class="element-container">
-        <div class="custom-input investigation-check">
+  <div class="section-body" style="display: flex; flex-direction: column; align-items: center;">
+    <div class="flex-row" style="justify-content: center;">
+      <div class="element-container" style="padding: var(--investigation-element-padding); margin:var(--investigation-element-margin); max-width: 60%;">
+        <div class="custom-input investigation-check" style="display: flex; justify-content: scenter; align-items: center;">
           <button class="decrement-button" onclick="changeInvestigationCheck(-1)">&#9664;</button>
           <div id="investigationCheckDisplay" class="value-display">10</div>
           <button class="increment-button" onclick="changeInvestigationCheck(1)">&#9654;</button>
         </div>
       </div>
     </div>
-    <div class="flex-row">
-      <div class="element-container">
-        <button class="button button-calculate" onclick="calculate()">Calculate</button>
-        <button class="button button-reset" onclick="resetForm()">Reset</button>
+    
+    <div class="flex-row" style="justify-content: space-between;">
+      <div class="element-container" style="padding: var(--investigation-element-padding); margin:var(--investigation-element-margin); max-width: 60%;">
+        <button class="button stretch-button button-calculate" onclick="calculate()">Calculate</button>
+      </div>
+      <div class="element-container" style="padding: var(--investigation-element-padding); margin:var(--investigation-element-margin); max-width: 30%">
+        <button class="button stretch-button button-reset" onclick="resetForm()">Reset</button>
       </div>
     </div>
   </div>
@@ -43,24 +46,3 @@
     </div>
   </div>
 </div>
-
-<!--
-<div class="result-title">Step 2: Check</div>
-<div class="form-group">
-
-  <div class="custom-input investigation-check">
-    <button class="decrement-button" onclick="changeInvestigationCheck(-1)">&#9664;</button>
-    <div id="investigationCheckDisplay" class="value-display">10</div>
-    <button class="increment-button" onclick="changeInvestigationCheck(1)">&#9654;</button>
-  </div>
-  <div class="button-container">
-    <button class="button button-calculate" onclick="calculate()">Calculate</button>
-    <button class="button button-reset" onclick="resetForm()">Reset</button>
-  </div>
-  <br>
-  <div class="loading-container">
-    <div id="progressMessage" class="progress-message" style="display: none;">Calculating, please wait...</div>
-    <div id="spinner" class="spinner" style="display: none;"></div>
-  </div>
-</div>
--->

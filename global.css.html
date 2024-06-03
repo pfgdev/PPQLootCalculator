@@ -8,6 +8,7 @@
     :root {
         --default-padding: 20px; /* Default padding used for sections and elements */
         --default-margin: 20px; /* Default margin used for sections and elements */
+        --padding-between-sections: 100px; /* If sections are in the same category container (same row), add space between them */
         --section-width: 1000px; /* Default width for section containers */
         --element-spacing: var(--default-padding); /* Default spacing between elements within a section */
         --background-color: #f9f9f9; /* Background color for sections */
@@ -31,7 +32,7 @@
         flex-direction: row; /* Aligns items horizontally, from left to right. */
         justify-content: space-between; /* Distributes space between items, ensuring they are spaced evenly across the container. */
         align-items: flex-start; /* Aligns items to the top of the container, ensuring they start from the same vertical point. */
-        gap: var(--default-padding); /* Adds space between the child elements, using the default padding variable defined in :root. */
+        gap: var(--padding-between-sections); /* Adds space between the child elements, using the default padding variable defined in :root. */
         max-width: var(--section-width); /* Ensures the total width of the container does not exceed the default section width variable defined in :root. */
         margin: 0 auto; /* Centers the container horizontally within its parent container by setting the left and right margins to auto. */
     }
@@ -72,6 +73,9 @@
         font-weight: var(--heading-font-weight); /* Apply the heading font weight using the variable defined in :root. */
         margin-bottom: var(--heading-margin-bottom); /* Add space below the section head using the default padding variable. */
         color: var(--text-color); /* Set the text color using the default text color variable. */
+        display: flex;
+        justify-content: center; /* Center the title horizontally */
+        white-space: nowrap; 
     }
     /* End section head styles */
 

@@ -37,36 +37,46 @@
     <div class="section-body" style="background-color: var(--results-background-color); border: 1px solid var(--results-border-color); border-radius: var(--results-border-radius);">
         <div class="flex-row">
             <div class="element-container" style="padding: var(--element-padding); margin: var(--element-margin); min-height: var(--element-min-height);">
-                <div id="beta_expectedGoldContainer">
+                <div id="expectedGoldContainer">
                     <div class="result-label">Expected Gold:</div>
-                    <div id="beta_expectedGold" class="result-value">0.00</div>
+                    <div id="expectedGold" class="result-value">0.00</div>
                 </div>
             </div>
             <div class="element-container" style="padding: var(--element-padding); margin: var(--element-margin); min-height: var(--element-min-height);">
-                <div id="beta_diceNotationContainer">
+                <div id="diceNotationContainer">
                     <div class="result-label">Dice Notation:</div>
-                    <div id="beta_diceNotation" class="result-value">0d0</div>
-                    <div id="beta_diceNotation" class="result-value">0d0</div>
+                    <div id="diceNotation" class="result-value">0d0</div>
                 </div>
             </div>
         </div>
     </div>
     <div class="section-footer">
-        <div id="beta_queryTimeContainer">
+        <div id="queryTimeContainer">
             <strong>Query Time:</strong>
-            <div id="beta_queryTime">0.00 ms</div>
+            <div id="queryTime">0.00 ms</div>
         </div>
     </div>
 </div>
 
 <script>
-function beta_updateResult(expectedGold, diceNotation, queryTime) {
-    document.getElementById('beta_expectedGold').innerText = expectedGold.toFixed(3);
-    document.getElementById('beta_diceNotation').innerText = diceNotation;
-    document.getElementById('beta_queryTime').innerText = queryTime.toFixed(2) + ' ms';
-}
 
-// Example usage of the function (replace this with your actual function call)
-beta_updateResult(123.456, '1d6 Gold', 25.67);
+    document.addEventListener('DOMContentLoaded', function() {
+        setResultsToZero();
+    });
 
+    function setResultsToZero() {
+        document.getElementById('expectedGold').innerText = '\u00A0'; // Using non-breaking space
+        document.getElementById('diceNotation').innerText = '\u00A0'; // Using non-breaking space
+        document.getElementById('queryTime').innerText = '\u00A0'; // Using non-breaking space
+    }
+
+
+    function updateResult(response, timeDelta) {
+        const { expectedGold, diceNotation } = response;
+    
+        // Ensure expectedGold is a number before calling toFixed
+        document.getElementById('expectedGold').innerText = Number(expectedGold).toFixed(3);
+        document.getElementById('diceNotation').innerText = diceNotation;
+        document.getElementById('queryTime').innerText = timeDelta.toFixed(2) + ' ms';
+    }
 </script>

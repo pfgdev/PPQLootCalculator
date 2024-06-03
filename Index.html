@@ -35,47 +35,56 @@
   <!-- Gold Calculator Tab Content -->
   <section id="GoldCalculator" class="tab-section active">
     <?!= include('goldcalculatorheader.html') ?>
-    <div class="content">
-      <div class="combined-container">
-        <div class="table-container">
-          <?!= include('table.html') ?>
-        </div>
-        <div class="investigation-container">
-          <?!= include('investigation.html') ?>
+    <div class="category-container">
+      <div class="content">
+        <div class="combined-container">
+          <div class="table-container">
+            <?!= include('table.html') ?>
+          </div>
+          <div class="investigation-container">
+            <?!= include('investigation.html') ?>
+          </div>
         </div>
       </div>
+      <? if (loggingEnabled) { ?>
+        <div class="debug-log">
+          <textarea id="logArea" readonly></textarea>
+        </div>
+      <? } ?>
     </div>
-    <?!= include('results.html') ?>
-    <? if (loggingEnabled) { ?>
-      <div class="debug-log">
-        <textarea id="logArea" readonly></textarea>
-      </div>
-    <? } ?>
+    <div class="category-container">
+      <?!= include('gold-results.html') ?>
+    </div>
   </section>
 
-<!-- Beta section for testing the new structure -->
-<section id="BetaVersion" class="tab-section">
-  <!-- Category container to hold sections -->
-  <div class="category-container">
-      <!-- Section 1: Enemies -->
-      <div class="section-container">
-          <div class="section-head">Step 1: Enemies</div>
-          <div class="section-body">
-              <div class="flex-row">
-                  <div class="element-container">Content 1</div>
-                  <div class="element-container">Content 2</div>
-              </div>
-          </div>
-          <div class="section-footer">Footer Content (Optional)</div>
-      </div>
-      <!-- Another section or element can be added here -->
-  </div>
+  <!-- Beta section for testing the new structure -->
+  <section id="BetaVersion" class="tab-section">
+    <!-- Category container to hold sections -->
+    <div class="category-container">
+        <!-- Section 1: Enemies -->
+        <div class="section-container">
+            <div class="section-head">Step 1: Enemies</div>
+            <div class="section-body">
+                <div class="flex-row">
+                    <div class="element-container">Content 1</div>
+                    <div class="element-container">Content 2</div>
+                </div>
+            </div>
+            <div class="section-footer">Footer Content (Optional)</div>
+        </div>
+        <!-- Another section or element can be added here -->
+    </div>
 
-  <!-- Separate Category container to hold the results on a new row -->
-  <div class="category-container">
-      <?!= include('gold-results.html') ?>
-  </div>
-</section>
+    <!-- Separate Category container to hold the results on a new row -->
+    <div class="category-container">
+        <?!= include('gold-results.html') ?>
+    </div>
+  </section>
+
+  <!-- Spell Scrolls Tab Content -->
+  <section id="SpellScrolls" class="tab-section">
+    <?!= include('spellscrollsheader.html') ?>
+  </section>
 
 
 

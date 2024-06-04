@@ -4,22 +4,79 @@
       --table-section-padding: 20px 0; /* Inner space within the section container, between the content and the border */
       --table-section-margin: 20px 0; /* Outer space outside the section container, between the section and surrounding elements. Vertical, then horizontal. */
 
-      --table-element-padding: 0px 0;
-      --table-element-margin: 20px;
+      --table-element-padding: 0;
+      --table-element-margin: 0;
+      --table-element-min-height: 420px;
 
       --table-background-color: #f8f1f1;
       --table-border-color: #f3d0d2;
       --table-border-radius: 8px;
-
   }
+
+  .button-remove {
+    padding: 5px 10px;
+    font-size: 1em;
+    border-radius: 5px;
+    background-color: var(--button-secondary-color);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    position: absolute;
+    left: -40px; /* Ensure correct alignment */
+    top: 50%;
+    transform: translateY(-50%); /* Maintain vertical alignment */
+    transition: background-color 0.3s, transform 0.2s;
+    margin: 0;
+  }
+
+  .button-remove:hover {
+    transform: translateY(-50%) scale(1.05); /* Add growth while maintaining alignment */
+  }
+
+  #goldInputTable {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  #goldInputTable th, #goldInputTable td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    position: relative; /* Allow positioning of remove button */
+  }
+
+  #goldInputTable th {
+    background-color: #555;
+    color: #fff;
+  }
+
+  #goldInputTable tr:nth-child(odd) {
+    background-color: #f9f9f9;
+  }
+
+  #goldInputTable tr:nth-child(even) {
+    background-color: #f1f1f1;
+  }
+
+  #goldInputTable tr:hover {
+    background-color: #d6eaff; /* Pale blue background for hover state */
+  }
+
+  #goldInputTable input {
+    width: 90%;
+    padding: 10px;
+    font-size: 1.0em;
+    margin: 0 auto;
+  }
+
 </style>
 
 <!-- Table Section for Step 1: Enemies -->
 <div class="section-container" style="padding: var(--table-section-padding); margin: var(--table-section-margin); flex-grow: 1;">
   <div class="section-head">Step 1: Enemies</div>
   <div class="section-body">
-    <div class="table-wrapper">
-      <table id="inputTable">
+    <div class="element-container" style="padding: var(--table-element-padding); margin: var(--table-element-margin); min-height: var(--table-element-min-height);">
+      <table id="goldInputTable" class="gold-calculator-table">
         <thead>
           <tr>
             <th>Enemy CR</th>
@@ -31,8 +88,8 @@
           <!-- Initial row will be inserted by JavaScript -->
         </tbody>
       </table>
-      <div class="button-container">
-        <button id="addEnemyButton" class="button button-add" onclick="addRow()">Add Enemy</button>
+      <div class="element-container">
+        <button id="addEnemyButton" class="button stretch-button" style="background-color: #6c757d; color: var(--button-text-color)" onclick="addRow()">Add Enemy</button>
       </div>
     </div>
   </div>
@@ -46,7 +103,7 @@
         <div class="value-display" data-name="cr">1</div>
         <button class="increment-button" onclick="increaseValue(this)">+</button>
       </div>
-      <button class="button-remove" onclick="removeRow()">-</button>
+      <button class="button button-remove" onclick="removeRow()">-</button>
     </td>
     <td class="cr-indicator-cell">
       <div class="icon icon-cr-indicator">

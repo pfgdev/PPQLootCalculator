@@ -5,13 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gold Calculator</title>
-  
-  <!-- Importing our styles -->
-  <?!= include('base.css.html') ?>
-  <?!= include('layout.css.html') ?>
 
   <!-- Base components and specific styles -->
-  <?!= include('components.css.html') ?>
   <?!= include('buttons.css.html') ?>
   <?!= include('spinner.css.html') ?>
   <?!= include('debug-log.css.html') ?>
@@ -19,7 +14,6 @@
   <?!= include('tables.css.html') ?>
   <?!= include('icons.css.html') ?>
 
-  <?!= include('utilities.css.html') ?>
   <?!= include('global.css.html') ?>
   
   <!-- Importing our scripts -->
@@ -52,6 +46,7 @@
 
     <!-- Beta section for testing the new structure -->
     <section id="BetaVersion" class="tab-section">
+      <?!= include('betaversionheader.html') ?>
       <!-- Category container to hold sections -->
       <div class="category-container">
           <!-- Section 1: Enemies -->

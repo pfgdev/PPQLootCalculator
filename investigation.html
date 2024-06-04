@@ -20,7 +20,7 @@
   <div class="section-body" style="display: flex; flex-direction: column; align-items: center;">
     <div class="flex-row" style="justify-content: center;">
       <div class="element-container" style="padding: var(--investigation-element-padding); margin:var(--investigation-element-margin); max-width: 60%;">
-        <div class="custom-input investigation-check" style="display: flex; justify-content: scenter; align-items: center;">
+        <div class="custom-input investigation-check" style="display: flex; justify-content: center; align-items: center;">
           <button class="decrement-button" onclick="changeInvestigationCheck(-1)">&#9664;</button>
           <div id="investigationCheckDisplay" class="value-display">10</div>
           <button class="increment-button" onclick="changeInvestigationCheck(1)">&#9654;</button>
@@ -30,10 +30,10 @@
     
     <div class="flex-row" style="justify-content: space-between;">
       <div class="element-container" style="padding: var(--investigation-element-padding); margin:var(--investigation-element-margin); max-width: 60%;">
-        <button class="button stretch-button button-calculate" onclick="calculate()">Calculate</button>
+        <button class="button stretch-button" style="background-color: var(--button-primary-color); color: var(--button-text-color)" onclick="calculate()">Calculate</button>
       </div>
       <div class="element-container" style="padding: var(--investigation-element-padding); margin:var(--investigation-element-margin); max-width: 30%">
-        <button class="button stretch-button button-reset" onclick="resetForm()">Reset</button>
+        <button class="button stretch-button" style="background-color: var(--button-secondary-color); color: var(--button-text-color)" onclick="resetForm()">Reset</button>
       </div>
     </div>
   </div>

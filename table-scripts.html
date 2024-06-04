@@ -7,13 +7,13 @@
     }
   
     function addInitialRow() {
-      const tableBody = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+      const tableBody = document.getElementById("goldInputTable").getElementsByTagName("tbody")[0];
       const template = createTableRow(0);
       tableBody.appendChild(template);
     }
   
     function addRow() {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+      const table = document.getElementById("goldInputTable").getElementsByTagName("tbody")[0];
       const rowCount = table.rows.length;
       const template = createTableRow(rowCount);
       table.appendChild(template);
@@ -28,14 +28,14 @@
     }
   
     function removeRow(index) {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+      const table = document.getElementById("goldInputTable").getElementsByTagName("tbody")[0];
       table.deleteRow(index - 1); // Adjust for 0-based index
       updateRowIndices();
       updateRemoveButtonsVisibility();
     }
   
     function updateRowIndices() {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+      const table = document.getElementById("goldInputTable").getElementsByTagName("tbody")[0];
       const rows = table.rows;
       for (let i = 0; i < rows.length; i++) {
         const crDisplay = rows[i].querySelector(".value-display[data-name='cr']");
@@ -47,7 +47,7 @@
     }
   
     function updateRemoveButtonsVisibility() {
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+      const table = document.getElementById("goldInputTable").getElementsByTagName("tbody")[0];
       const rowCount = table.rows.length;
       const removeButtons = document.querySelectorAll(".button-remove");
   
@@ -64,7 +64,7 @@
       }
   
       // Get the table and reset its rows, except the header row
-      const table = document.getElementById("inputTable").getElementsByTagName("tbody")[0];
+      const table = document.getElementById("goldInputTable").getElementsByTagName("tbody")[0];
       if (table) {
         while (table.rows.length > 0) {
           table.deleteRow(0);

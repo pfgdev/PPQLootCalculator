@@ -20,10 +20,30 @@
         --heading-font-weight: bold; /* Font weight for section headings */
         --heading-margin-bottom: 10px; /* Margin between the head (title) and the body */
         --footer-margin-bottom: 10px; /* Margin between the head (title) and the body */
+        --button-primary-color: #007BFF; /* Main color for primary actions (e.g., buttons) */
+        --button-secondary-color: #FF6347; /* Main color for secondary actions (e.g., cancel buttons) */
+        --button-text-color: #fff; /* White text to use on colored buttons */
     }
     /*
         End: Global CSS variables
     */
+
+      /* Basic reset to ensure consistency across browsers */
+  * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    /* Global body styles for font and background */
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 16px; /* Set a base font size */
+        background-color: #f4f4f9;
+        padding: 20px;
+        text-align: center;
+        overflow-y: scroll; /* Always show vertical scrollbar */
+    }
 
 
     /* Main Container Styles */

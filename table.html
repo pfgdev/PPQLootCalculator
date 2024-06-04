@@ -69,6 +69,13 @@
     margin: 0 auto;
   }
 
+  /* Specific styles for the Add Enemy button container */
+  .add-enemy-button-container {
+    display: flex;
+    justify-content: center; /* Center the button horizontally */
+    margin-top: -20px; /* Adjust as needed to achieve the "dangling" effect */
+  }
+
 </style>
 
 <!-- Table Section for Step 1: Enemies -->
@@ -88,8 +95,15 @@
           <!-- Initial row will be inserted by JavaScript -->
         </tbody>
       </table>
-      <div class="element-container">
-        <button id="addEnemyButton" class="button stretch-button" style="background-color: #6c757d; color: var(--button-text-color)" onclick="addRow()">Add Enemy</button>
+      <div class="element-container" style="display: flex; padding: var(--table-element-padding); margin: var(--table-element-margin);">
+        <button id="addEnemyButton" class="button bottom-tab-button" 
+            style="background-color: #6c757d; color: var(--button-text-color); flex-grow: 1; flex-basis: 50%; padding: 12px 0;" 
+            onclick="addRow()"
+            onmouseover="this.style.backgroundColor='#495057'; this.style.transform='none'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.1)';"
+            onmouseout="this.style.backgroundColor='#6c757d'; this.style.transform='none'; this.style.boxShadow=' 0 4px 6px rgba(0, 0, 0, 0.1)';">
+            Add Enemy
+        </button>
+        <div class="m-0" style="flex-grow: 1; flex-basis: 50%;"></div>
       </div>
     </div>
   </div>

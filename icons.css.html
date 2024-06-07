@@ -118,6 +118,24 @@
     width: var(--icon-size-extralarge);
     height: var(--icon-size-extralarge);
   }
+
+  /* CSS */
+  .icon-shapeholder-medium {
+    width: var(--icon-size-medium);
+    height: var(--icon-size-medium);
+    /* Removed flex properties */
+    display: inline-block;
+    background-color: var(--icon-bg-color); /* Default to transparent */
+    position: relative;
+    text-align: center; /* Center text horizontally */
+  }
+
+  .icon-shapeholder-medium img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    background-color: var(--icon-bg-color); /* This will be the background color filling the space */
+  }
   
   .icon-border {
     border-style: solid;

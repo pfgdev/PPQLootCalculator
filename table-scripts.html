@@ -118,7 +118,7 @@
   
     function updateCRIndicator(display) {
       const value = parseInt(display.innerText, 10); // Use .innerText for display fields
-      const crIndicatorCell = display.closest("tr").querySelector(".cr-indicator-cell .cr-number");
+      const crIndicatorCell = display.closest("tr").querySelector(".cr-indicator-cell .icon-number");
       crIndicatorCell.textContent = value;
     }
 

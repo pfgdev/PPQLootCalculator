@@ -1,0 +1,280 @@
+<style>
+    :root {
+        --icon-base-font-size: 1.6em; /* Base font size for scaling */
+        --icon-text-shadow: 0.1em 0.1em 0.1em rgba(0, 0, 0, 0.5); /* Subtle text shadow */
+        --icon-border-radius: 0.25em; /* Default border radius for rounded corners */
+
+        /* Icon Sizes */
+        --icon-size-extrasmall: 32px; /* Extra small icon size */
+        --icon-size-small: 48px; /* Small icon size */
+        --icon-size-medium: 64px; /* Medium icon size */
+        --icon-size-large: 96px; /* Large icon size */
+        --icon-size-extralarge: 128px; /* Extra large icon size */
+
+        /* Border Widths */
+        --icon-border-width-extrasmall: 0.1em; /* Border width for extra small icons */
+        --icon-border-width-small: 0.1em; /* Border width for small icons */
+        --icon-border-width-medium: 0.15em; /* Border width for medium icons */
+        --icon-border-width-large: 0.2em; /* Border width for large icons */
+        --icon-border-width-extralarge: 0.25em; /* Border width for extra large icons */
+
+        /* Text Sizes */
+        --icon-text-size-extrasmall: 0.55; /* Text size for extra small icons */
+        --icon-text-size-small: 0.65; /* Text size for small icons */
+        --icon-text-size-medium: 0.75; /* Text size for medium icons */
+        --icon-text-size-large: 1.1; /* Text size for large icons */
+        --icon-text-size-extralarge: 1.25; /* Text size for extra large icons */
+
+        /* Indicator Border Widths */
+        --icon-indicator-border-width-extrasmall: 1px; /* Border width for extra small indicators */
+        --icon-indicator-border-width-small: 1px; /* Border width for small indicators */
+        --icon-indicator-border-width-medium: 1px; /* Border width for medium indicators */
+        --icon-indicator-border-width-large: 1px; /* Border width for large indicators */
+        --icon-indicator-border-width-extralarge: 1px; /* Border width for extra large indicators */
+
+        /* Indicator Sizes */
+        --icon-indicator-size-extrasmall: 1.05em; /* Size for extra small indicators */
+        --icon-indicator-size-small: 1.05em; /* Size for small indicators */
+        --icon-indicator-size-medium: 1.1em; /* Size for medium indicators */
+        --icon-indicator-size-large: 1.1em; /* Size for large indicators */
+        --icon-indicator-size-extralarge: 1.25em; /* Size for extra large indicators */
+
+        /* Color Pairs */
+        --color-pair-1-bg: #ffe4e1; /* Light pink background */
+        --color-pair-1-text: #8b0000; /* Dark red text */
+        --color-pair-2-bg: #e6ffe4; /* Light green background */
+        --color-pair-2-text: #006400; /* Dark green text */
+        --color-pair-3-bg: #e1e4ff; /* Light blue background */
+        --color-pair-3-text: #00008b; /* Dark blue text */
+        --color-pair-4-bg: #fff5e1; /* Light beige background */
+        --color-pair-4-text: #8b4500; /* Dark brown text */
+        --color-pair-5-bg: #f5e1ff; /* Light purple background */
+        --color-pair-5-text: #8b008b; /* Dark purple text */
+        --color-pair-6-bg: #e1fff5; /* Light aqua background */
+        --color-pair-6-text: #008b8b; /* Dark teal text */
+        --color-pair-7-bg: #ffe1e1; /* Light red background */
+        --color-pair-7-text: #8b0000; /* Dark red text */
+        --color-pair-8-bg: #e1f5ff; /* Light cyan background */
+        --color-pair-8-text: #00008b; /* Dark blue text */
+        --color-pair-9-bg: #f5ffe1; /* Light yellow-green background */
+        --color-pair-9-text: #008b00; /* Dark green text */
+        --color-pair-10-bg: #e1e1ff; /* Light lavender background */
+        --color-pair-10-text: #00008b; /* Dark blue text */
+    }
+
+    /* General Icon Styles */
+    .icon {
+        position: relative; /* Necessary for absolute positioning of indicators */
+        display: inline-block; /* Keep icons inline */
+        vertical-align: middle; /* Align icons vertically in the middle */
+        margin: 0; /* Remove default margin */
+        padding: 0; /* Remove default padding */
+        background-color: transparent; /* Ensure transparent background */
+    }
+
+    .icon img {
+        max-width: 100%; /* Scale image to fit container */
+        max-height: 100%; /* Scale image to fit container */
+        object-fit: contain; /* Contain image within bounds */
+        background: transparent; /* Ensure transparent background */
+    }
+
+    /* Centered Icon Styles */
+    .centered-icon {
+        overflow: hidden; /* Ensure content does not overflow */
+    }
+
+    .centered-icon img {
+        position: absolute; /* Position absolutely within container */
+        top: 50%; /* Center vertically */
+        left: 50%; /* Center horizontally */
+        transform: translate(-50%, -50%); /* Adjust position to center */
+        max-width: 100%; /* Scale image to fit container */
+        max-height: 100%; /* Scale image to fit container */
+        object-fit: contain; /* Contain image within bounds */
+        background: transparent; /* Ensure transparent background */
+    }
+
+    /* Size Classes */
+    .icon-extrasmall { 
+        width: var(--icon-size-extrasmall); 
+        height: var(--icon-size-extrasmall); 
+    }
+    .icon-small { 
+        width: var(--icon-size-small); 
+        height: var(--icon-size-small); 
+    }
+    .icon-medium { 
+        width: var(--icon-size-medium); 
+        height: var(--icon-size-medium); 
+    }
+    .icon-large { 
+        width: var(--icon-size-large); 
+        height: var(--icon-size-large); 
+    }
+    .icon-extralarge { 
+        width: var(--icon-size-extralarge); 
+        height: var(--icon-size-extralarge); 
+    }
+
+    /* Border Classes */
+    .icon-border { 
+        border-style: solid; /* Apply solid border style */
+    }
+
+    /* Automatically apply border widths based on icon size */
+    .icon-extrasmall.icon-border { 
+        border-width: var(--icon-border-width-extrasmall); 
+    }
+    .icon-small.icon-border { 
+        border-width: var(--icon-border-width-small); 
+    }
+    .icon-medium.icon-border { 
+        border-width: var(--icon-border-width-medium); 
+    }
+    .icon-large.icon-border { 
+        border-width: var(--icon-border-width-large); 
+    }
+    .icon-extralarge.icon-border { 
+        border-width: var(--icon-border-width-extralarge); 
+    }
+
+    /* Specificity overrides for border sizes */
+    .icon-border.icon-border-extrasmall { 
+        border-width: var(--icon-border-width-extrasmall) !important; 
+    }
+    .icon-border.icon-border-small { 
+        border-width: var(--icon-border-width-small) !important; 
+    }
+    .icon-border.icon-border-medium { 
+        border-width: var(--icon-border-width-medium) !important; 
+    }
+    .icon-border.icon-border-large { 
+        border-width: var(--icon-border-width-large) !important; 
+    }
+    .icon-border.icon-border-extralarge { 
+        border-width: var(--icon-border-width-extralarge) !important; 
+    }
+
+    /* Color Pair Classes */
+    .color-pair-1 { 
+        background-color: var(--color-pair-1-bg); 
+        color: var(--color-pair-1-text); 
+    }
+    .color-pair-2 { 
+        background-color: var(--color-pair-2-bg); 
+        color: var(--color-pair-2-text); 
+    }
+    .color-pair-3 { 
+        background-color: var(--color-pair-3-bg); 
+        color: var(--color-pair-3-text); 
+    }
+    .color-pair-4 { 
+        background-color: var(--color-pair-4-bg); 
+        color: var(--color-pair-4-text); 
+    }
+    .color-pair-5 { 
+        background-color: var(--color-pair-5-bg); 
+        color: var(--color-pair-5-text); 
+    }
+    .color-pair-6 { 
+        background-color: var(--color-pair-6-bg); 
+        color: var(--color-pair-6-text); 
+    }
+    .color-pair-7 { 
+        background-color: var(--color-pair-7-bg); 
+        color: var(--color-pair-7-text); 
+    }
+    .color-pair-8 { 
+        background-color: var(--color-pair-8-bg); 
+        color: var(--color-pair-8-text); 
+    }
+    .color-pair-9 { 
+        background-color: var(--color-pair-9-bg); 
+        color: var(--color-pair-9-text); 
+    }
+    .color-pair-10 { 
+        background-color: var(--color-pair-10-bg); 
+        color: var(--color-pair-10-text); 
+    }
+
+    /* Indicator Styles */
+    .icon-indicator .icon-number {
+        position: absolute; /* Position absolutely within icon */
+        display: flex; /* Flexbox for centering */
+        align-items: center; /* Center items vertically */
+        justify-content: center; /* Center items horizontally */
+        text-shadow: var(--icon-text-shadow); /* Apply text shadow */
+        font-weight: bold; /* Bold text */
+        text-align: center; /* Center text */
+        box-sizing: border-box; /* Use border-box sizing */
+        line-height: 1; /* Reduce blank height inside box */
+        border-style: solid; /* Ensure border is visible */
+        border-radius: 0.25em; /* Default to rounded corners */
+    }
+
+    /* Size-specific Indicator Styles */
+    .icon-extrasmall .icon-number { 
+        font-size: calc(var(--icon-base-font-size) * var(--icon-text-size-extrasmall)); 
+        border-width: var(--icon-indicator-border-width-extrasmall); 
+        min-width: var(--icon-indicator-size-extrasmall); 
+        height: var(--icon-indicator-size-extrasmall); 
+    }
+    .icon-small .icon-number { 
+        font-size: calc(var(--icon-base-font-size) * var(--icon-text-size-small)); 
+        border-width: var(--icon-indicator-border-width-small); 
+        min-width: var(--icon-indicator-size-small); 
+        height: var(--icon-indicator-size-small); 
+    }
+    .icon-medium .icon-number { 
+        font-size: calc(var(--icon-base-font-size) * var(--icon-text-size-medium)); 
+        border-width: var(--icon-indicator-border-width-medium); 
+        min-width: var(--icon-indicator-size-medium); 
+        height: var(--icon-indicator-size-medium); 
+    }
+    .icon-large .icon-number { 
+        font-size: calc(var(--icon-base-font-size) * var(--icon-text-size-large)); 
+        border-width: var(--icon-indicator-border-width-large); 
+        min-width: var(--icon-indicator-size-large); 
+        height: var(--icon-indicator-size-large); 
+    }
+    .icon-extralarge .icon-number { 
+        font-size: calc(var(--icon-base-font-size) * var(--icon-text-size-extralarge)); 
+        border-width: var(--icon-indicator-border-width-extralarge); 
+        min-width: var(--icon-indicator-size-extralarge); 
+        height: var(--icon-indicator-size-extralarge); 
+    }
+
+    /* Indicator Position Classes */
+    .icon-number.top-right { 
+        top: 0; 
+        right: 0; 
+    }
+    .icon-number.top-left { 
+        top: 0; 
+        left: 0; 
+        right: auto; 
+    }
+    .icon-number.bottom-right { 
+        bottom: 0; 
+        right: 0; 
+        top: auto; 
+    }
+    .icon-number.bottom-left { 
+        bottom: 0; 
+        left: 0; 
+        top: auto; 
+        right: auto; 
+    }
+
+    /* Indicator Shape Classes */
+    .icon-number.rounded { 
+        border-radius: 0.25em; 
+    }
+    .icon-number.square { 
+        border-radius: 0; 
+    }
+    .icon-number.circle { 
+        border-radius: 50%; 
+    }
+</style>

@@ -72,11 +72,15 @@
 
 
     function updateResult(response, timeDelta) {
-        const { expectedGold, diceNotation } = response;
+        const { expectedGold, diceNotation, logMessages } = response;
     
         // Ensure expectedGold is a number before calling toFixed
         document.getElementById('expectedGold').innerText = Number(expectedGold).toFixed(3);
         document.getElementById('diceNotation').innerText = diceNotation;
         document.getElementById('queryTime').innerText = timeDelta.toFixed(2) + ' ms';
+
+        if (logMessages && logMessages.trim() !== "") {
+            updateLog(logMessages);
+        }
     }
 </script>

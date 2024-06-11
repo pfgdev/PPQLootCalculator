@@ -28,17 +28,5 @@
             updateResult(response, timeDelta); // Ensure this is always called
         }).calculateGoldAndLog(inputs);
     }
-
-    // Update Calculation Result
-    function updateResult(message, timeDelta) {
-        document.getElementById("expectedGold").innerText = message.expectedGold;
-        document.getElementById("diceNotation").innerText = message.diceNotation;
-        document.getElementById("queryTime").innerText = `${timeDelta.toFixed(2)} ms`; // Corrected from timeDelta to queryTime
-        updateLog(message.logMessages);
-    }
-
-    function updateLog(messages) {
-        const logElement = document.getElementById("logMessages");
-        logElement.innerText = messages.join("\n");
-    }
+    
 </script>

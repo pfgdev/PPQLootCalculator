@@ -7,46 +7,83 @@
  * in the script properties for later use.
  */
 function initializeSpellScrollData() {
-    // Log the start of the initialization process
-    addToLog('initializeSpellScrollData called');
-    
-    // Check if the spellScrollData variable is not already initialized
-    if (!spellScrollData) {
-      // Fetch the range 'SpellScroll_Export' from the active spreadsheet
+  addToLog('initializeSpellScrollData called');
+
+  try {
       var spellScrollRange = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('SpellScroll_Export');
-      addToLog('Fetched SpellScroll_Export range: ' + spellScrollRange);
-      
-      // Check if the named range 'SpellScroll_Export' exists
+      addToLog('Fetched SpellScroll_Export range: ' + spellScrollRange.getA1Notation());
+
       if (!spellScrollRange) {
-        addToLog('Named range "SpellScroll_Export" is missing.');
-        return 'Named range "SpellScroll_Export" is missing.';
+          addToLog('Named range "SpellScroll_Export" is missing.');
+          return 'Named range "SpellScroll_Export" is missing.';
       }
-      
-      // Get the values from the named range
-      spellScrollData = spellScrollRange.getValues();
-      addToLog('Fetched spell scroll data: ' + JSON.stringify(spellScrollData));
-      
-      // Clean the data by removing empty rows
-      cleanedSpellScrollData = spellScrollData.filter(row => row.some(cell => cell !== ''));
-      addToLog('Cleaned spell scroll data: ' + JSON.stringify(cleanedSpellScrollData));
-      
-      // Store the cleaned data in the script properties
-      PropertiesService.getScriptProperties().setProperty('cleanedSpellScrollData', JSON.stringify(cleanedSpellScrollData));
-      return "Spell Scroll Data initialized.";
-    }
-    
-    // If spellScrollData is already initialized, return a message indicating this
-    return "Spell Scroll Data already initialized.";
+
+      var spellScrollData = spellScrollRange.getValues();
+      addToLog('Fetched spell scroll data (length): ' + spellScrollData.length);
+
+      var cleanedSpellScrollData = spellScrollData.filter(function(row) {
+          return row.some(function(cell) {
+              return cell !== '';
+          });
+      });
+      addToLog('Cleaned spell scroll data (length): ' + cleanedSpellScrollData.length);
+
+      var structuredData = {};
+      var detailedData = [];
+
+      cleanedSpellScrollData.forEach(function(row) {
+          var level = row[5]; // level is in the 6th  column
+          if (!structuredData[level]) {
+              structuredData[level] = [];
+          }
+          var commonData = {
+              diceRange: row[3], // dice range is in the 4th column
+              name: row[4], // name is in the 5th column
+              detailIndex: detailedData.length
+          };
+          structuredData[level].push(commonData);
+
+          detailedData.push({
+              level: level,
+              source: row[6], // Assuming source is in the 7th column
+              castingTime: row[7], // Assuming casting time is in the 8th column
+              rangeOrArea: row[8], // Assuming range or area is in the 9th column
+              components: row[9], // Assuming components are in the 10th column
+              duration: row[10], // Assuming duration is in the 11th column
+              concentration: row[11], // Assuming concentration is in the 12th column
+              school: row[12], // Assuming school is in the 13th column
+              attackOrSave: row[13], // Assuming attack or save is in the 14th column
+              damageOrEffect: row[14], // Assuming damage or effect is in the 15th column
+              description: row[15] // Assuming description is in the 16th column
+          });
+      });
+
+      addToLog('Structured Data: ' + JSON.stringify(structuredData));
+      PropertiesService.getScriptProperties().setProperty('structuredSpellScrollData', JSON.stringify(structuredData));
+      PropertiesService.getScriptProperties().setProperty('detailedSpellScrollData', JSON.stringify(detailedData));
+      addToLog('Stored structured spell scroll data in script properties');
+
+      return logMessages.join("\n");
+  } catch (error) {
+      addToLog('Error during initialization: ' + error.message);
+      return logMessages.join("\n");
   }
-  
-  /**
-   * Function to get the spell scroll data.
-   * This function retrieves the cleaned spell scroll data from the script properties
-   * and returns it as a JSON object.
-   */
-  function getSpellScrollData() {
-    // Retrieve the cleaned spell scroll data from the script properties
-    var properties = PropertiesService.getScriptProperties();
-    return JSON.parse(properties.getProperty('cleanedSpellScrollData') || '[]');
+}
+
+function getSpellScrollData(level) {
+  var properties = PropertiesService.getScriptProperties();
+  var structuredData = JSON.parse(properties.getProperty('structuredSpellScrollData') || '{}');
+  if (!structuredData[level]) {
+      return JSON.stringify([]); // Return an empty array if no data is found for the level
   }
-  
+  return JSON.stringify(structuredData[level]);
+}
+
+function getSpellScrollDetail(index) {
+  var properties = PropertiesService.getScriptProperties();
+  var detailedData = JSON.parse(properties.getProperty('detailedSpellScrollData') || '[]');
+  if (!detailedData[index]) {
+      return JSON.stringify({}); // Return an empty object if no data is found for the index
+  }
+  return JSON.stringify(detailedData[index]);
+}

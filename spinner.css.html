@@ -8,13 +8,21 @@
 /* Spinner Styles         */
 /* ====================== */
 
+/* Center the progress message and spinner */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 5px;
+}
+
   /* Center the progress message and spinner */
-  .loading-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 5px;
-  }
+.inline-loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 
 .spinner {
   border: 4px solid rgba(0, 0, 0, 0.1);
@@ -23,7 +31,7 @@
   width: 30px;
   height: 30px;
   animation: spin 1s linear infinite;
-  margin-top: 5px;
+  display: inline-block;
 }
 
 @keyframes spin {
@@ -35,8 +43,9 @@
   .progress-message {
     font-size: 16px;
     color: #333;
-    margin-bottom: 5px;
     font-style: italic;
+    line-height: 30px; /* match spinner height */
+    display: inline-block;
   }
 
 /* ====================== */

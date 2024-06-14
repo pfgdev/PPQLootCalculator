@@ -2,7 +2,7 @@
 // Define global variables
 var investigationData, goldData, cleanedInvestigationData, cleanedGoldData;
 var highSuccessMod, mediumSuccessMod, lowSuccessMod, failedCheckMod;
-var LOGGING_ENABLED = true; // Toggle to enable/disable logging
+var LOGGING_ENABLED = false; // Toggle to enable/disable logging
 var MAX_LOG_SIZE = 100; // Set a maximum log size
 var logMessages = []; // Store log messages
 var initializationCompleteFlag = 'initializationComplete';
@@ -23,6 +23,11 @@ const GOLD_TARGET_COLUMN_INDEX = 3; // Manually Replace with the actual index fr
 const MAX_CHALLENGE_RATING = 20 + 10; // Manually Replace with the actual index from spreadsheet (optimization) (added 10 to deal with blank spaces, but this is a future optimization of putting the entire table together)
 
 
+/**
+ * Function to handle GET requests.
+ * This function initializes data if not already done, caches the initialization status,
+ * and serves the HTML content.
+ */
 function doGet() {
   addToLog('doGet called at ' + new Date().toISOString());
 
@@ -38,7 +43,7 @@ function doGet() {
     addToLog('Initialization completed and cached at ' + new Date().toISOString());
   } else {
     addToLog('Initialization already completed at ' + new Date().toISOString());
-  }
+  } 
 
   // Determine logging status
   var loggingEnabled = LOGGING_ENABLED;
@@ -50,17 +55,29 @@ function doGet() {
   return template.evaluate().setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+/**
+ * Function to include additional HTML files.
+ * @param {string} filename - The name of the file to include.
+ * @returns {string} The content of the included file.
+ */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 
 
-
+/**
+ * Function to check if logging is enabled.
+ * @returns {boolean} The logging status.
+ */
 function isLoggingEnabled() {
   return LOGGING_ENABLED;
 }
 
+/**
+ * Function to add messages to the log.
+ * @param {string} message - The message to log.
+ */
 function addToLog(message) {
   if (LOGGING_ENABLED) {
     logMessages.push(message);
@@ -70,7 +87,10 @@ function addToLog(message) {
   }
 }
 
-
+/**
+ * Function to read properties from the script properties.
+ * @returns {object} The properties object containing various data.
+ */
 function readProperties() {
   const scriptProperties = PropertiesService.getScriptProperties();
   return {

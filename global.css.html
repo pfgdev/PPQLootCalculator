@@ -7,8 +7,9 @@
     */
     :root {
         --page-width: 1280px; /* The width of the entire page, used by main-container*/
+        --page-min-height: 800px; /* The minimum height of the entire page, used by main-container*/
         --page-background-color: #fff; /* The background color of the entire page, used by main-container. Ensure the background is white */
-        --default-padding: 20px; /* Default padding used for sections and elements */
+        --default-padding: 10px; /* Default padding used for sections and elements */
         --default-margin: 20px; /* Default margin used for sections and elements */
         --padding-between-sections: 100px; /* If sections are in the same category container (same row), add space between them */
         --section-width: 1000px; /* Default width for section containers */
@@ -49,6 +50,7 @@
     /* Main Container Styles */
     .main-container {
         max-width: var(--page-width);
+        min-height: var(--page-min-height);
         margin: 0 auto;
         background-color: var(--page-background-color);
         box-sizing: border-box;
@@ -138,7 +140,7 @@
         width: var(--section-width); /* The width of the section container is set to the default section width variable defined in :root. */
         margin: 0 auto; /* The section container is centered horizontally within its parent container by setting the left and right margins to auto. */
         padding: var(--default-padding); /* The padding inside the section container is set to the default padding variable defined in :root. */
-        margin-bottom: var(--default-margin); /* Add margin-bottom to create vertical space between sections */
+        margin-top: var(--default-margin); /* Add margin-bottom to create vertical space between sections */
     }
 
     /*  Framed container styles
@@ -167,7 +169,7 @@
         color: var(--text-color); /* Set the text color using the default text color variable. */
         display: flex;
         justify-content: center; /* Center the title horizontally */
-        white-space: nowrap; 
+        white-space: nowrap;
     }
     /* End section head styles */
 
@@ -288,5 +290,9 @@
     .m-0 { margin: 0; }
     .m-1 { margin: 10px; }
     .m-2 { margin: 20px; }
+
+    .hidden {
+        display: none;
+    }
 
 </style>

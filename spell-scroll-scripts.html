@@ -1,0 +1,139 @@
+<script>
+    /**
+     * Function to fetch and display spell scroll data.
+     * This function calls the server-side fetchSpellScrollData function,
+     * and then displays the data on the page.
+     */
+    let currentSpellScrollIcon = null;
+
+
+    function selectSpellScrollLevel(spellScrollLevel, icon)
+    {
+        if (currentSpellScrollIcon){
+            currentSpellScrollIcon.classList.remove('selected');
+        }
+
+        currentSpellScrollIcon = icon;
+        currentSpellScrollIcon.classList.add('selected');
+        fetchAndDisplaySpellScrollData(spellScrollLevel);
+    }
+    
+    function fetchAndDisplaySpellScrollData(spellScrollLevel) {
+        showScrollLoading(); // reveal the spinner
+        google.script.run.withSuccessHandler(displaySpellScrollData).getSpellScrollData(spellScrollLevel);
+    }
+
+/**
+ * Function to display spell scroll data.
+ * @param {string} data - The JSON string of spell scroll data.
+ */
+ function displaySpellScrollData(data) {
+    try {
+        var spellScrollData = JSON.parse(data);
+    } catch (e) {
+        console.error('Error parsing JSON:', e);
+        return;
+    }
+
+    var tableBodyA = document.getElementById('currentSpellScrollTable_A').getElementsByTagName('tbody')[0];
+    var tableBodyB = document.getElementById('currentSpellScrollTable_B').getElementsByTagName('tbody')[0];
+    tableBodyA.innerHTML = ''; // Clear existing rows
+    tableBodyB.innerHTML = ''; // Clear existing rows
+
+    var totalScrolls = spellScrollData.length;
+    var halfLength = Math.floor(totalScrolls / 2); // Table A gets the extra row if odd number of scrolls
+    var rangePerScroll = Math.floor(100 / totalScrolls);
+
+    // Populate Table A with the first half + 1 if odd
+    spellScrollData.slice(0, halfLength + 1).forEach((row, index) => {
+        var newRow = tableBodyA.insertRow();
+        var diceRangeCell = newRow.insertCell(0);
+        var spellScrollCell = newRow.insertCell(1);
+
+        diceRangeCell.textContent = row.diceRange; // Dice Range
+        diceRangeCell.classList.add('dice-range-cell'); // adding a class to make this dynamic text bold!
+        spellScrollCell.textContent = row.name; // Spell Name
+        newRow.onclick = function() {
+            fetchAndDisplaySpellDetail(row.detailIndex);
+        };
+    });
+
+    // Populate Table B with the remaining rows
+    spellScrollData.slice(halfLength + 1).forEach((row, index) => {
+        var newRow = tableBodyB.insertRow();
+        var diceRangeCell = newRow.insertCell(0);
+        var spellScrollCell = newRow.insertCell(1);
+
+        diceRangeCell.textContent = row.diceRange; // Dice Range
+        diceRangeCell.classList.add('dice-range-cell'); // adding a class to make this dynamic text bold!
+        spellScrollCell.textContent = row.name; // Spell Name
+        newRow.onclick = function() {
+            fetchAndDisplaySpellDetail(row.detailIndex);
+        };
+    });
+
+    // Calculate the last dice range
+    var lastEndRange = rangePerScroll * totalScrolls;
+    if (lastEndRange < 100) {
+        var reRollRow = tableBodyB.insertRow();
+        var reRollRangeCell = reRollRow.insertCell(0);
+        var reRollCell = reRollRow.insertCell(1);
+
+        reRollRangeCell.textContent = `${lastEndRange + 1}-100`; // Re-roll Range
+        reRollCell.textContent = "Re-Roll"; // Re-Roll
+        reRollRangeCell.classList.add('dice-range-cell');
+    }
+
+    // UI updates! (show the scrolls now!)
+    hideScrollLoading();
+    document.getElementById('spell-scroll-section').classList.remove('hidden');
+}
+
+
+
+
+
+    function fetchAndDisplaySpellDetail(index) {
+        console.log('Fetching detail for index:', index);
+        google.script.run.withSuccessHandler(displaySpellDetail).getSpellScrollDetail(index);
+    }
+
+    function displaySpellDetail(data) {
+        console.log('Received detail data:', data);
+        try {
+            var detailData = JSON.parse(data);
+        } catch (e) {
+            console.error('Error parsing JSON:', e);
+            return;
+        }
+
+        var detailContainer = document.getElementById('spell-detail-container');
+        detailContainer.innerHTML = `
+            <h3>${detailData.name}</h3>
+            <p><strong>Level:</strong> ${detailData.level}</p>
+            <p><strong>Description:</strong> ${detailData.description}</p>
+            <p><strong>Casting Time:</strong> ${detailData.castingTime}</p>
+            <!-- Add other details as needed -->
+        `;
+    }
+
+    function initializeAndLog() {
+        google.script.run.withSuccessHandler(updateLog).initializeSpellScrollData();
+    }
+
+    /**
+     * Function to show loading message and spinner.
+     */
+    function showScrollLoading() {
+        document.getElementById('scrollProgressMessage').style.display = 'block';
+        document.getElementById('scrollSpinner').style.display = 'block';
+    }
+
+    /**
+     * Function to hide loading message and spinner.
+     */
+    function hideScrollLoading() {
+        document.getElementById('scrollProgressMessage').style.display = 'none';
+        document.getElementById('scrollSpinner').style.display = 'none';
+    }
+</script>

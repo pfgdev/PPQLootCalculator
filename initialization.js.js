@@ -14,11 +14,13 @@ function initializeData() {
   var goldLog = initializeGoldData();
   var modsLog = initializeMods();
   var goldToDiceLog = initializeGoldToDiceTranslation();
+  var spellScrollLog = initializeSpellScrollData();
 
   addToLog(investigationLog);
   addToLog(goldLog);
   addToLog(modsLog);
   addToLog(goldToDiceLog);
+  addToLog(spellScrollLog);
 
   scriptProperties.setProperty(initializationCompleteFlag, 'true'); // Mark as initialized
   addToLog('Script Properties set initializationComplete to true');

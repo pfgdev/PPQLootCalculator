@@ -60,7 +60,39 @@
         --color-pair-9-text: #008b00; /* Dark green text */
         --color-pair-10-bg: #e1e1ff; /* Light lavender background */
         --color-pair-10-text: #00008b; /* Dark blue text */
-    }
+
+
+    /* Rarity color pairs for different levels */
+    --rarity-color-1-bg: #E0E0E0;  /* Light Gray */
+    --rarity-color-1-text: #696969; /* Dark Gray */
+
+    --rarity-color-2-bg: #DFFFD6;  /* Light Green */
+    --rarity-color-2-text: #228B22; /* Dark Green */
+
+    --rarity-color-3-bg: #C6FFD6;  /* Pale Green */
+    --rarity-color-3-text: #006400; /* Green */
+
+    --rarity-color-4-bg: #D0EFFF;  /* Light Blue */
+    --rarity-color-4-text: #1E90FF; /* Dodger Blue */
+
+    --rarity-color-5-bg: #A3DFFF;  /* Pale Blue */
+    --rarity-color-5-text: #4682B4; /* Steel Blue */
+
+    --rarity-color-6-bg: #E6E6FA; /* Lavender */
+    --rarity-color-6-text: #9370DB; /* Medium Purple */
+
+    --rarity-color-7-bg: #D1B3FF;  /* Light Purple */
+    --rarity-color-7-text: #800080; /* Purple */
+
+    --rarity-color-8-bg: #FFE5CC; /* Peach Puff */
+    --rarity-color-8-text: #FF8C00; /* Dark Orange */
+
+    --rarity-color-9-bg: #FFD1B3; /* Light Salmon */
+    --rarity-color-9-text: #FF4500; /* Orange Red */
+
+    --rarity-color-10-bg: #FFCCCC; /* Light Pink */
+    --rarity-color-10-text: #FF0000; /* Red */
+        }
 
     /* General Icon Styles */
     .icon {
@@ -70,6 +102,7 @@
         margin: 0; /* Remove default margin */
         padding: 0; /* Remove default padding */
         background-color: transparent; /* Ensure transparent background */
+        overflow: hidden;
     }
 
     .icon img {
@@ -77,6 +110,17 @@
         max-height: 100%; /* Scale image to fit container */
         object-fit: contain; /* Contain image within bounds */
         background: transparent; /* Ensure transparent background */
+        transition: transform 0.2s ease-in-out; /* Smooth transition for the scaling effect */
+    }
+
+    /* Example hover effect */
+    .icon:hover {
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Example hover effect */
+    .icon:hover img {
+        transform: scale(1.1); /* Scales the image up when selected */
     }
 
     /* Centered Icon Styles */
@@ -156,6 +200,18 @@
         border-width: var(--icon-border-width-extralarge) !important; 
     }
 
+    .icon.selected {
+        border-color: #FFD700; /* Gold border for selected state */
+        box-sizing: border-box; /* Ensures border is added outside of the element's size */
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.7); /* Optional glow effect */
+        background-color: #FFFACD; /* Light yellow background for selected state */
+    }
+
+    .icon.selected img {
+        transform: scale(1.4); /* Scales the image up when selected */
+    }
+
+
     /* Color Pair Classes */
     .color-pair-1 { 
         background-color: var(--color-pair-1-bg); 
@@ -197,6 +253,51 @@
         background-color: var(--color-pair-10-bg); 
         color: var(--color-pair-10-text); 
     }
+    
+    /* Rarity Color Pair Classes */
+    .rarity-color-1 { 
+        background-color: var(--rarity-color-1-bg); 
+        color: var(--rarity-color-1-text); 
+    }
+    .rarity-color-2 { 
+        background-color: var(--rarity-color-2-bg); 
+        color: var(--rarity-color-2-text); 
+    }
+    .rarity-color-3 { 
+        background-color: var(--rarity-color-3-bg); 
+        color: var(--rarity-color-3-text); 
+    }
+    .rarity-color-4 { 
+        background-color: var(--rarity-color-4-bg); 
+        color: var(--rarity-color-4-text); 
+    }
+    .rarity-color-5 { 
+        background-color: var(--rarity-color-5-bg); 
+        color: var(--rarity-color-5-text); 
+    }
+    .rarity-color-6 { 
+        background-color: var(--rarity-color-6-bg); 
+        color: var(--rarity-color-6-text); 
+    }
+    .rarity-color-7 { 
+        background-color: var(--rarity-color-7-bg); 
+        color: var(--rarity-color-7-text); 
+    }
+    .rarity-color-8 { 
+        background-color: var(--rarity-color-8-bg); 
+        color: var(--rarity-color-8-text); 
+    }
+    .rarity-color-9 { 
+        background-color: var(--rarity-color-9-bg); 
+        color: var(--rarity-color-9-text); 
+    }
+    .rarity-color-10 { 
+        background-color: var(--rarity-color-10-bg); 
+        color: var(--rarity-color-10-text); 
+    }
+
+    
+
 
     /* Indicator Styles */
     .icon-indicator .icon-number {

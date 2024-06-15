@@ -6,7 +6,6 @@
      */
     let currentSpellScrollIcon = null;
 
-
     function selectSpellScrollLevel(spellScrollLevel, icon)
     {
         if (currentSpellScrollIcon){
@@ -19,9 +18,13 @@
     }
     
     function fetchAndDisplaySpellScrollData(spellScrollLevel) {
-        showScrollLoading(); // reveal the spinner
-        google.script.run.withSuccessHandler(displaySpellScrollData).getSpellScrollData(spellScrollLevel);
+        showScrollLoading(); // Show the spinner
+        toggleStatBlock(false);
+        google.script.run.withSuccessHandler(displaySpellScrollData).fetchSpellScrollData(spellScrollLevel);
     }
+
+
+
 
 /**
  * Function to display spell scroll data.
@@ -51,10 +54,14 @@
         var spellScrollCell = newRow.insertCell(1);
 
         diceRangeCell.textContent = row.diceRange; // Dice Range
-        diceRangeCell.classList.add('dice-range-cell'); // adding a class to make this dynamic text bold!
+        diceRangeCell.classList.add('dice-range-cell','keep-stat-block-open');
         spellScrollCell.textContent = row.name; // Spell Name
+        spellScrollCell.classList.add('spell-name-cell','keep-stat-block-open');
         newRow.onclick = function() {
-            fetchAndDisplaySpellDetail(row.detailIndex);
+            document.querySelector('#spellStatBlock .section-head').textContent = row.name;
+            showLoadingMessage();
+            toggleStatBlock(true);
+            fetchAndDisplaySpellDetail(row.level, index);
         };
     });
 
@@ -65,10 +72,14 @@
         var spellScrollCell = newRow.insertCell(1);
 
         diceRangeCell.textContent = row.diceRange; // Dice Range
-        diceRangeCell.classList.add('dice-range-cell'); // adding a class to make this dynamic text bold!
+        diceRangeCell.classList.add('dice-range-cell','keep-stat-block-open');
         spellScrollCell.textContent = row.name; // Spell Name
+        spellScrollCell.classList.add('spell-name-cell','keep-stat-block-open');
         newRow.onclick = function() {
-            fetchAndDisplaySpellDetail(row.detailIndex);
+            document.querySelector('#spellStatBlock .section-head').textContent = row.name;
+            showLoadingMessage();
+            toggleStatBlock(true);
+            fetchAndDisplaySpellDetail(row.level, index);
         };
     });
 
@@ -84,22 +95,25 @@
         reRollRangeCell.classList.add('dice-range-cell');
     }
 
-    // UI updates! (show the scrolls now!)
+    // UI updates (show the scrolls now)
     hideScrollLoading();
     document.getElementById('spell-scroll-section').classList.remove('hidden');
 }
 
 
+    function fetchAndDisplaySpellDetail(level, index) {
+        google.script.run.withSuccessHandler(displaySpellDetail).getSpellScrollDetail(level, index);
+    }
 
-
-
-    function fetchAndDisplaySpellDetail(index) {
-        console.log('Fetching detail for index:', index);
-        google.script.run.withSuccessHandler(displaySpellDetail).getSpellScrollDetail(index);
+    function showLoadingMessage() {
+        // Hide all data fields and show the fetching message
+        document.querySelectorAll('.statBlockData').forEach(element => {
+            element.style.display = 'none';
+        });
+        document.getElementById('fetching-spells-message').style.display = 'block';
     }
 
     function displaySpellDetail(data) {
-        console.log('Received detail data:', data);
         try {
             var detailData = JSON.parse(data);
         } catch (e) {
@@ -107,18 +121,38 @@
             return;
         }
 
-        var detailContainer = document.getElementById('spell-detail-container');
-        detailContainer.innerHTML = `
-            <h3>${detailData.name}</h3>
-            <p><strong>Level:</strong> ${detailData.level}</p>
-            <p><strong>Description:</strong> ${detailData.description}</p>
-            <p><strong>Casting Time:</strong> ${detailData.castingTime}</p>
-            <!-- Add other details as needed -->
-        `;
+        // Update spell details fields
+        document.getElementById('statBlockField-level').textContent = detailData.level;
+        document.getElementById('statBlockField-castingTime').textContent = detailData.castingTime;
+        document.getElementById('statBlockField-rangeOrArea').textContent = detailData.rangeOrArea;
+        document.getElementById('statBlockField-components').textContent = detailData.components;
+        document.getElementById('statBlockField-duration').textContent = detailData.duration;
+        document.getElementById('statBlockField-school').textContent = detailData.school;
+        document.getElementById('statBlockField-attackOrSave').textContent = detailData.attackOrSave;
+        document.getElementById('statBlockField-damageOrEffect').textContent = detailData.damageOrEffect;
+        document.getElementById('statBlockField-spellDescription').textContent = detailData.description;
+
+        // Hide the fetching message
+        document.getElementById('fetching-spells-message').style.display = 'none';
+        document.querySelectorAll('.statBlockData').forEach(element => {
+            element.style.display = 'flex'; // Or another appropriate display value for your layout
+        });
     }
 
     function initializeAndLog() {
         google.script.run.withSuccessHandler(updateLog).initializeSpellScrollData();
+    }
+
+    function toggleStatBlock(visible) {
+        const statBlock = document.getElementById('spellStatBlock');
+        const tableContainerA = document.getElementById('currentSpellScrollTable_A').parentElement;
+        const tableContainerB = document.getElementById('currentSpellScrollTable_B').parentElement;
+
+        if (visible) {
+            statBlock.classList.add('visible');
+        } else {
+            statBlock.classList.remove('visible');
+        }
     }
 
     /**
@@ -136,4 +170,16 @@
         document.getElementById('scrollProgressMessage').style.display = 'none';
         document.getElementById('scrollSpinner').style.display = 'none';
     }
+
+    document.addEventListener('click', function(event) {
+        const statBlock = document.getElementById('spellStatBlock');
+        const isKeepOpenElement = event.target.closest('.keep-stat-block-open');
+
+        const spellTab = document.getElementById('spellScrollsTab');
+        const isSpellTabActive = spellTab.classList.contains('active');
+
+        if (!isKeepOpenElement && isSpellTabActive) {
+            toggleStatBlock(false);
+        }
+    });
 </script>

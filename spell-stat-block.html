@@ -1,0 +1,132 @@
+<style>
+    #spellStatBlock {
+        transition: max-width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden; /* Ensure content does not overflow */
+        flex-grow: 1;
+    }
+
+    #spellStatBlock.visible {
+        max-width: 600px; /* Adjust as needed */
+        opacity: 1;
+    }
+
+    .spell-stats {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .spell-stats p {
+        width: 48%; /* Adjust this value to fit your layout needs */
+        margin: 0;
+    }
+
+    .spell-description {
+        margin-top: 10px;
+    }
+
+    .spell-description p {
+        margin: 0;
+        white-space: pre-wrap; /* This preserves the line breaks in the description */
+    }
+
+    /* Styling for the images */
+    #fetch-icon img {
+        transition: opacity 0.1s ease;
+    }
+
+    /* Keyframes for bouncing animation */
+    @keyframes fetch-bounce {
+        0%, 5%, 35%, 65%, 100% {
+            transform: translateY(0);
+        }
+        25% {
+            transform: translateY(-10px) rotate(-2deg);
+        }
+        50% {
+            transform: translateY(-5px) rotate(2deg);
+        }
+    }
+
+    /* Applying the animation */
+    .fetch-bouncing {
+        animation: fetch-bounce 1.5s infinite;
+    }
+
+    /* Keyframes for image swapping */
+    @keyframes fetch-image-swap {
+        0%, 100% {
+            content: url('https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png');
+        }
+        50% {
+            content: url('https://i.ibb.co/HTGHfXp/floof-fetch-scroll-A-128.png');
+        }
+    }
+
+    /* Applying the image swap animation */
+    #fetch-icon img {
+        animation: fetch-image-swap 1s infinite;
+    }
+
+
+    
+
+</style>
+
+<div id="spellStatBlock" class="section-container" style="padding-left: 0; padding-right: 0; margin-top: 0px;">
+    <div class="section-head">Step 3: View Details</div>
+    <div class="section-body">
+        <div class="flex-row">
+            <div class="framed-section-container" id="spell-detail-container" style="min-height: 200px;">
+                <div class="flex-row statBlockData">
+                    <div class="element-container">
+                        <strong>Level:</strong> <span id="statBlockField-level"></span>
+                    </div>
+                    <div class="element-container">
+                        <strong>Casting Time:</strong> <span id="statBlockField-castingTime"></span>
+                    </div>
+                </div>
+                <div class="flex-row statBlockData">
+                    <div class="element-container">
+                        <strong>Range/Area:</strong> <span id="statBlockField-rangeOrArea"></span>
+                    </div>
+                    <div class="element-container">
+                        <strong>Components:</strong> <span id="statBlockField-components"></span>
+                    </div>
+                </div>
+                <div class="flex-row statBlockData">
+                    <div class="element-container">
+                        <strong>Duration:</strong> <span id="statBlockField-duration"></span>
+                    </div>
+                    <div class="element-container">
+                        <strong>School:</strong> <span id="statBlockField-school"></span>
+                    </div>
+                </div>
+                <div class="flex-row statBlockData">
+                    <div class="element-container">
+                        <strong>Attack/Save:</strong> <span id="statBlockField-attackOrSave"></span>
+                    </div>
+                    <div class="element-container">
+                        <strong>Damage/Effect:</strong> <span id="statBlockField-damageOrEffect"></span>
+                    </div>
+                </div>
+                <div class="flex-row statBlockData">
+                    <div class="element-container">
+                        <strong>Description:</strong> <span id="statBlockField-spellDescription"></span>
+                    </div>
+                </div>
+                <div class="flex-row" style="margin: 0px;">
+                    <div class="element-container" id="fetching-spells-message" style="display: none; overflow: visible;">
+                        <div class="icon icon-extralarge fetch-bouncing" id="fetch-icon">
+                            <img src="https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png">
+                        </div>
+                        <p>Fetching spell details, please wait...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

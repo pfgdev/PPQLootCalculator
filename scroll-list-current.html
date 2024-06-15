@@ -16,6 +16,7 @@
         table-layout: fixed;
         width: 100%;
         border-collapse: collapse;
+        transition: width 0.3s ease-in-out;
     }
 
     .spell-scroll-table th, .spell-scroll-table td {
@@ -23,6 +24,7 @@
         text-align: center;
         border: 1px solid var(--scroll-table-border-color);
         position: relative; /* Allow positioning of remove button */
+        transition: width 0.5s ease;
     }
 
     .spell-scroll-table th {
@@ -31,7 +33,14 @@
     }
 
     .spell-scroll-table th:first-child {
-        width: 25%;
+        width: 70px;
+    }
+
+    .spell-scroll-table th:nth-child(2) {
+        width: auto; /* Allow the second column to take up the remaining space */
+        white-space: nowrap; /* Prevent text from wrapping */
+        overflow: hidden; /* Hide overflow */
+        text-overflow: ellipsis; /* Add ellipsis */
     }
 
     .spell-scroll-table tr:nth-child(odd) {
@@ -44,6 +53,7 @@
 
     .spell-scroll-table tr:hover {
         background-color: #d6eaff; /* Pale blue background for hover state */
+        cursor: pointer;
     }
 
     .section-body {
@@ -53,22 +63,31 @@
 
     .dice-range-cell {
         font-weight: bold;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .spell-name-cell {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
 
 </style>
   
 <!-- Table Section for Step 2: Select Scroll -->
-<div class="framed-section-container hidden" id="spell-scroll-section" style="padding: var(--default-padding); margin: var(--scroll-table-section-margin); flex-grow: 1; margin-top: 0px;">
+<div class="section-container hidden" id="spell-scroll-section" style="padding-left: 0; padding-right: 0; margin: var(--scroll-table-section-margin); margin-top: 0px; flex-grow: 1; flex-shrink: 1; flex-basis: 0;">
     <div class="section-head">Step 2: Select Spell</div>
     <div class="section-body">
-        <div class ="flex-row" style="gap:20px;">
+        <div class ="flex-row" style="gap: 10px;">
             <div class="element-container" style="padding: var(--scroll-table-element-padding); margin: var(--scroll-table-element-margin);">
                 <table id="currentSpellScrollTable_A" class="spell-scroll-table">
                     <thead>
                         <tr>
-                            <th>Dice Range</th>
-                            <th>Spell Scroll</th>
+                            <th>Range</th>
+                            <th>Spell</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,8 +99,8 @@
                 <table id="currentSpellScrollTable_B" class="spell-scroll-table">
                     <thead>
                         <tr>
-                            <th>Dice Range</th>
-                            <th>Spell Scroll</th>
+                            <th>Range</th>
+                            <th>Spell</th>
                         </tr>
                     </thead>
                     <tbody>

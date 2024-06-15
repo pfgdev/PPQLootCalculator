@@ -5,6 +5,7 @@
      * and then displays the data on the page.
      */
     let currentSpellScrollIcon = null;
+    let currentlySelectedRow = null;
 
     function selectSpellScrollLevel(spellScrollLevel, icon)
     {
@@ -19,6 +20,7 @@
     
     function fetchAndDisplaySpellScrollData(spellScrollLevel) {
         showScrollLoading(); // Show the spinner
+        clearSelectedRowVisuals();
         toggleStatBlock(false);
         google.script.run.withSuccessHandler(displaySpellScrollData).fetchSpellScrollData(spellScrollLevel);
     }
@@ -59,6 +61,7 @@
         spellScrollCell.classList.add('spell-name-cell','keep-stat-block-open');
         newRow.onclick = function() {
             document.querySelector('#spellStatBlock .section-head').textContent = row.name;
+            updateSelectedRowVisuals(newRow, tableBodyA);
             showLoadingMessage();
             toggleStatBlock(true);
             fetchAndDisplaySpellDetail(row.level, index);
@@ -77,6 +80,7 @@
         spellScrollCell.classList.add('spell-name-cell','keep-stat-block-open');
         newRow.onclick = function() {
             document.querySelector('#spellStatBlock .section-head').textContent = row.name;
+            updateSelectedRowVisuals(newRow, tableBodyB);
             showLoadingMessage();
             toggleStatBlock(true);
             fetchAndDisplaySpellDetail(row.level, index + halfLength + 1);
@@ -103,6 +107,22 @@
 
     function fetchAndDisplaySpellDetail(level, index) {
         google.script.run.withSuccessHandler(displaySpellDetail).getSpellScrollDetail(level, index);
+    }
+
+
+
+    function updateSelectedRowVisuals(newRow, tableBody) {
+        clearSelectedRowVisuals();
+
+        newRow.classList.add('selected-spell-row');
+        console.log(newRow);
+        currentlySelectedRow = newRow;
+    }
+
+    function clearSelectedRowVisuals() {
+        if (currentlySelectedRow) {
+            currentlySelectedRow.classList.remove('selected-spell-row');
+        }
     }
 
     function showLoadingMessage() {
@@ -179,7 +199,9 @@
         const isSpellTabActive = spellTab.classList.contains('active');
 
         if (!isKeepOpenElement && isSpellTabActive) {
+            clearSelectedRowVisuals();
             toggleStatBlock(false);
+
         }
     });
 </script>

@@ -79,7 +79,7 @@
             document.querySelector('#spellStatBlock .section-head').textContent = row.name;
             showLoadingMessage();
             toggleStatBlock(true);
-            fetchAndDisplaySpellDetail(row.level, index);
+            fetchAndDisplaySpellDetail(row.level, index + halfLength + 1);
         };
     });
 
@@ -130,7 +130,7 @@
         document.getElementById('statBlockField-school').textContent = detailData.school;
         document.getElementById('statBlockField-attackOrSave').textContent = detailData.attackOrSave;
         document.getElementById('statBlockField-damageOrEffect').textContent = detailData.damageOrEffect;
-        document.getElementById('statBlockField-spellDescription').textContent = detailData.description;
+        document.getElementById('statBlockField-spellDescription').innerHTML = detailData.description.replace(/\n/g, '<br>');
 
         // Hide the fetching message
         document.getElementById('fetching-spells-message').style.display = 'none';

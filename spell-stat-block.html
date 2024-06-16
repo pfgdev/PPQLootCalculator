@@ -16,16 +16,22 @@
     .spell-stat-label {
         font-weight: bold;
         margin-right: 5px;
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
     }
 
     .spell-stat-value {
         font-weight: normal;
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
     }
+
 
     #statBlockField-spellDescription {
         text-align: left; /* Ensures the description text aligns properly */
         margin-top: 10px;
         white-space: pre-line; /* Preserves line breaks and spaces */
+        -webkit-text-size-adjust: 100%;
     }
 
     /* Styling for the images */
@@ -44,6 +50,10 @@
         50% {
             transform: translateY(-5px) rotate(2deg);
         }
+    }
+
+    .statBlockData span {
+        font-size: inherit;
     }
 
     /* Applying the animation */

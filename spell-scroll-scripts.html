@@ -115,7 +115,6 @@
         clearSelectedRowVisuals();
 
         newRow.classList.add('selected-spell-row');
-        console.log(newRow);
         currentlySelectedRow = newRow;
     }
 
@@ -133,31 +132,49 @@
         document.getElementById('fetching-spells-message').style.display = 'block';
     }
 
-    function displaySpellDetail(data) {
-        try {
-            var detailData = JSON.parse(data);
-        } catch (e) {
-            console.error('Error parsing JSON:', e);
-            return;
-        }
-
-        // Update spell details fields
-        document.getElementById('statBlockField-level').textContent = detailData.level;
-        document.getElementById('statBlockField-castingTime').textContent = detailData.castingTime;
-        document.getElementById('statBlockField-rangeOrArea').textContent = detailData.rangeOrArea;
-        document.getElementById('statBlockField-components').textContent = detailData.components;
-        document.getElementById('statBlockField-duration').textContent = detailData.duration;
-        document.getElementById('statBlockField-school').textContent = detailData.school;
-        document.getElementById('statBlockField-attackOrSave').textContent = detailData.attackOrSave;
-        document.getElementById('statBlockField-damageOrEffect').textContent = detailData.damageOrEffect;
-        document.getElementById('statBlockField-spellDescription').innerHTML = detailData.description.replace(/\n/g, '<br>');
-
-        // Hide the fetching message
-        document.getElementById('fetching-spells-message').style.display = 'none';
-        document.querySelectorAll('.statBlockData').forEach(element => {
-            element.style.display = 'flex'; // Or another appropriate display value for your layout
-        });
+function toggleSpellComponentIconVisibility(elementId, condition) {
+    const element = document.getElementById(elementId);
+    if (condition) {
+        element.classList.remove('hidden');
+    } else {
+        element.classList.add('hidden');
     }
+}
+
+function displaySpellDetail(data) {
+    try {
+        var detailData = JSON.parse(data);
+    } catch (e) {
+        console.error('Error parsing JSON:', e);
+        return;
+    }
+
+    // Update spell details fields
+    document.getElementById('statBlockField-level').textContent = detailData.level === 0 ? "Cantrip" : `Level ${detailData.level}`;
+    document.getElementById('statBlockField-castingTime').textContent = detailData.castingTime;
+    document.getElementById('statBlockField-rangeOrArea').textContent = detailData.rangeOrArea;
+    
+    toggleSpellComponentIconVisibility('statBlockIcon-verbal', detailData.verbal);
+    toggleSpellComponentIconVisibility('statBlockIcon-somatic', detailData.somatic);
+    toggleSpellComponentIconVisibility('statBlockIcon-material', detailData.material);
+    
+    document.getElementById('statBlockField-materialText').textContent = detailData.materialText;
+    document.getElementById('statBlockField-duration').textContent = detailData.duration;
+    
+    toggleSpellComponentIconVisibility('statBlockIcon-concentration', detailData.concentration);
+    
+    document.getElementById('statBlockField-school').textContent = detailData.school;
+    document.getElementById('statBlockField-attackOrSave').textContent = detailData.attackOrSave;
+    document.getElementById('statBlockField-damageOrEffect').textContent = detailData.damageOrEffect;
+    document.getElementById('statBlockField-source').textContent = detailData.source;
+    document.getElementById('statBlockField-spellDescription').innerHTML = detailData.description.replace(/\n/g, '<br>');
+
+    // Hide the fetching message
+    document.getElementById('fetching-spells-message').style.display = 'none';
+    document.querySelectorAll('.statBlockData').forEach(element => {
+        element.style.display = 'flex'; // Or another appropriate display value for your layout
+    });
+}
 
     function initializeAndLog() {
         google.script.run.withSuccessHandler(updateLog).initializeSpellScrollData();

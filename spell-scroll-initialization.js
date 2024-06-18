@@ -43,13 +43,16 @@ function initializeSpellScrollData() {
                 source: row[6], // Assuming source is in the 7th column
                 castingTime: row[7], // Assuming casting time is in the 8th column
                 rangeOrArea: row[8], // Assuming range or area is in the 9th column
-                components: row[9], // Assuming components are in the 10th column
-                duration: row[10], // Assuming duration is in the 11th column
-                concentration: row[11], // Assuming concentration is in the 12th column
-                school: row[12], // Assuming school is in the 13th column
-                attackOrSave: row[13], // Assuming attack or save is in the 14th column
-                damageOrEffect: row[14], // Assuming damage or effect is in the 15th column
-                description: row[15] // Assuming description is in the 16th column
+                verbal: row[9],
+                somatic: row[10],
+                material: row[11],
+                materialText: row[12],
+                duration: row[13], // Assuming duration is in the 11th column
+                concentration: row[14], // Assuming concentration is in the 12th column
+                school: row[15], // Assuming school is in the 13th column
+                attackOrSave: row[16], // Assuming attack or save is in the 14th column
+                damageOrEffect: row[17], // Assuming damage or effect is in the 15th column
+                description: row[18] // Assuming description is in the 16th column
             };
 
             combinedData[level].push(combinedEntry);

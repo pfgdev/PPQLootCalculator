@@ -14,29 +14,55 @@
 
     /* Styling for labels and values */
     .spell-stat-label {
+        font-family: 'Arial', sans-serif;
+        font-size: 17px;
         font-weight: bold;
-        margin-right: 5px;
-        font-size: 16px;
+        margin-bottom: 5px;
         -webkit-text-size-adjust: 100%;
     }
 
     .spell-stat-value {
         font-weight: normal;
-        font-size: 16px;
+        font-family: 'Georgia', serif;
+        font-size: 17px;
         -webkit-text-size-adjust: 100%;
+    }
+
+    /* Styles for the footer section */
+    .spell-footer .spell-stat-value {
+        font-size: 13px; /* Smaller font size */
+        font-style: italic; /* Italic text */
+        margin-bottom: 0; /* Ensure the footer stays close to the bottom */
+        font-family: 'Arial', sans-serif;
+    }
+
+    .spell-stat-value.material-text {
+        font-size: 13px; /* Smaller font size */
+        font-style: italic; /* Italic text */
+        font-family: 'Georgia', serif;
+        /* Add other styles if needed */
     }
 
 
     #statBlockField-spellDescription {
         text-align: left; /* Ensures the description text aligns properly */
-        margin-top: 10px;
         white-space: pre-line; /* Preserves line breaks and spaces */
         -webkit-text-size-adjust: 100%;
+        font-family: 'Georgia', serif;
+        font-size: 15px;
     }
 
     /* Styling for the images */
     #fetch-icon img {
         transition: opacity 0.1s ease;
+    }
+
+    /* Style for the horizontal line separator */
+    .spell-separator {
+        border: none;
+        height: 2px;
+        background-color: #ddd; /* Light gray color */
+        margin-top: 5px; /* Margin to add space around the line */
     }
 
     /* Keyframes for bouncing animation */
@@ -85,41 +111,79 @@
     <div class="section-head">Step 3: View Details</div>
     <div class="section-body">
         <div class="flex-row">
-            <div class="framed-section-container" id="spell-detail-container" style="min-height: 200px;">
+            <div class="framed-section-container" id="spell-detail-container" style="min-height: 200px; padding-bottom: 2px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <!-- First row: Cast Time, Range/Area -->
                 <div class="flex-row statBlockData">
-                    <div class="element-container" style="padding-left: 0;">
-                        <div class="spell-stat-label">Level</div> <div class="spell-stat-value" id="statBlockField-level"></div>
+                    <div class="element-container" style="flex-direction: column;">
+                        <div class="spell-stat-label">Cast Time</div>
+                        <div class="spell-stat-value" id="statBlockField-castingTime"></div>
                     </div>
-                    <div class="element-container">
-                        <div class="spell-stat-label">Casting Time</div> <div class="spell-stat-value" id="statBlockField-castingTime"></div>
-                    </div>
-                    <div class="element-container">
-                        <div class="spell-stat-label">Range/Area</div> <div class="spell-stat-value" id="statBlockField-rangeOrArea"></div>
-                    </div>
-                    <div class="element-container" style="padding-right: 0;">
-                        <div class="spell-stat-label">Components</div> <div class="spell-stat-value" id="statBlockField-components"></div>
+                    <div class="element-container" style="flex-direction: column;">
+                        <div class="spell-stat-label">Range/Area</div>
+                        <div class="spell-stat-value" id="statBlockField-rangeOrArea"></div>
                     </div>
                 </div>
-                <div class="flex-row statBlockData" style="margin-top: 5px;">
-                    <div class="element-container" style="padding-left: 0;">
-                        <div class="spell-stat-label">Duration</div> <div class="spell-stat-value" id="statBlockField-duration"></div>
+                <!-- Second row: Components, Duration -->
+                <div class="flex-row statBlockData">
+                    <div class="element-container" style="flex-direction: column;">
+                        <div class="spell-stat-label">Components</div>
+                        <div class="icon-container">
+                            <div id="statBlockIcon-verbal" class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover hidden" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                                <img src="https://i.ibb.co/vqR6TW1/floof-bark-128.png">
+                                <span class="icon-number bottom-right rarity-color-1">V</span>
+                            </div>
+                            <div id="statBlockIcon-somatic" class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover hidden" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                                <img src="https://i.ibb.co/hL5qBwc/floof-wave-hand-128.png">
+                                <span class="icon-number bottom-right rarity-color-1">S</span>
+                            </div>
+                            <div id="statBlockIcon-material" class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover hidden" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                                <img src="https://i.ibb.co/B6vKL0V/floof-give-bone-128-b.png">
+                                <div class="icon-number bottom-right rarity-color-1" style="margin-top: auto;">M</div>
+                            </div>
+                        </div>
+                        <div class="spell-stat-value material-text" id="statBlockField-materialText" style="text-align: bottom;"></div>
                     </div>
-                    <div class="element-container">
-                        <div class="spell-stat-label">School</div> <div class="spell-stat-value" id="statBlockField-school"></div>
-                    </div>
-                    <div class="element-container">
-                        <div class="spell-stat-label">Attack/Save</div> <div class="spell-stat-value" id="statBlockField-attackOrSave"></div>
-                    </div>
-                    <div class="element-container" style="padding-right: 0;">
-                        <div class="spell-stat-label">Damage/Effect</div> <div class="spell-stat-value" id="statBlockField-damageOrEffect"></div>
+                    <div class="element-container" style="flex-direction: column;">
+                        <div class="spell-stat-label">Duration</div>
+                        <div id="statBlockIcon-concentration" class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover hidden" style="box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                            <img src="https://i.ibb.co/vPsjc6F/floof-concentrate-128-b.png">
+                            <span class="icon-number bottom-right rarity-color-1">C</span>
+                        </div>
+                        <div class="spell-stat-value" id="statBlockField-duration"></div>
                     </div>
                 </div>
-                <div class="flex-row statBlockData" style="margin-top: 10px;">
-                    <div class="element-container">
-                        <div><strong>Description:</strong></div>
+                <hr class="spell-separator statBlockData">
+                <!-- Description -->
+                <div class="flex-row statBlockData" style="margin: 10px 0;">
+                    <div class="element-container" style="flex-direction: column;">
                         <div id="statBlockField-spellDescription"></div>
                     </div>
                 </div>
+                <hr class="spell-separator statBlockData">
+                <!-- Fourth row: Attack/Save, Damage/Effect -->
+                <div class="flex-row statBlockData" style="margin-top: 10px;">
+                    <div class="element-container" style="flex-direction: column;">
+                        <div class="spell-stat-label">Attack/Save</div>
+                        <div class="spell-stat-value" id="statBlockField-attackOrSave"></div>
+                    </div>
+                    <div class="element-container" style="flex-direction: column;">
+                        <div class="spell-stat-label">Damage/Effect</div>
+                        <div class="spell-stat-value" id="statBlockField-damageOrEffect"></div>
+                    </div>
+                </div>
+                <!-- Footer: Level, School, Source -->
+                <div class="flex-row statBlockData spell-footer" style="margin-top: 10px;">
+                    <div class="element-container spell-footer" style="padding-bottom: 0;">
+                        <div class="spell-stat-value" id="statBlockField-level"></div>
+                    </div>
+                    <div class="element-container spell-footer" style="padding-bottom: 0;">
+                        <div class="spell-stat-value" id="statBlockField-school"></div>
+                    </div>
+                    <div class="element-container spell-footer" style="padding-bottom: 0;">
+                        <div class="spell-stat-value" id="statBlockField-source"></div>
+                    </div>
+                </div>
+                <!-- Loading message -->
                 <div class="flex-row" style="margin: 0px;">
                     <div class="element-container" id="fetching-spells-message" style="display: none; overflow: visible;">
                         <div class="icon icon-extralarge fetch-bouncing no-hover" id="fetch-icon">
@@ -132,3 +196,6 @@
         </div>
     </div>
 </div>
+
+
+

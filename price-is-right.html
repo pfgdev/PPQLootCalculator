@@ -4,8 +4,8 @@
     <div class="section-head">Spin the Wheel</div>
     <button id="spinButton">Spin</button>
     <div class="section-body">
-        <div class="flex-row">
-            <div class="framed-element-container" style="height: 235px; position: relative;">
+        <div class="flex-row" style="justify-content: center; align-items: center;">
+            <div class="framed-element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative;">
                 <div class="wheels">
                     <div class="wheel">
                         <div data-index="0">
@@ -88,23 +88,26 @@
     .wheels {
         box-sizing: border-box;
         position: relative;
-        left: 50%;
         top: 65%;
         padding: 0;
         text-align: center;
-        width: 50%;
+        width: auto;
         height: calc(10rem * var(--scaling-factor)); /* Adjust height using the scaling factor */
         user-select: none;
-        transform: translate(-7.1%, -50%);
+        transform: translate(0%, -50%);
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     
     .wheels .wheel {
         box-sizing: border-box;
         position: relative;
+        width: 66px;
         padding: 0;
         margin: 0;
         height: 100%;
-        width: 14.2%; /* Adjust based on $num-wheels */
         transform-style: preserve-3d;
         transform-origin: 100% 25%;
     }
@@ -112,7 +115,7 @@
     .wheels .wheel > div {
         box-sizing: border-box;
         position: absolute;
-        width: 100%;
+        width: auto;
         height: 51%; /* Adjust segment height */
         line-height: calc(5rem * var(--scaling-factor)); /* Adjust line-height */
         text-align: center;

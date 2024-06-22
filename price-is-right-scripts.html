@@ -1,0 +1,159 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+(function ($) {
+    const scalingFactor = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scaling-factor'));
+
+    function applyTransforms(coords) {
+        $('.wheel > div').each(function (i) {
+            var angle = -(coords.y / 2) + (360 / 10) * i;
+            $(this).css('transform', `perspective(${500 * scalingFactor}px) rotate3d(1, 0, 0, ${angle}deg) translate3d(0, 0, ${122 * scalingFactor}px)`);
+        });
+    }
+
+    function calculateSegment(angle) {
+        const segmentCount = 10;
+        const segmentAngle = 360 / segmentCount;
+        const offset = segmentAngle / 2; // Adjust this value to fine-tune alignment
+        let adjustedAngle = (angle + offset) % 360;
+        if (adjustedAngle < 0) {
+            adjustedAngle += 360;
+        }
+        return Math.floor(adjustedAngle / segmentAngle);
+    }
+
+    var current_coords = { x: 0, y: 0 };
+    var velocity = { x: 0, y: 0 };
+    var inertia_time = null;
+    var isSpinning = false;
+
+    // Adjust these variables to control speed and friction
+    const initialVelocityRange = [1, 2]; // Lower initial velocity
+    const frictionCoefficient = 1; // Lower friction coefficient
+    const mass = 1500; // Higher mass for slower deceleration
+
+    function startFlipperAnimation() {
+        $('.flipper').addClass('animate');
+    }
+
+    function stopFlipperAnimation() {
+        $('.flipper').removeClass('animate');
+    }
+
+    function triggerFlipperAnimation(coords) {
+        const currentSegment = calculateSegment(coords.y / 2);
+        if (currentSegment !== triggerFlipperAnimation.lastSegment) {
+            startFlipperAnimation();
+            setTimeout(stopFlipperAnimation, 300); // Adjust the duration as needed
+            triggerFlipperAnimation.lastSegment = currentSegment;
+        }
+    }
+
+    $.fn.momentus = function (cfg) {
+        var now = Date.now || function () { return (new Date()).valueOf() },
+            last_time = now(),
+
+            // Configuration
+            mass = cfg.mass || mass,
+            u = cfg.u || frictionCoefficient,
+            wheel_ratio = cfg.wheelRatio || 1000,
+            on_change = cfg.onChange || function () { },
+            frame_rate = cfg.frameRate || 60;
+
+        function calculateVelocity(delta_time) {
+            var vel_y = velocity.y - (u * (velocity.y / mass) * delta_time);
+            return { x: 0, y: vel_y };
+        }
+
+        function inertia() {
+            if (!isSpinning) {
+                return;
+            }
+
+            velocity.x = !isNaN(velocity.x) ? velocity.x : 0;
+            velocity.y = !isNaN(velocity.y) ? velocity.y : 0;
+
+            if (!inertia_time) {
+                inertia_time = now();
+            } else if (velocity.y != 0) {
+                var time = now(),
+                    delta_time = time - inertia_time,
+                    new_velocity = calculateVelocity(delta_time);
+
+                velocity.y = new_velocity.y;
+
+                var delta_y = velocity.y * delta_time;
+                current_coords.y += delta_y;
+                inertia_time = time;
+                on_change(current_coords, velocity);
+
+                // Trigger flipper animation based on wheel position
+                triggerFlipperAnimation(current_coords);
+
+                // If velocity is very low, consider the wheel stopped
+                if (Math.abs(velocity.y) < 0.01) {
+                    isSpinning = false;
+                    const finalAngle = current_coords.y / 2;
+                    const segment = calculateSegment(finalAngle);
+                    console.log('Final Segment:', segment);
+
+                    // Log the corresponding div
+                    const selectedDiv = $(`.wheel > div[data-index="${segment}"]`);
+                    const imgSrc = selectedDiv.find('img').attr('src');
+                    const number = selectedDiv.find('.icon-number').text();
+                    console.log(`Selected Div Index: ${segment}, Image: ${imgSrc}, Number: ${number}`);
+
+                    $('#spinButton').prop('disabled', false); // Enable the spin button
+
+                    // Stop the flipper animation
+                    stopFlipperAnimation();
+
+                    return; // Exit the loop when the wheel stops
+                }
+            }
+
+            if (isSpinning) {
+                if (window.requestAnimationFrame) {
+                    requestAnimationFrame(inertia);
+                } else {
+                    setTimeout(inertia, 1000 / frame_rate);
+                }
+            }
+        }
+
+        return {
+            startSpin: function () {
+                isSpinning = true;
+                inertia_time = now();
+                inertia();
+            }
+        };
+    }
+
+    $(document).ready(function () {
+        applyTransforms(current_coords);
+        const momentusInstance = $('.wheel').momentus({
+            u: frictionCoefficient,
+            mass: mass,
+            wheelRatio: -1000,
+            onChange: function (coords, velocity) {
+                applyTransforms(coords);
+            }
+        });
+
+        $('#spinButton').on('click', function () {
+            if (isSpinning) return;
+            isSpinning = true;
+            $('#spinButton').prop('disabled', true); // Disable the spin button
+            let initialVelocity = Math.random() * (initialVelocityRange[1] - initialVelocityRange[0]) + initialVelocityRange[0]; // Updated initial velocity function
+            velocity.y = initialVelocity;
+            inertia_time = Date.now();
+            momentusInstance.startSpin(); // Call the inertia function correctly
+
+            // Start the flipper animation
+            startFlipperAnimation();
+        });
+    });
+
+})(jQuery);
+</script>

@@ -73,7 +73,9 @@
             </div>
         </div>
         <div class="flex-row">
-            <div id="current-section" style="position: relative; top: -137px; left: 412px;">0</div>
+            <div id="current-section" style="position: relative; top: -137px; left: 412px;">0
+                <span class="new-flipper"></span>
+            </div>
         </div>
     </div>
 </div>
@@ -206,5 +208,22 @@
             transform: translate(-50%, -50%) rotate(0deg);
         }
     }
+
+    .new-flipper {
+    position: absolute;
+    top: 50%; /* Adjust as needed */
+    left: -250%; /* Adjust as needed */
+    width: 0;
+    height: 0;
+    border-left: 20px solid blue; /* Adjust size and color */
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    transform-origin: center center; /* Rotate around its center */
+    transform: translate(-50%, -50%) rotate(0deg); /* Start with no rotation */
+    z-index: 10;
+    transition: transform 0.1s ease-out; /* Ensure smooth transitions */
+}
     </style>
+
+    
     

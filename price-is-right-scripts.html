@@ -31,14 +31,18 @@
     var lastBoundaryStartSegment = null;
     var lastBoundaryEndSegment = null;
     var hiddenTime = null; // Time when the tab was hidden
+    let boundaryStartPoint = null;
+    let boundaryEndPoint = null;
+
 
     // Adjust these variables to control speed and friction
-    const initialVelocityRange = [0.01, 0.01]; // Lower initial velocity
-    const frictionCoefficient = 0; // Lower friction coefficient
+    const initialVelocityRange = [1, 2]; // Lower initial velocity
+    const frictionCoefficient = 1; // Lower friction coefficient
     const mass = 1500; // Higher mass for slower deceleration
 
-    const boundaryStartOffset = 2; // Adjust this value as needed
-    const boundaryEndOffset = -4; // Adjust this value as needed
+    const boundaryStartOffset = 5; // Adjust this value as needed
+    const boundaryEndOffset = -2; // Adjust this value as needed
+
 
     function startFlipperAnimation() {
         $('.flipper').addClass('animate');
@@ -47,6 +51,9 @@
     function stopFlipperAnimation() {
         $('.flipper').removeClass('animate');
     }
+
+
+
 
 
 
@@ -75,18 +82,54 @@
 
     // Check if within boundary start
     if (currentSegment === boundaryStartSegment && lastBoundaryStartSegment !== boundaryStartSegment) {
-        $('#current-section').text(`${currentSegment}+`);
-        console.log(`Entered boundary for segment ${currentSegment}`);
         lastBoundaryStartSegment = boundaryStartSegment;
+
+        // Calculate the start point of the boundary
+        boundaryStartPoint = coords.y;
+        // Calculate the end point of the boundary
+        boundaryEndPoint = boundaryStartPoint + Math.abs(boundaryEndOffset - boundaryStartOffset);
+
+        // Reset flipper angle to ensure it starts fresh for the new segment
+        $('.new-flipper').css('transform', 'translate(-50%, -50%) rotate(0deg)');
+
+        console.log(`Entered boundary for segment ${currentSegment}`);
+        console.log(`Calculated Boundary Start Point: ${boundaryStartPoint}, Calculated Boundary End Point: ${boundaryEndPoint}`);
     }
 
     // Check if within boundary end
-    else if (currentSegment === boundaryEndSegment && lastBoundaryEndSegment !== boundaryEndSegment) {
-        $('#current-section').text(`${currentSegment}`);
-        console.log(`Exited boundary for segment ${currentSegment}`);
+    else if (coords.y >= boundaryEndPoint && lastBoundaryEndSegment !== boundaryEndSegment) {
         lastBoundaryEndSegment = boundaryEndSegment;
+        // Ensure the flipper moves to max angle when exiting the boundary
+        $('.new-flipper').css('transform', 'translate(-50%, -50%) rotate(30deg)');
+        console.log('Flipper set to 30deg at boundary exit');
+
+        console.log(`Exited boundary for segment ${currentSegment}`);
+    }
+
+    // New flipper rotation logic
+    if (lastBoundaryStartSegment !== lastBoundaryEndSegment) {
+        const distanceFromEndPoint = Math.abs(coords.y - boundaryEndPoint);
+        const boundaryRange = boundaryEndPoint - boundaryStartPoint;
+        const normalizedPosition = Math.max(0, Math.min(1, distanceFromEndPoint / boundaryRange));
+        const desiredFlipperAngle = 30 * (1 - normalizedPosition); // 0 degrees at max distance, 30 degrees at zero distance
+
+        // Set the flipper angle directly
+        $('.new-flipper').css('transform', `translate(-50%, -50%) rotate(${desiredFlipperAngle}deg)`);
+
+        // Log the details of the calculation
+        console.log(`Current Position: ${coords.y}, Distance from End Point: ${distanceFromEndPoint}`);
+        console.log(`Normalized Position within boundary: ${(1 - normalizedPosition) * 100}%`);
+        console.log(`Desired Flipper Angle: ${desiredFlipperAngle}deg`);
+    }
+
+    // Reset boundary points when exiting the boundary
+    if (lastBoundaryStartSegment === lastBoundaryEndSegment) {
+        boundaryStartPoint = null;
+        boundaryEndPoint = null;
     }
 }
+
+
 
 
 

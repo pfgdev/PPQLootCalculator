@@ -28,12 +28,17 @@
     var isSpinning = false;
     var initialFrameIgnored = false; // Flag to ignore the first frame
     var lastSegment = null; // Initialize lastSegment
+    var lastBoundaryStartSegment = null;
+    var lastBoundaryEndSegment = null;
     var hiddenTime = null; // Time when the tab was hidden
 
     // Adjust these variables to control speed and friction
-    const initialVelocityRange = [1, 2]; // Lower initial velocity
-    const frictionCoefficient = 1; // Lower friction coefficient
+    const initialVelocityRange = [0.01, 0.01]; // Lower initial velocity
+    const frictionCoefficient = 0; // Lower friction coefficient
     const mass = 1500; // Higher mass for slower deceleration
+
+    const boundaryStartOffset = 2; // Adjust this value as needed
+    const boundaryEndOffset = -4; // Adjust this value as needed
 
     function startFlipperAnimation() {
         $('.flipper').addClass('animate');
@@ -43,22 +48,50 @@
         $('.flipper').removeClass('animate');
     }
 
+
+
+
     function triggerFlipperAnimation(coords) {
-        const currentSegment = calculateSegment(coords.y / 2);
-        if (lastSegment === null) {
-            lastSegment = currentSegment; // Set lastSegment initially
-            return;
-        }
-        if (!initialFrameIgnored) {
-            initialFrameIgnored = true; // Ignore the first frame
-            return;
-        }
-        if (currentSegment !== lastSegment) {
-            startFlipperAnimation();
-            setTimeout(stopFlipperAnimation, 300); // Adjust the duration as needed
-            lastSegment = currentSegment;
-        }
+    const currentSegment = calculateSegment(coords.y / 2);
+    const boundaryStartSegment = calculateSegment((coords.y + boundaryStartOffset) / 2);
+    const boundaryEndSegment = calculateSegment((coords.y + boundaryEndOffset) / 2);
+
+    if (lastSegment === null) {
+        lastSegment = currentSegment; // Set lastSegment initially
+        lastBoundaryStartSegment = boundaryStartSegment;
+        lastBoundaryEndSegment = boundaryEndSegment;
+        return;
     }
+    if (!initialFrameIgnored) {
+        initialFrameIgnored = true; // Ignore the first frame
+        return;
+    }
+
+    if (currentSegment !== lastSegment) {
+        startFlipperAnimation();
+        setTimeout(stopFlipperAnimation, 300); // Adjust the duration as needed
+        lastSegment = currentSegment;
+    }
+
+    // Check if within boundary start
+    if (currentSegment === boundaryStartSegment && lastBoundaryStartSegment !== boundaryStartSegment) {
+        $('#current-section').text(`${currentSegment}+`);
+        console.log(`Entered boundary for segment ${currentSegment}`);
+        lastBoundaryStartSegment = boundaryStartSegment;
+    }
+
+    // Check if within boundary end
+    else if (currentSegment === boundaryEndSegment && lastBoundaryEndSegment !== boundaryEndSegment) {
+        $('#current-section').text(`${currentSegment}`);
+        console.log(`Exited boundary for segment ${currentSegment}`);
+        lastBoundaryEndSegment = boundaryEndSegment;
+    }
+}
+
+
+
+
+
 
     $.fn.momentus = function (cfg) {
         var now = Date.now || function () { return (new Date()).valueOf() },

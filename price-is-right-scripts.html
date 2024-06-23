@@ -26,6 +26,9 @@
     var velocity = { x: 0, y: 0 };
     var inertia_time = null;
     var isSpinning = false;
+    var initialFrameIgnored = false; // Flag to ignore the first frame
+    var lastSegment = null; // Initialize lastSegment
+    var hiddenTime = null; // Time when the tab was hidden
 
     // Adjust these variables to control speed and friction
     const initialVelocityRange = [1, 2]; // Lower initial velocity
@@ -42,10 +45,18 @@
 
     function triggerFlipperAnimation(coords) {
         const currentSegment = calculateSegment(coords.y / 2);
-        if (currentSegment !== triggerFlipperAnimation.lastSegment) {
+        if (lastSegment === null) {
+            lastSegment = currentSegment; // Set lastSegment initially
+            return;
+        }
+        if (!initialFrameIgnored) {
+            initialFrameIgnored = true; // Ignore the first frame
+            return;
+        }
+        if (currentSegment !== lastSegment) {
             startFlipperAnimation();
             setTimeout(stopFlipperAnimation, 300); // Adjust the duration as needed
-            triggerFlipperAnimation.lastSegment = currentSegment;
+            lastSegment = currentSegment;
         }
     }
 
@@ -105,6 +116,7 @@
 
                     $('#spinButton').prop('disabled', false); // Enable the spin button
 
+
                     // Stop the flipper animation
                     stopFlipperAnimation();
 
@@ -124,6 +136,8 @@
         return {
             startSpin: function () {
                 isSpinning = true;
+                initialFrameIgnored = false; // Reset the flag
+                lastSegment = null; // Reset lastSegment
                 inertia_time = now();
                 inertia();
             }
@@ -149,9 +163,18 @@
             velocity.y = initialVelocity;
             inertia_time = Date.now();
             momentusInstance.startSpin(); // Call the inertia function correctly
+        });
 
-            // Start the flipper animation
-            startFlipperAnimation();
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                hiddenTime = Date.now();
+            } else {
+                if (hiddenTime) {
+                    const elapsed = Date.now() - hiddenTime;
+                    inertia_time += elapsed; // Adjust inertia time by the elapsed hidden time
+                    hiddenTime = null;
+                }
+            }
         });
     });
 

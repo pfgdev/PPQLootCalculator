@@ -1,17 +1,26 @@
 <div class="section-container" style="padding-bottom: 5px; margin-bottom: 5px; margin-top: 5px; width: auto; max-width: var(--section-width);">
     <div class="section-head">Spin the Wheel</div>
-    <button id="spinButton">Spin</button>
+    <button id="spinButton" onclick="spinWheels()">Spin</button>
     <div class="section-body">
         <div class="flex-row" style="justify-content: center; align-items: center;">
-            <div class="framed-element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative;">
-                <div class="wheels">
+
+            <!-- Wheel 1 -->
+            <div class="element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative; padding: 14px; flex:none;">
+                <div class="flipper-container">
+                    <div class="flipper-bg"></div>
+                    <div id="flipper1" class="flipper"></div>
+                </div>
+            </div>
+            <div class="element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative; padding: 15px; flex:none;">
+                <div id="wheel1" class="wheels">
                     <div class="wheel">
+                        <!-- Wheel 1 Segments -->
                         <div data-index="0">
                             <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover" style="bottom: 4%; max-height: 63px;">
                                 <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
                                 <span class="wheel-dice-number" style="background: linear-gradient(315deg, red 36%, orange 42%, yellow 48%, green 54%, blue 60%, violet 66%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">0</span>
                             </div>
-                        </div>                   
+                        </div>
                         <div data-index="1">
                             <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-2 no-hover" style="bottom: 4%; max-height: 63px;">
                                 <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
@@ -68,14 +77,87 @@
                         </div>
                     </div>
                 </div>
-                <div class="flipper-container">
+            </div>
+
+            <!-- Wheel 2 -->
+            <div class="element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative; padding: 15px; flex: none;">
+                <div id="wheel2" class="wheels">
+                    <div class="wheel">
+                        <!-- Wheel 2 Segments -->
+                        <div data-index="0">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="background: linear-gradient(315deg, red 36%, orange 42%, yellow 48%, green 54%, blue 60%, violet 66%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">0</span>
+                            </div>
+                        </div>
+                        <div data-index="1">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-2 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-2-bg); --gradient-end: var(--rarity-color-2-text);">1</span>
+                            </div>
+                        </div>
+                        <div data-index="2">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-3 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-3-bg); --gradient-end: var(--rarity-color-3-text);">2</span>
+                            </div>
+                        </div>
+                        <div data-index="3">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-4 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-4-bg); --gradient-end: var(--rarity-color-4-text);">3</span>
+                            </div>
+                        </div>
+                        <div data-index="4">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-5 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-5-bg); --gradient-end: var(--rarity-color-5-text);">4</span>
+                            </div>
+                        </div>
+                        <div data-index="5">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-6 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-6-bg); --gradient-end: var(--rarity-color-6-text);">5</span>
+                            </div>
+                        </div>
+                        <div data-index="6">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-7 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-7-bg); --gradient-end: var(--rarity-color-7-text);">6</span>
+                            </div>
+                        </div>
+                        <div data-index="7">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-8 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-8-bg); --gradient-end: var(--rarity-color-8-text);">7</span>
+                            </div>
+                        </div>
+                        <div data-index="8">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-9 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-9-bg); --gradient-end: var(--rarity-color-9-text);">8</span>
+                            </div>
+                        </div>
+                        <div data-index="9">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-10 no-hover" style="bottom: 4%; max-height: 63px;">
+                                <img src="https://i.ibb.co/myTZPmS/d10-black-circle-128x.png">
+                                <span class="wheel-dice-number" style="--gradient-start: var(--rarity-color-10-bg); --gradient-end: var(--rarity-color-10-text);">9</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative; padding: 14px; flex:none;">
+                <div class="flipper-container" style="transform: scaleX(-1); left: 62.5%;">
                     <div class="flipper-bg"></div>
-                    <div class="flipper"></div>
+                    <div id="flipper2" class="flipper"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+
 
 
 

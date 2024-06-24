@@ -36,109 +36,123 @@
     let isAnimatingBackwards = false;
     let inBoundary = false; // New flag to track if we're within a boundary
     let flipperReturnTimer = null; // Timer to track flipper return
+    
 
     // Adjust these variables to control speed and friction
     const initialVelocityRange = [1, 2]; // Lower initial velocity
     const frictionCoefficient = 1; // Lower friction coefficient
-    const mass = 1500; // Higher mass for slower deceleration
+    const mass = 1000; // Higher mass for slower deceleration
+    const minResistanceFactor = 0.000005; // Minimum resistance factor 0.00001 final version
+    const maxResistanceFactor = 0.00001; // Maximum resistance factor
+    const maxFlipperAngle = 30; // Maximum flipper angle
+
 
     const boundaryStartOffset = 3; // Adjust this value as needed
     const boundaryEndOffset = -3.5; // Adjust this value as needed
 
-    function triggerFlipperAnimation(coords) {
-        const boundaryStartSegment = calculateSegment((coords.y + boundaryStartOffset) / 2);
-        const boundaryEndSegment = calculateSegment((coords.y + boundaryEndOffset) / 2);
 
-        if (lastSegment === null) {
-            lastSegment = boundaryStartSegment; // Set lastSegment initially
-            lastBoundaryStartSegment = boundaryStartSegment;
-            lastBoundaryEndSegment = boundaryEndSegment;
-            console.log('Initial segment setup');
-            return;
-        }
-        if (!initialFrameIgnored) {
-            initialFrameIgnored = true; // Ignore the first frame
-            console.log('Ignoring initial frame');
-            return;
-        }
+function triggerFlipperAnimation(coords) {
+    const boundaryStartSegment = calculateSegment((coords.y + boundaryStartOffset) / 2);
+    const boundaryEndSegment = calculateSegment((coords.y + boundaryEndOffset) / 2);
 
-        // Check if entering a new boundary
-        if (!inBoundary && boundaryStartSegment !== lastBoundaryStartSegment) {
-            inBoundary = true; // Mark as within boundary
-            lastBoundaryStartSegment = boundaryStartSegment;
+    if (lastSegment === null) {
+        lastSegment = boundaryStartSegment; // Set lastSegment initially
+        lastBoundaryStartSegment = boundaryStartSegment;
+        lastBoundaryEndSegment = boundaryEndSegment;
+        console.log('Initial segment setup');
+        return;
+    }
+    if (!initialFrameIgnored) {
+        initialFrameIgnored = true; // Ignore the first frame
+        console.log('Ignoring initial frame');
+        return;
+    }
 
-            // Calculate the start point of the boundary
-            boundaryStartPoint = coords.y;
-            // Calculate the end point of the boundary
-            boundaryEndPoint = boundaryStartPoint + Math.abs(boundaryEndOffset - boundaryStartOffset);
+    // Check if entering a new boundary
+    if (!inBoundary && boundaryStartSegment !== lastBoundaryStartSegment) {
+        inBoundary = true; // Mark as within boundary
+        lastBoundaryStartSegment = boundaryStartSegment;
 
-            // Reset flipper angle to ensure it starts fresh for the new segment
+        // Calculate the start point of the boundary
+        boundaryStartPoint = coords.y;
+        // Calculate the end point of the boundary
+        boundaryEndPoint = boundaryStartPoint + Math.abs(boundaryEndOffset - boundaryStartOffset);
+
+        // Reset flipper angle to ensure it starts fresh for the new segment
+        $('.flipper').css({
+            'transform': 'translate(20%, -50%) rotate(0deg)',
+            'transition': 'none'
+        });
+
+        console.log(`Entered boundary at ${coords.y}`);
+        console.log(`Calculated Boundary Start Point: ${boundaryStartPoint}, Calculated Boundary End Point: ${boundaryEndPoint}`);
+        isAnimatingBackwards = false;
+    }
+
+    // Check if exiting the boundary
+    if (inBoundary && coords.y >= boundaryEndPoint) {
+        inBoundary = false; // Mark as outside boundary
+        lastBoundaryEndSegment = boundaryEndSegment;
+        // Ensure the flipper moves to max angle when exiting the boundary
+        $('.flipper').css({
+            'transform': 'translate(20%, -50%) rotate(30deg)',
+            'transition': 'none'
+        });
+        console.log('Flipper set to 30deg at boundary exit');
+
+        // Start smooth transition back to 0 degrees
+        flipperReturnTimer = setTimeout(() => {
             $('.flipper').css({
                 'transform': 'translate(20%, -50%) rotate(0deg)',
-                'transition': 'none'
+                'transition': 'transform 0.1s ease-out'
             });
+            console.log('Flipper smoothly transitioning back to 0deg');
 
-            console.log(`Entered boundary at ${coords.y}`);
-            console.log(`Calculated Boundary Start Point: ${boundaryStartPoint}, Calculated Boundary End Point: ${boundaryEndPoint}`);
-            isAnimatingBackwards = false;
-        }
+            // Update the selected class once the flipper has returned to 0 degrees
+            updateSelectedClass();
+        }, 50); // Short delay to ensure the 30deg set completes before starting the transition
 
-        // Check if exiting the boundary
-        if (inBoundary && coords.y >= boundaryEndPoint) {
-            inBoundary = false; // Mark as outside boundary
-            lastBoundaryEndSegment = boundaryEndSegment;
-            // Ensure the flipper moves to max angle when exiting the boundary
-            $('.flipper').css({
-                'transform': 'translate(20%, -50%) rotate(30deg)',
-                'transition': 'none'
-            });
-            console.log('Flipper set to 30deg at boundary exit');
-
-            // Start smooth transition back to 0 degrees
-            flipperReturnTimer = setTimeout(() => {
-                $('.flipper').css({
-                    'transform': 'translate(20%, -50%) rotate(0deg)',
-                    'transition': 'transform 0.1s ease-out'
-                });
-                console.log('Flipper smoothly transitioning back to 0deg');
-
-                // Update the selected class once the flipper has returned to 0 degrees
-                updateSelectedClass();
-            }, 50); // Short delay to ensure the 30deg set completes before starting the transition
-
-            isAnimatingBackwards = true;
-            console.log(`Exited boundary at ${coords.y}`);
-        }
-
-        // New flipper rotation logic within the boundary
-        if (inBoundary && !isAnimatingBackwards) {
-            const distanceFromEndPoint = Math.abs(coords.y - boundaryEndPoint);
-            const boundaryRange = boundaryEndPoint - boundaryStartPoint;
-            const normalizedPosition = Math.max(0, Math.min(1, distanceFromEndPoint / boundaryRange));
-            const desiredFlipperAngle = 30 * (1 - normalizedPosition); // 0 degrees at max distance, 30 degrees at zero distance
-
-            // Set the flipper angle directly
-            $('.flipper').css({
-                'transform': `translate(20%, -50%) rotate(${desiredFlipperAngle}deg)`,
-                'transition': 'none'
-            });
-
-            // Log the details of the calculation
-            console.log(`Boundary Start Point: ${boundaryStartPoint}`);
-            console.log(`Current Position: ${coords.y}`);
-            console.log(`Boundary End Point: ${boundaryEndPoint}`);
-            console.log(`Remaining Position: ${distanceFromEndPoint}`);
-            console.log(`Normalized Position within boundary: ${(1 - normalizedPosition) * 100}%`);
-            console.log(`Desired Flipper Angle: ${desiredFlipperAngle}deg`);
-        }
-
-        // Reset boundary points when exiting the boundary
-        if (!inBoundary) {
-            boundaryStartPoint = null;
-            boundaryEndPoint = null;
-            console.log('Reset boundary points');
-        }
+        isAnimatingBackwards = true;
+        console.log(`Exited boundary at ${coords.y}`);
     }
+
+    // New flipper rotation logic within the boundary
+    if (inBoundary && !isAnimatingBackwards) {
+        const distanceFromEndPoint = Math.abs(coords.y - boundaryEndPoint);
+        const boundaryRange = boundaryEndPoint - boundaryStartPoint;
+        const normalizedPosition = Math.max(0, Math.min(1, distanceFromEndPoint / boundaryRange));
+        const desiredFlipperAngle = maxFlipperAngle * (1 - normalizedPosition); // 0 degrees at max distance, 30 degrees at zero distance
+
+        // Set the flipper angle directly
+        $('.flipper').css({
+            'transform': `translate(20%, -50%) rotate(${desiredFlipperAngle}deg)`,
+            'transition': 'none'
+        });
+
+        // Calculate resistance: proportional to the flipper's rotation angle
+        const resistanceFactor = minResistanceFactor + (maxResistanceFactor - minResistanceFactor) * (desiredFlipperAngle / maxFlipperAngle);
+        const resistance = resistanceFactor * desiredFlipperAngle;
+
+        // Apply the resistance to the wheel's velocity
+        velocity.y -= resistance;
+
+        // Log the details of the calculation
+        console.log(`Boundary Start Point: ${boundaryStartPoint}`);
+        console.log(`Current Position: ${coords.y}`);
+        console.log(`Boundary End Point: ${boundaryEndPoint}`);
+        console.log(`Remaining Position: ${distanceFromEndPoint}`);
+        console.log(`Normalized Position within boundary: ${(1 - normalizedPosition) * 100}%`);
+        console.log(`Desired Flipper Angle: ${desiredFlipperAngle}deg`);
+        console.log(`Resistance Factor: ${resistanceFactor}, Resistance: ${resistance}`);
+    }
+
+    // Reset boundary points when exiting the boundary
+    if (!inBoundary) {
+        boundaryStartPoint = null;
+        boundaryEndPoint = null;
+        console.log('Reset boundary points');
+    }
+}
 
     function updateSelectedClass() {
         const currentSegment = calculateSegment((current_coords.y + boundaryStartOffset) / 2);
@@ -170,7 +184,6 @@
 
         function inertia() {
     if (!isSpinning) {
-        return;
     }
 
     velocity.x = !isNaN(velocity.x) ? velocity.x : 0;
@@ -194,7 +207,7 @@
         triggerFlipperAnimation(current_coords);
 
         // If velocity is very low, consider the wheel stopped
-        if (Math.abs(velocity.y) < 0.001) {
+        if (velocity.y < 0.005) {
             isSpinning = false;
             // Wait for the flipper to return to 0 degrees before calling getFinalSegment
             setTimeout(() => {
@@ -258,6 +271,16 @@
             $('#spinButton').prop('disabled', true); // Disable the spin button
             let initialVelocity = Math.random() * (initialVelocityRange[1] - initialVelocityRange[0]) + initialVelocityRange[0]; // Updated initial velocity function
             velocity.y = initialVelocity;
+            inertia_time = Date.now();
+            momentusInstance.startSpin(); // Call the inertia function correctly
+
+            // Set the initial selected class when the spin starts
+            updateSelectedClass();
+        });
+
+        $('#otherButton').on('click', function () {
+            let initialVelocity = Math.random() * (initialVelocityRange[1] - initialVelocityRange[0]) + initialVelocityRange[0]; // Updated initial velocity function
+            velocity.y = -initialVelocity/100;
             inertia_time = Date.now();
             momentusInstance.startSpin(); // Call the inertia function correctly
 

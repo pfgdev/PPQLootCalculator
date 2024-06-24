@@ -7,11 +7,11 @@
                 <div class="wheels">
                     <div class="wheel">
                         <div data-index="0">
-                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover" style="bottom: 4%;">
+                            <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-5 no-hover" style="bottom: 4%;">
                                 <img src="https://i.ibb.co/B6vKL0V/floof-give-bone-128-b.png">
-                                <span class="icon-number bottom-right rarity-color-1">0</span>
+                                <span class="icon-number bottom-right rarity-color-5">4</span>
                             </div>
-                        </div>
+                        </div>                   
                         <div data-index="1">
                             <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-2 no-hover" style="bottom: 4%;">
                                 <img src="https://i.ibb.co/vPsjc6F/floof-concentrate-128-b.png">
@@ -68,8 +68,10 @@
                         </div>
                     </div>
                 </div>
-                <!-- Flipper -->
-                <div class="flipper"></div>
+                <div class="flipper-container">
+                    <div class="flipper-bg"></div>
+                    <div class="flipper"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -175,6 +177,14 @@
         background: hsla(324deg, 100%, 75%, 0.8);
     }
 
+    .flipper-container {
+        position: absolute;
+        top: 50%;
+        left: 43.5%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+    }
+
     .flipper {
         position: absolute;
         top: 50%;
@@ -182,10 +192,23 @@
         width: 0;
         height: 0;
         border-left: 20px solid red; /* Adjust size and color */
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        transform: translate(30%, -50%);
+        z-index: 11;
+    }
+
+    .flipper-bg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-left: 40px solid rgba(255, 0, 0, 0.5); /* Larger background */
+        border-top: 20px solid transparent;
+        border-bottom: 20px solid transparent;
         transform: translate(-50%, -50%);
-        z-index: 10;
+        z-index: 10; /* Behind the flipper */
     }
 
     .new-flipper {
@@ -202,6 +225,22 @@
     z-index: 10;
     transition: transform 0.1s ease-out; /* Ensure smooth transitions */
 }
+
+    .wheel1-icon-selected {
+        border-color: #FFD700; /* Gold border for selected state */
+        box-sizing: border-box; /* Ensures border is added outside of the element's size */
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.7); /* Optional glow effect */
+        background-color: #FFFACD; /* Light yellow background for selected state */
+        color: #FFD700; /* in case we have text */
+    }
+
+    .wheel2-icon-selected {
+        border-color: #FFD700; /* Gold border for selected state */
+        box-sizing: border-box; /* Ensures border is added outside of the element's size */
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.7); /* Optional glow effect */
+        background-color: #FFFACD; /* Light yellow background for selected state */
+        color: #FFD700; /* in case we have text */
+    }
     </style>
 
     

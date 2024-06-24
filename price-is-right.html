@@ -72,11 +72,6 @@
                 <div class="flipper"></div>
             </div>
         </div>
-        <div class="flex-row">
-            <div id="current-section" style="position: relative; top: -137px; left: 412px;">0
-                <span class="new-flipper"></span>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -191,22 +186,6 @@
         border-bottom: 10px solid transparent;
         transform: translate(-50%, -50%);
         z-index: 10;
-    }
-
-    .flipper.animate {
-        animation: flip 0.3s forwards; /* Adjust the duration as needed */
-    }
-
-    @keyframes flip {
-        0% {
-            transform: translate(-50%, -50%) rotate(0deg);
-        }
-        50% {
-            transform: translate(-50%, -50%) rotate(30deg);
-        }
-        100% {
-            transform: translate(-50%, -50%) rotate(0deg);
-        }
     }
 
     .new-flipper {

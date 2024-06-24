@@ -45,6 +45,7 @@
     const minResistanceFactor = 0.000005; // Minimum resistance factor 0.00001 final version
     const maxResistanceFactor = 0.00001; // Maximum resistance factor
     const maxFlipperAngle = 30; // Maximum flipper angle
+    
 
 
     const boundaryStartOffset = 3; // Adjust this value as needed
@@ -95,7 +96,7 @@ function triggerFlipperAnimation(coords) {
         lastBoundaryEndSegment = boundaryEndSegment;
         // Ensure the flipper moves to max angle when exiting the boundary
         $('.flipper').css({
-            'transform': 'translate(20%, -50%) rotate(30deg)',
+            'transform': `translate(20%, -50%) rotate(${maxFlipperAngle}deg)`,
             'transition': 'none'
         });
         console.log('Flipper set to 30deg at boundary exit');

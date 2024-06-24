@@ -278,16 +278,6 @@ function triggerFlipperAnimation(coords) {
             updateSelectedClass();
         });
 
-        $('#otherButton').on('click', function () {
-            let initialVelocity = Math.random() * (initialVelocityRange[1] - initialVelocityRange[0]) + initialVelocityRange[0]; // Updated initial velocity function
-            velocity.y = -initialVelocity/100;
-            inertia_time = Date.now();
-            momentusInstance.startSpin(); // Call the inertia function correctly
-
-            // Set the initial selected class when the spin starts
-            updateSelectedClass();
-        });
-
         document.addEventListener('visibilitychange', function () {
             if (document.hidden) {
                 hiddenTime = Date.now();

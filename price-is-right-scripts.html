@@ -3,13 +3,26 @@
 <script>
 (function ($) {
     const scalingFactor = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scaling-factor'));
+    console.log(scalingFactor);
 
     function applyTransforms(coords) {
+        // Select all div elements that are direct children of elements with the class 'wheel'
         $('.wheel > div').each(function (i) {
+            // Calculate the rotation angle for each div element
+            // coords.y / 2: Adjust the angle based on the y coordinate
+            // 360 / 10: Divide 360 degrees by the number of segments (10), each segment is 36 degrees
+            // (360 / 10) * i: Calculate the base angle for each div based on its index
+            // The final angle is the sum of the base angle and the adjustment based on the y coordinate
             var angle = -(coords.y / 2) + (360 / 10) * i;
+
+            // Apply the CSS transform to the current div element
+            // perspective(): Set the perspective distance for 3D transformations
+            // rotate3d(1, 0, 0, ${angle}deg): Rotate the element around the x-axis by the calculated angle in degrees
+            // translate3d(0, 0, ${122 * scalingFactor}px): Translate the element along the z-axis to move it closer to or further from the viewer
             $(this).css('transform', `perspective(${500 * scalingFactor}px) rotate3d(1, 0, 0, ${angle}deg) translate3d(0, 0, ${122 * scalingFactor}px)`);
         });
     }
+
 
     function calculateSegment(angle) {
         const segmentCount = 10;

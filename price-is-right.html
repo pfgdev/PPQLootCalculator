@@ -12,8 +12,8 @@
                 </div>
             </div>
             <div class="element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative; padding: 15px; flex:none;">
-                <div id="wheel1" class="wheels">
-                    <div class="wheel">
+                <div class="wheels">
+                    <div id="wheel1" class="wheel">
                         <!-- Wheel 1 Segments -->
                         <div data-index="0">
                             <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover" style="bottom: 4%; max-height: 63px;">
@@ -76,13 +76,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Wheel 2 -->
-            <div class="element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative; padding: 15px; flex: none;">
-                <div id="wheel2" class="wheels">
-                    <div class="wheel">
+                    <div id="wheel2" class="wheel">
                         <!-- Wheel 2 Segments -->
                         <div data-index="0">
                             <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover" style="bottom: 4%; max-height: 63px;">
@@ -147,6 +141,8 @@
                     </div>
                 </div>
             </div>
+
+
             <div class="element-container" style="height: 235px; justify-content: center; align-items: center; width: fit-content; position: relative; padding: 14px; flex:none;">
                 <div class="flipper-container" style="transform: scaleX(-1); left: 62.5%;">
                     <div class="flipper-bg"></div>
@@ -173,13 +169,13 @@
         top: 50%;
         padding: 0;
         text-align: center;
-        width: auto;
+        width: 168px;
         height: calc(10rem * var(--scaling-factor)); /* Adjust height using the scaling factor */
         user-select: none;
         transform: translate(0%, -50%);
 
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
     }
     
@@ -293,21 +289,6 @@
         transform: translate(-50%, -50%);
         z-index: 10; /* Behind the flipper */
     }
-
-    .new-flipper {
-    position: absolute;
-    top: 50%; /* Adjust as needed */
-    left: -250%; /* Adjust as needed */
-    width: 0;
-    height: 0;
-    border-left: 20px solid blue; /* Adjust size and color */
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    transform-origin: center center; /* Rotate around its center */
-    transform: translate(-50%, -50%) rotate(0deg); /* Start with no rotation */
-    z-index: 10;
-    transition: transform 0.1s ease-out; /* Ensure smooth transitions */
-}
 
     .wheel1-icon-selected {
         border-color: #FFD700; /* Gold border for selected state */

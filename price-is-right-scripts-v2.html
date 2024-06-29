@@ -1,0 +1,71 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    const scalingFactor = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scaling-factor'));
+
+    // Initialize wheel data
+    let wheels = [];
+
+    // Function to initialize wheels
+    function initializeWheels() {
+        $('.wheels .wheel').each(function (index) {
+            // Calculate a random initial segment
+            let initialSegment = Math.floor(Math.random() * 10); // 10 segments, 0-9
+            let initialPosition = (360 / 10) * initialSegment * 2; // Calculate the initial position in terms of degrees
+            wheels.push({
+                coords: { x: 0, y: initialPosition },
+                velocity: { x: 0, y: 0 },
+                element: $(this),
+                flipper: $(`#flipper${index + 1}`)
+            });
+        });
+    }
+
+    // Function to apply transforms to wheels
+    function applyTransforms() {
+        wheels.forEach((wheel, wheelIndex) => {
+            wheel.element.children('div').each(function (segmentIndex) {
+                var angle = -(wheel.coords.y / 2) + (360 / 10) * segmentIndex;
+                $(this).css('transform', `perspective(${500 * scalingFactor}px) rotate3d(1, 0, 0, ${angle}deg) translate3d(0, 0, ${122 * scalingFactor}px)`);
+            });
+        });
+    }
+
+    // Function to spin the wheels
+    function spinWheels() {
+        wheels.forEach(wheel => {
+            let initialVelocity = Math.random() * 10 + 10; // Random initial velocity
+            wheel.velocity.y = initialVelocity;
+
+            function updateWheel() {
+                // Apply friction to the wheel
+                wheel.velocity.y *= 0.98;
+                wheel.coords.y += wheel.velocity.y;
+
+                // Apply the transform to the wheel
+                applyTransforms();
+
+                // Continue the animation if the velocity is above a threshold
+                if (Math.abs(wheel.velocity.y) > 0.1) {
+                    requestAnimationFrame(updateWheel);
+                }
+            }
+
+            // Start the animation
+            updateWheel();
+        });
+    }
+
+
+
+
+    // Initialize wheels and apply transforms
+    initializeWheels();
+    applyTransforms();
+
+    $('#spinButton').on('click', function () {
+        spinWheels();
+    });
+});
+</script>

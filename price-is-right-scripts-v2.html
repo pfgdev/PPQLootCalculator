@@ -7,6 +7,19 @@ $(document).ready(function () {
     // Initialize wheel data
     let wheels = [];
 
+    // Adjust these variables to control speed and friction
+    const initialVelocityRanges = [
+        [1.5, 2.5], // Range for wheel 1
+        [1.5, 2.5]  // Range for wheel 2
+    ];
+    const frictionCoefficient = 1;
+    const mass = 1200;
+    const minResistanceFactor = 0.000002;
+    const maxResistanceFactor = 0.000008;
+    const maxFlipperAngle = 30;
+    const boundaryStartOffset = 3;
+    const boundaryEndOffset = -3.5;
+
     // Function to initialize wheels
     function initializeWheels() {
         $('.wheels .wheel').each(function (index) {
@@ -17,7 +30,16 @@ $(document).ready(function () {
                 coords: { x: 0, y: initialPosition },
                 velocity: { x: 0, y: 0 },
                 element: $(this),
-                flipper: $(`#flipper${index + 1}`)
+                flipper: $(`#flipper${index + 1}`),
+                lastBoundaryStartSegment: null,
+                lastBoundaryEndSegment: null,
+                isAnimatingBackwards: false,
+                inBoundary: false,
+                flipperReturnTimer: null,
+                boundaryStartPoint: null,
+                boundaryEndPoint: null,
+                inertia_time: null,
+                currentSegment: initialSegment // Track the current segment
             });
         });
     }
@@ -32,33 +54,143 @@ $(document).ready(function () {
         });
     }
 
+    function calculateSegment(angle) {
+        const segmentCount = 10;
+        const segmentAngle = 360 / segmentCount;
+        const offset = segmentAngle / 2; // Adjust this value to fine-tune alignment
+        let adjustedAngle = (angle + offset) % 360;
+        if (adjustedAngle < 0) {
+            adjustedAngle += 360;
+        }
+        return Math.floor(adjustedAngle / segmentAngle);
+    }
+
+    // Function to trigger flipper animation
+    function triggerFlipperAnimation(wheel) {
+        const boundaryStartSegment = calculateSegment((wheel.coords.y + boundaryStartOffset) / 2);
+        const boundaryEndSegment = calculateSegment((wheel.coords.y + boundaryEndOffset) / 2);
+
+        if (wheel.lastBoundaryStartSegment === null) {
+            wheel.lastBoundaryStartSegment = boundaryStartSegment;
+            wheel.lastBoundaryEndSegment = boundaryEndSegment;
+            return;
+        }
+
+        if (!wheel.inBoundary && boundaryStartSegment !== wheel.lastBoundaryStartSegment) {
+            wheel.inBoundary = true;
+            wheel.lastBoundaryStartSegment = boundaryStartSegment;
+            wheel.boundaryStartPoint = wheel.coords.y;
+            wheel.boundaryEndPoint = wheel.boundaryStartPoint + Math.abs(boundaryEndOffset - boundaryStartOffset);
+
+            wheel.flipper.css({
+                'transform': 'translate(20%, -50%) rotate(0deg)',
+                'transition': 'none'
+            });
+            wheel.isAnimatingBackwards = false;
+        }
+
+        if (wheel.inBoundary && wheel.coords.y >= wheel.boundaryEndPoint) {
+            wheel.inBoundary = false;
+            wheel.lastBoundaryEndSegment = boundaryEndSegment;
+            wheel.flipper.css({
+                'transform': `translate(20%, -50%) rotate(${maxFlipperAngle}deg)`,
+                'transition': 'none'
+            });
+
+            wheel.flipperReturnTimer = setTimeout(() => {
+                wheel.flipper.css({
+                    'transform': 'translate(20%, -50%) rotate(0deg)',
+                    'transition': 'transform 0.1s ease-out'
+                });
+
+                // Update the selected class once the flipper has returned to 0 degrees
+                updateSelectedClass(wheel);
+
+            }, 50);
+
+            wheel.isAnimatingBackwards = true;
+        }
+
+        if (wheel.inBoundary && !wheel.isAnimatingBackwards) {
+            const distanceFromEndPoint = Math.abs(wheel.coords.y - wheel.boundaryEndPoint);
+            const boundaryRange = wheel.boundaryEndPoint - wheel.boundaryStartPoint;
+            const normalizedPosition = Math.max(0, Math.min(1, distanceFromEndPoint / boundaryRange));
+            const desiredFlipperAngle = maxFlipperAngle * (1 - normalizedPosition);
+
+            wheel.flipper.css({
+                'transform': `translate(20%, -50%) rotate(${desiredFlipperAngle}deg)`,
+                'transition': 'none'
+            });
+
+            const resistanceFactor = minResistanceFactor + (maxResistanceFactor - minResistanceFactor) * (desiredFlipperAngle / maxFlipperAngle);
+            const resistance = resistanceFactor * desiredFlipperAngle;
+            wheel.velocity.y -= resistance;
+        }
+
+        if (!wheel.inBoundary) {
+            wheel.boundaryStartPoint = null;
+            wheel.boundaryEndPoint = null;
+        }
+    }
+
     // Function to spin the wheels
     function spinWheels() {
-        wheels.forEach(wheel => {
-            let initialVelocity = Math.random() * 10 + 10; // Random initial velocity
+        wheels.forEach((wheel, index) => {
+            const [minVelocity, maxVelocity] = initialVelocityRanges[index];
+            const initialVelocity = Math.random() * (maxVelocity - minVelocity) + minVelocity;
             wheel.velocity.y = initialVelocity;
 
+            // Set the initial selected class when the spin starts
+            updateSelectedClass(wheel);
+
             function updateWheel() {
-                // Apply friction to the wheel
-                wheel.velocity.y *= 0.98;
-                wheel.coords.y += wheel.velocity.y;
+                const now = Date.now();
+                const delta_time = now - wheel.inertia_time;
+                wheel.inertia_time = now;
 
-                // Apply the transform to the wheel
+                const new_velocity = wheel.velocity.y - (frictionCoefficient * (wheel.velocity.y / mass) * delta_time);
+                wheel.velocity.y = new_velocity;
+
+                const delta_y = wheel.velocity.y * delta_time;
+                wheel.coords.y += delta_y;
+
                 applyTransforms();
+                triggerFlipperAnimation(wheel);
 
-                // Continue the animation if the velocity is above a threshold
-                if (Math.abs(wheel.velocity.y) > 0.1) {
+                if (wheel.velocity.y > 0.005) {
                     requestAnimationFrame(updateWheel);
+                } else {
+                    getFinalSegment(wheel);
+                    $('#spinButton').prop('disabled', false);
                 }
             }
 
-            // Start the animation
+            wheel.inertia_time = Date.now();
             updateWheel();
         });
     }
 
+    function updateSelectedClass(wheel) {
+        const currentSegment = calculateSegment((wheel.coords.y + boundaryStartOffset) / 2);
+        wheel.currentSegment = currentSegment; // Update the wheel's current segment
+        wheel.element.children('div').find('.icon').removeClass('wheel-icon-selected');
+        const selectedDiv = wheel.element.children(`div[data-index="${currentSegment}"]`).find('.icon');
+        if (selectedDiv.length) {
+            selectedDiv.addClass('wheel-icon-selected');
+        }
+    }
 
-
+    function getFinalSegment(wheel) {
+        const currentSegment = wheel.currentSegment; // Use the tracked current segment
+        const selectedIcon = wheel.element.children(`div[data-index="${currentSegment}"]`).find('.icon');
+        if (selectedIcon.length) {
+            const segment = selectedIcon.closest('div[data-index]').attr('data-index');
+            const imgSrc = selectedIcon.find('img').attr('src');
+            const number = selectedIcon.find('.wheel-dice-number').text();
+            // console.log('Final Segment:', segment);
+            // console.log(`Selected Div Index: ${segment}, Image: ${imgSrc}, Number: ${number}`);
+        }
+    }
 
     // Initialize wheels and apply transforms
     initializeWheels();
@@ -66,6 +198,7 @@ $(document).ready(function () {
 
     $('#spinButton').on('click', function () {
         spinWheels();
+        $(this).prop('disabled', true);
     });
 });
 </script>

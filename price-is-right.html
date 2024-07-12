@@ -154,6 +154,9 @@
     <div class="flex-row">
         <div class="portal-container">
             <div class="portal">
+                <div class="sparkle-container inner-sparkle-container"></div>
+                <div class="sparkle-container middle-sparkle-container"></div>
+                <div class="sparkle-container outer-sparkle-container"></div>
                 <div id="circular-swirl-1" class="circular-swirl"></div>
                 <div id="circular-swirl-2" class="circular-swirl2"></div>
                 <div id="circular-swirl-3" class="circular-swirl3"></div>
@@ -323,11 +326,19 @@
 
 
 
+
+
+
+
+
+
     .portal-container {
     position: relative;
-    width: 220px; /* Set the width of the container */
-    height: 300px; /* Set the height of the container */
+    width: 220px; /* Set the final width */
+    height: 300px; /* Set the final height */
     margin: auto;
+    transform: scale(0); /* Start from scale 0 */
+    animation: portal-appear 10s ease-in-out infinite; /* Looping animation */
 }
 
 .portal {
@@ -338,22 +349,88 @@
     position: relative;
     overflow: hidden;
     border: none; /* Remove the solid border */
-    box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(123, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
-    animation: border-glow-animation 5s linear infinite; /* Adjusted for better visual effect */
+    box-shadow: 
+        0 0 10px 5px rgba(0, 123, 255, 0.6), 
+        0 0 20px 10px rgba(123, 0, 255, 0.6), 
+        inset 0 0 10px 5px rgba(0, 123, 255, 0.3), 
+        inset 0 0 20px 10px rgba(123, 0, 255, 0.3); /* Inner and outer glow */
+    animation: border-glow-animation 4s linear infinite; /* Adjusted for better visual effect */
+}
+
+@keyframes portal-appear {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    8% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    92% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+.portal::before, .portal::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: radial-gradient(circle, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.05));
+    animation: wave-animation 4s ease-in-out infinite;
+    mix-blend-mode: screen;
+    opacity: 0.6; /* Slightly increase opacity */
+}
+
+.portal::after {
+    animation-delay: 2s; /* Stagger the animations for a more dynamic effect */
+}
+
+@keyframes wave-animation {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-20px) scale(1.1); /* Increase the translate and scale values for more visibility */
+    }
 }
 
 @keyframes border-glow-animation {
     0% {
-        box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(123, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
+        box-shadow: 
+            0 0 10px 5px rgba(0, 123, 255, 0.6), 
+            0 0 20px 10px rgba(123, 0, 255, 0.6), 
+            inset 0 0 10px 5px rgba(0, 123, 255, 0.3), 
+            inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
     }
     33% {
-        box-shadow: 0 0 10px 5px rgba(123, 0, 255, 0.6), 0 0 20px 10px rgba(0, 123, 255, 0.6), inset 0 0 10px 5px rgba(123, 0, 255, 0.3), inset 0 0 20px 10px rgba(0, 123, 255, 0.3);
+        box-shadow: 
+            0 0 10px 5px rgba(123, 0, 255, 0.6), 
+            0 0 20px 10px rgba(0, 123, 255, 0.6), 
+            inset 0 0 10px 5px rgba(123, 0, 255, 0.3), 
+            inset 0 0 20px 10px rgba(0, 123, 255, 0.3);
     }
     66% {
-        box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(0, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(0, 0, 255, 0.3);
+        box-shadow: 
+            0 0 10px 5px rgba(0, 123, 255, 0.6), 
+            0 0 20px 10px rgba(0, 0, 255, 0.6), 
+            inset 0 0 10px 5px rgba(0, 123, 255, 0.3), 
+            inset 0 0 20px 10px rgba(0, 0, 255, 0.3);
     }
     100% {
-        box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(123, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
+        box-shadow: 
+            0 0 10px 5px rgba(0, 123, 255, 0.6), 
+            0 0 20px 10px rgba(123, 0, 255, 0.6), 
+            inset 0 0 10px 5px rgba(0, 123, 255, 0.3), 
+            inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
     }
 }
 
@@ -368,17 +445,17 @@
 }
 
 #circular-swirl-1 {
-    animation: swirl-animation 1s linear infinite, glow-animation-1 2s ease-in-out infinite; /* Adjusted for faster animation */
+    animation: swirl-animation 1s linear infinite, glow-animation-1 1.5s ease-in-out infinite; /* Adjusted for faster animation */
     background: conic-gradient(from 0deg, rgba(0, 123, 255, 0.05), rgba(0, 123, 255, 0.15) 25%, rgba(0, 123, 255, 0.05) 50%, rgba(0, 123, 255, 0.15) 75%, rgba(0, 123, 255, 0.05) 100%);
 }
 
 #circular-swirl-2 {
-    animation: swirl2-animation 1.5s linear infinite reverse, glow-animation-2 4s ease-in-out infinite; /* Adjusted for faster animation */
+    animation: swirl2-animation 1.5s linear infinite reverse, glow-animation-2 1.5s ease-in-out infinite; /* Adjusted for faster animation */
     background: conic-gradient(from 0deg, rgba(123, 0, 255, 0.05), rgba(143, 0, 255, 0.15) 25%, rgba(123, 0, 255, 0.05) 50%, rgba(143, 0, 255, 0.15) 75%, rgba(123, 0, 255, 0.05) 100%);
 }
 
 #circular-swirl-3 {
-    animation: swirl3-animation 1s linear infinite, glow-animation-3 3s ease-in-out infinite; /* Adjusted for faster animation */
+    animation: swirl3-animation 1s linear infinite, glow-animation-3 1.5s ease-in-out infinite; /* Adjusted for faster animation */
     background: conic-gradient(from 0deg, rgba(0, 123, 255, 0.05), rgba(0, 123, 255, 0.15) 25%, rgba(0, 123, 255, 0.05) 50%, rgba(0, 123, 255, 0.15) 75%, rgba(0, 123, 255, 0.05) 100%);
     transform: translate(-50%, -50%) rotate(90deg); /* Starting rotation */
 }
@@ -442,6 +519,113 @@
 
 
 
+/* Sparkle Container Rotation */
+.sparkle-container {
+    position: absolute;
+    left: -90px; /* Offset to center */
+    top: -50px;
+    width: 400px; /* Set all to 300px */
+    height: 400px; /* Set all to 300px */
+    border-radius: 50%;
+    overflow: hidden; /* Ensure overflow is hidden */
+    background: none; /* Ensure no background */
+    border: none; /* Ensure no border */
+}
+
+/* Inner Sparkle Container Rotation */
+.inner-sparkle-container {
+    animation: rotate-inner-sparkles 4.5s linear infinite; /* Slower rotational movement */
+}
+
+@keyframes rotate-inner-sparkles {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Middle Sparkle Container Rotation */
+.middle-sparkle-container {
+    animation: rotate-middle-sparkles 3s linear infinite; /* Medium rotational movement */
+}
+
+@keyframes rotate-middle-sparkles {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Outer Sparkle Container Rotation */
+.outer-sparkle-container {
+    animation: rotate-outer-sparkles 1.5s linear infinite; /* Faster rotational movement */
+}
+
+@keyframes rotate-outer-sparkles {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Sparkle Effect */
+.sparkle {
+    position: absolute;
+    width: 3px; /* Initial size */
+    height: 3px; /* Initial size */
+    background: rgba(255, 255, 255, 0.8); /* Increased opacity */
+    border-radius: 50%;
+    animation: sparkle-animation 2s linear infinite;
+    opacity: 0;
+}
+
+@keyframes sparkle-animation {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+        box-shadow: none;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.6), 0 0 20px 15px rgba(255, 255, 255, 0.4), 0 0 30px 25px rgba(255, 255, 255, 0.2);
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+        box-shadow: none;
+    }
+}
+
+
+
+
+
 
 
     </style>
+
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+    const innerSparkleContainer = document.querySelector('.inner-sparkle-container');
+    const middleSparkleContainer = document.querySelector('.middle-sparkle-container');
+    const outerSparkleContainer = document.querySelector('.outer-sparkle-container');
+
+    function addSparkles(container, count, minDistance, maxDistance, maxSize) {
+        for (let i = 0; i < count; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.classList.add('sparkle');
+            const distance = minDistance + Math.random() * (maxDistance - minDistance);
+            const angle = Math.random() * 2 * Math.PI;
+            sparkle.style.top = `${50 + distance * Math.sin(angle)}%`;
+            sparkle.style.left = `${50 + distance * Math.cos(angle)}%`;
+            sparkle.style.width = `${Math.random() * maxSize + 2}px`; // Random size between 2px and maxSize
+            sparkle.style.height = sparkle.style.width; // Keep it a circle
+            sparkle.style.animationDuration = `${Math.random() * 1.5 + 1}s`; // Random duration between 1s and 2.5s
+            sparkle.style.animationDelay = `${Math.random() * 2}s`;
+            container.appendChild(sparkle);
+        }
+    }
+
+    addSparkles(innerSparkleContainer, 10, 0, 30, 3); // 10 sparkles, min distance 0%, max distance 30%, max size 3px
+    addSparkles(middleSparkleContainer, 20, 20, 50, 4); // 20 sparkles, min distance 20%, max distance 60%, max size 4px
+    addSparkles(outerSparkleContainer, 30, 40, 65, 5); // 30 sparkles, min distance 50%, max distance 90%, max size 5px
+});
+
+
+
+    </script>

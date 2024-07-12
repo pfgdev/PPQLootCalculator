@@ -151,6 +151,17 @@
             </div>
         </div>
     </div>
+    <div class="flex-row">
+        <div class="portal-container">
+            <div class="portal">
+                <div id="circular-swirl-1" class="circular-swirl"></div>
+                <div id="circular-swirl-2" class="circular-swirl2"></div>
+                <div id="circular-swirl-3" class="circular-swirl3"></div>
+                <div class="particles"></div>
+                <div class="glow"></div>
+            </div>
+        </div>                                 
+    </div>
 </div>
 
 
@@ -309,7 +320,128 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    </style>
 
-    
-    
+
+
+    .portal-container {
+    position: relative;
+    width: 220px; /* Set the width of the container */
+    height: 300px; /* Set the height of the container */
+    margin: auto;
+}
+
+.portal {
+    width: 100%;
+    height: 100%;
+    border-radius: 50% / 50%;
+    background: radial-gradient(circle, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.05)), #000;
+    position: relative;
+    overflow: hidden;
+    border: none; /* Remove the solid border */
+    box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(123, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
+    animation: border-glow-animation 5s linear infinite; /* Adjusted for better visual effect */
+}
+
+@keyframes border-glow-animation {
+    0% {
+        box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(123, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
+    }
+    33% {
+        box-shadow: 0 0 10px 5px rgba(123, 0, 255, 0.6), 0 0 20px 10px rgba(0, 123, 255, 0.6), inset 0 0 10px 5px rgba(123, 0, 255, 0.3), inset 0 0 20px 10px rgba(0, 123, 255, 0.3);
+    }
+    66% {
+        box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(0, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(0, 0, 255, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 10px 5px rgba(0, 123, 255, 0.6), 0 0 20px 10px rgba(123, 0, 255, 0.6), inset 0 0 10px 5px rgba(0, 123, 255, 0.3), inset 0 0 20px 10px rgba(123, 0, 255, 0.3);
+    }
+}
+
+#circular-swirl-1, #circular-swirl-2, #circular-swirl-3 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px; /* Match the height of the container */
+    height: 300px; /* Match the height of the container */
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#circular-swirl-1 {
+    animation: swirl-animation 1s linear infinite, glow-animation-1 2s ease-in-out infinite; /* Adjusted for faster animation */
+    background: conic-gradient(from 0deg, rgba(0, 123, 255, 0.05), rgba(0, 123, 255, 0.15) 25%, rgba(0, 123, 255, 0.05) 50%, rgba(0, 123, 255, 0.15) 75%, rgba(0, 123, 255, 0.05) 100%);
+}
+
+#circular-swirl-2 {
+    animation: swirl2-animation 1.5s linear infinite reverse, glow-animation-2 4s ease-in-out infinite; /* Adjusted for faster animation */
+    background: conic-gradient(from 0deg, rgba(123, 0, 255, 0.05), rgba(143, 0, 255, 0.15) 25%, rgba(123, 0, 255, 0.05) 50%, rgba(143, 0, 255, 0.15) 75%, rgba(123, 0, 255, 0.05) 100%);
+}
+
+#circular-swirl-3 {
+    animation: swirl3-animation 1s linear infinite, glow-animation-3 3s ease-in-out infinite; /* Adjusted for faster animation */
+    background: conic-gradient(from 0deg, rgba(0, 123, 255, 0.05), rgba(0, 123, 255, 0.15) 25%, rgba(0, 123, 255, 0.05) 50%, rgba(0, 123, 255, 0.15) 75%, rgba(0, 123, 255, 0.05) 100%);
+    transform: translate(-50%, -50%) rotate(90deg); /* Starting rotation */
+}
+
+@keyframes swirl-animation {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes swirl2-animation {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
+@keyframes swirl3-animation {
+    0% { transform: translate(-50%, -50%) rotate(90deg); } /* Initial rotation to match the transform */
+    100% { transform: translate(-50%, -50%) rotate(450deg); } /* 360deg + initial rotation */
+}
+
+@keyframes glow-animation-1 {
+    0%, 100% { opacity: 1; filter: brightness(1) blur(0px); }
+    50% { opacity: 0.5; filter: brightness(1.5) blur(2px); }
+}
+
+@keyframes glow-animation-2 {
+    0%, 100% { opacity: 1; filter: brightness(1) blur(0px); }
+    25%, 75% { opacity: 0.5; filter: brightness(1.5) blur(2px); }
+}
+
+@keyframes glow-animation-3 {
+    0%, 100% { opacity: 1; filter: brightness(1) blur(0px); }
+    33%, 66% { opacity: 0.5; filter: brightness(1.5) blur(2px); }
+}
+
+.particles {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px; /* Match the height of the container */
+    height: 300px; /* Match the height of the container */
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(0, 123, 255, 0.3) 10%, transparent 70%);
+    animation: particles-animation 3s ease-in-out infinite;
+}
+
+@keyframes particles-animation {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.glow {
+    box-shadow: 0 0 50px 30px rgba(0, 123, 255, 0.9);
+    width: 100%;
+    height: 100%;
+    border-radius: 50% / 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+
+
+
+
+    </style>

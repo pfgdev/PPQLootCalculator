@@ -1,0 +1,583 @@
+<!-- spell-v2.css.html -->
+<style>
+  .spell-v2 {
+    --spell-v2-gap: 20px;
+    --spell-v2-ink: #223049;
+    --spell-v2-muted: #5e6d87;
+    --spell-v2-edge: #d5deef;
+    --spell-v2-panel: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    --spell-v2-selected: #fef7e2;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 12px 20px;
+  }
+
+  .spell-v2 .v2-card {
+    border-color: var(--spell-v2-edge);
+    background: var(--spell-v2-panel);
+    box-shadow: 0 10px 24px rgba(25, 64, 122, 0.08);
+  }
+
+  .spell-v2 .v2-card-header {
+    color: var(--spell-v2-ink);
+    background: linear-gradient(90deg, #e9f8f8 0%, #f7fdfe 72%);
+  }
+
+  .spell-v2-level-grid {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 8px;
+    justify-items: center;
+  }
+
+  .spell-v2-level-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .spell-v2-level-shell {
+    position: relative;
+    display: inline-flex;
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    box-shadow: 0 3px 10px rgba(20, 43, 82, 0.15);
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .spell-v2-level-shell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .spell-v2-level-num {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #25334d;
+    border: 1px solid rgba(35, 49, 75, 0.25);
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .spell-v2-level-btn:hover .spell-v2-level-shell {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 16px rgba(15, 46, 95, 0.18);
+  }
+
+  .spell-v2-level-btn.is-selected .spell-v2-level-shell {
+    border-color: #f2c84d;
+    box-shadow: 0 0 0 2px rgba(242, 200, 77, 0.3), 0 10px 18px rgba(76, 58, 20, 0.2);
+    background: var(--spell-v2-selected);
+    transform: scale(1.12);
+  }
+
+  .spell-v2-level-btn.is-selected .spell-v2-level-shell img {
+    transform: scale(1.08);
+  }
+
+  .spell-v2-level-rarity-1 { background: #f2f2f2; }
+  .spell-v2-level-rarity-2 { background: #ebffe8; }
+  .spell-v2-level-rarity-3 { background: #dfffe5; }
+  .spell-v2-level-rarity-4 { background: #e2f4ff; }
+  .spell-v2-level-rarity-5 { background: #d2efff; }
+  .spell-v2-level-rarity-6 { background: #efe9ff; }
+  .spell-v2-level-rarity-7 { background: #e7dcff; }
+  .spell-v2-level-rarity-8 { background: #fff0de; }
+  .spell-v2-level-rarity-9 { background: #ffe4d5; }
+  .spell-v2-level-rarity-10 { background: #ffd9d9; }
+
+  .spell-v2-status {
+    font-style: italic;
+    color: var(--spell-v2-muted);
+    text-align: center;
+    min-height: 22px;
+  }
+
+  .spell-v2-status.is-error {
+    color: #b33f46;
+  }
+
+  .spell-v2-workspace {
+    margin-top: var(--spell-v2-gap);
+    display: grid;
+    gap: var(--spell-v2-gap);
+    align-items: start;
+    min-height: 760px;
+  }
+
+  .spell-v2-list-panel {
+    min-width: 0;
+  }
+
+  .spell-v2-detail-panel {
+    min-width: 0;
+  }
+
+  .spell-v2-detail-title {
+    min-height: 62px;
+    display: flex;
+    align-items: center;
+  }
+
+  .spell-v2-filter-label {
+    display: block;
+    text-align: left;
+    color: var(--spell-v2-muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .spell-v2-filter-input {
+    width: 100%;
+    border: 1px solid #c2cde4;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .spell-v2-filter-input:focus {
+    outline: 2px solid rgba(31, 111, 235, 0.25);
+    border-color: #5e89cf;
+  }
+
+  .spell-v2-list-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .spell-v2-list-scroll {
+    border: none;
+    border-radius: 0;
+    overflow-y: scroll;
+    max-height: 600px;
+    background: transparent;
+    padding-right: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .spell-v2-list-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .spell-v2-list-wrap {
+    border: 1px solid #d6dff1;
+    border-radius: 10px;
+    overflow: visible;
+    max-height: none;
+    background: #fff;
+  }
+
+  .spell-v2-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .spell-v2-list-table th,
+  .spell-v2-list-table td {
+    border-bottom: 1px solid #e2e9f5;
+    padding: 7px 6px;
+  }
+
+  .spell-v2-list-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #41527a;
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .spell-v2-list-table th:first-child,
+  .spell-v2-list-table td:first-child {
+    width: 74px;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .spell-v2-spell-btn {
+    border: none;
+    background: transparent;
+    color: #233350;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .spell-v2-row:hover td {
+    background: #eef8ff;
+  }
+
+  .spell-v2-row {
+    cursor: pointer;
+  }
+
+  .spell-v2-row-reroll {
+    cursor: default;
+  }
+
+  .spell-v2-row-reroll td {
+    background: #f6f8fc;
+  }
+
+  .spell-v2-row-reroll:hover td {
+    background: #f6f8fc;
+  }
+
+  .spell-v2-row.is-selected td {
+    background: #fff8e5;
+    border-bottom-color: #ecd8a4;
+  }
+
+  .spell-v2-row-reroll .spell-v2-spell-btn {
+    color: #4f607d;
+    cursor: default;
+    font-style: italic;
+    pointer-events: none;
+  }
+
+  .spell-v2-spell-btn:disabled {
+    opacity: 1;
+  }
+
+  .spell-v2-empty {
+    text-align: center;
+    color: #677898;
+    padding: 14px;
+  }
+
+  .spell-v2-detail-panel .v2-card-body {
+    max-height: 670px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .spell-v2-detail-panel .v2-card-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .spell-v2-facts-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .spell-v2-facts-top,
+  .spell-v2-facts-bottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .spell-v2-facts-mid {
+    margin-top: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .spell-v2-fact {
+    border: 1px solid #dce4f3;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    text-align: center;
+  }
+
+  .spell-v2-fact-label {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #5f718f;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .spell-v2-fact-value {
+    font-size: 23px;
+    font-weight: 700;
+    color: #223049;
+    line-height: 1.2;
+  }
+
+  .spell-v2-facts-mid .spell-v2-fact-value,
+  .spell-v2-facts-bottom .spell-v2-fact-value {
+    font-size: 18px;
+  }
+
+  .spell-v2-components-items {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .spell-v2-component-icon {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border: 1px solid #c8d2e6;
+    border-radius: 8px;
+    background-color: #e0e0e0;
+    overflow: hidden;
+    opacity: 0.32;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .spell-v2-component-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .spell-v2-component-icon span {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(36, 48, 73, 0.3);
+    color: #243049;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .spell-v2-component-icon.is-on {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+
+  .spell-v2-component-icon-duration {
+    margin: 0 auto 8px;
+  }
+
+  .spell-v2-material-text {
+    color: #495971;
+    font-style: italic;
+    min-height: 20px;
+    line-height: 1.32;
+    font-size: 14px;
+  }
+
+  .spell-v2-description-wrap {
+    margin-top: 10px;
+    position: relative;
+  }
+
+  .spell-v2-description {
+    border: 1px solid #dbe4f3;
+    border-radius: 10px;
+    background: #fff;
+    padding: 12px;
+    color: #2d3a53;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    min-height: 190px;
+    text-align: left;
+    font-size: 15px;
+  }
+
+  .spell-v2-facts-bottom {
+    margin-top: 10px;
+  }
+
+  .spell-v2-meta-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    color: #485a77;
+    font-style: italic;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .spell-v2-detail-panel .v2-card-footer {
+    padding-top: 6px;
+  }
+
+  .spell-v2-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .spell-v2-loading-inline {
+    margin-top: 10px;
+    margin-bottom: 0;
+  }
+
+  .spell-v2-loading-overlay {
+    position: absolute;
+    inset: 0;
+    border: 1px solid #dbe4f3;
+    border-radius: 10px;
+    background: rgba(248, 251, 255, 0.96);
+    z-index: 2;
+  }
+
+  .spell-v2-loading-icon {
+    width: 142px;
+    height: 142px;
+    border-radius: 0;
+    overflow: visible;
+    border: none;
+    box-shadow: none;
+    animation: fetch-bounce 1.5s infinite;
+  }
+
+  .spell-v2-loading-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    animation: fetch-image-swap 1s infinite;
+  }
+
+  .spell-v2-loading-text {
+    color: #4f6282;
+    font-style: italic;
+    font-size: 14px;
+  }
+
+  .spell-v2-loading[hidden] {
+    display: none;
+  }
+
+  @keyframes fetch-bounce {
+    0%, 5%, 35%, 65%, 100% {
+      transform: translateY(0);
+    }
+    25% {
+      transform: translateY(-10px) rotate(-2deg);
+    }
+    50% {
+      transform: translateY(-5px) rotate(2deg);
+    }
+  }
+
+  @keyframes fetch-image-swap {
+    0%, 100% {
+      content: url('https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png');
+    }
+    50% {
+      content: url('https://i.ibb.co/HTGHfXp/floof-fetch-scroll-A-128.png');
+    }
+  }
+
+  @media (min-width: 980px) {
+    .spell-v2-workspace {
+      grid-template-columns: minmax(0, 1fr) 0fr;
+      transition: grid-template-columns 280ms ease;
+    }
+
+    .spell-v2 .spell-v2-detail-panel {
+      opacity: 0;
+      transform: translateX(24px);
+      pointer-events: none;
+      transition: opacity 240ms ease, transform 240ms ease;
+      overflow: hidden;
+    }
+
+    .spell-v2.spell-v2-has-detail .spell-v2-workspace {
+      grid-template-columns: minmax(340px, 0.43fr) minmax(460px, 0.57fr);
+    }
+
+    .spell-v2.spell-v2-has-detail .spell-v2-detail-panel {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+  }
+
+  @media (max-width: 1100px) {
+    .spell-v2-level-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 979px) {
+    .spell-v2-workspace {
+      grid-template-columns: 1fr;
+      min-height: 0;
+    }
+
+    .spell-v2-detail-panel {
+      display: none;
+    }
+
+    .spell-v2.spell-v2-has-detail .spell-v2-detail-panel {
+      display: block;
+    }
+
+    .spell-v2-detail-panel .v2-card-body {
+      max-height: none;
+      overflow: visible;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .spell-v2 {
+      padding: 0 8px 16px;
+    }
+
+    .spell-v2-level-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .spell-v2-level-shell {
+      width: 66px;
+      height: 66px;
+    }
+
+    .spell-v2-list-columns {
+      grid-template-columns: 1fr;
+    }
+
+    .spell-v2-list-scroll {
+      max-height: 540px;
+    }
+
+    .spell-v2-facts-top,
+    .spell-v2-facts-mid,
+    .spell-v2-facts-bottom,
+    .spell-v2-meta-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

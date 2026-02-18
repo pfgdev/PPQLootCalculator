@@ -1,0 +1,64 @@
+<!-- goldcalculatorv2-shell.html -->
+<div id="goldV2Root" class="gold-v2">
+  <div class="gold-v2-layout">
+    <section class="v2-card v2-enemies-card">
+      <div class="v2-card-header">Step 1: Enemies</div>
+      <div class="v2-card-body">
+        <table id="goldV2EnemyTable" class="gold-v2-table">
+          <thead>
+            <tr>
+              <th>Enemy CR</th>
+              <th>Number Killed</th>
+              <th>Remove</th>
+            </tr>
+          </thead>
+          <tbody id="goldV2EnemyTableBody"></tbody>
+        </table>
+      </div>
+      <div class="v2-card-footer">
+        <button id="goldV2AddEnemyBtn" class="button gold-v2-primary" type="button">Add Enemy</button>
+      </div>
+    </section>
+
+    <section class="v2-card v2-check-card">
+      <div class="v2-card-header">Step 2: Check</div>
+      <div class="v2-card-body">
+        <div class="gold-v2-check-wrap">
+          <div class="gold-v2-label">Investigation Check</div>
+          <div class="gold-v2-stepper" role="group" aria-label="Investigation check controls">
+            <button class="gold-v2-stepper-btn" type="button" data-action="check-dec" aria-label="Decrease investigation check">&#9664;</button>
+            <div id="goldV2CheckValue" class="gold-v2-stepper-value" aria-live="polite">10</div>
+            <button class="gold-v2-stepper-btn" type="button" data-action="check-inc" aria-label="Increase investigation check">&#9654;</button>
+          </div>
+        </div>
+      </div>
+      <div class="v2-card-footer gold-v2-actions">
+        <button class="button gold-v2-primary" type="button" data-action="calculate">Calculate</button>
+        <button class="button gold-v2-secondary" type="button" data-action="reset">Reset</button>
+      </div>
+      <div class="v2-card-footer">
+        <div id="goldV2ProgressMessage" class="progress-message" hidden>Calculating, please wait...</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="gold-v2-results-row">
+    <section class="v2-card">
+      <div class="v2-card-header">Step 3: Results</div>
+      <div class="v2-card-body gold-v2-results-grid">
+        <div class="gold-v2-result-item">
+          <div class="gold-v2-result-label">Expected Gold</div>
+          <div id="goldV2ExpectedGold" class="gold-v2-result-value">--</div>
+        </div>
+        <div class="gold-v2-result-item">
+          <div class="gold-v2-result-label">Dice Notation</div>
+          <div id="goldV2DiceNotation" class="gold-v2-result-value">--</div>
+        </div>
+        <div class="gold-v2-result-item">
+          <div class="gold-v2-result-label">Query Time</div>
+          <div id="goldV2QueryTime" class="gold-v2-result-value">--</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

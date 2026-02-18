@@ -1,0 +1,193 @@
+<!-- spellscrollsv2-shell.html -->
+<div id="spellV2Root" class="spell-v2">
+  <section class="v2-card">
+    <div class="v2-card-header">Step 1: Select Spell Level</div>
+    <div class="v2-card-body">
+      <div class="spell-v2-level-grid">
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="0" aria-label="Cantrip level">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-1">
+            <img src="https://i.ibb.co/MfrzVf1/spell-scroll-D-128x.png" alt="Cantrip scroll">
+            <span class="spell-v2-level-num">0</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="1" aria-label="Level 1">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-2">
+            <img src="https://i.ibb.co/5sNJD7G/spell-scroll-C-128x.png" alt="Level 1 scroll">
+            <span class="spell-v2-level-num">1</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="2" aria-label="Level 2">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-3">
+            <img src="https://i.ibb.co/0jR2phB/spell-scroll-G-128x.png" alt="Level 2 scroll">
+            <span class="spell-v2-level-num">2</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="3" aria-label="Level 3">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-4">
+            <img src="https://i.ibb.co/HBHvVdx/spell-scroll-J-128x.png" alt="Level 3 scroll">
+            <span class="spell-v2-level-num">3</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="4" aria-label="Level 4">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-5">
+            <img src="https://i.ibb.co/XV7kxBs/spell-scroll-E-128x.png" alt="Level 4 scroll">
+            <span class="spell-v2-level-num">4</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="5" aria-label="Level 5">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-6">
+            <img src="https://i.ibb.co/W5LY3bX/spell-scroll-H-128x.png" alt="Level 5 scroll">
+            <span class="spell-v2-level-num">5</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="6" aria-label="Level 6">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-7">
+            <img src="https://i.ibb.co/7vHg9ns/spell-scroll-B-128x.png" alt="Level 6 scroll">
+            <span class="spell-v2-level-num">6</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="7" aria-label="Level 7">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-8">
+            <img src="https://i.ibb.co/5r8pcMq/spell-scroll-F-128x.png" alt="Level 7 scroll">
+            <span class="spell-v2-level-num">7</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="8" aria-label="Level 8">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-9">
+            <img src="https://i.ibb.co/rptjmBW/spell-scroll-I-128x.png" alt="Level 8 scroll">
+            <span class="spell-v2-level-num">8</span>
+          </span>
+        </button>
+        <button class="spell-v2-level-btn" type="button" data-action="pick-level" data-level="9" aria-label="Level 9">
+          <span class="spell-v2-level-shell spell-v2-level-rarity-10">
+            <img src="https://i.ibb.co/Pwsk3pw/spell-scroll-A-128x.png" alt="Level 9 scroll">
+            <span class="spell-v2-level-num">9</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div id="spellV2Workspace" class="spell-v2-workspace">
+    <section class="v2-card spell-v2-list-panel">
+      <div class="v2-card-header">Step 2: Select Spell</div>
+      <div class="v2-card-body">
+        <label class="spell-v2-filter-label" for="spellV2FilterInput">Filter Current Level</label>
+        <input id="spellV2FilterInput" class="spell-v2-filter-input" type="search" placeholder="Type spell name...">
+
+        <div id="spellV2ListScroll" class="spell-v2-list-scroll">
+          <div class="spell-v2-list-columns">
+            <div class="spell-v2-list-wrap">
+              <table class="spell-v2-list-table" aria-label="Spell list column A">
+                <thead>
+                  <tr>
+                    <th>Range</th>
+                    <th>Spell</th>
+                  </tr>
+                </thead>
+                <tbody id="spellV2ListBodyA">
+                  <tr><td colspan="2" class="spell-v2-empty">Pick a spell level to begin.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="spell-v2-list-wrap">
+              <table class="spell-v2-list-table" aria-label="Spell list column B">
+                <thead>
+                  <tr>
+                    <th>Range</th>
+                    <th>Spell</th>
+                  </tr>
+                </thead>
+                <tbody id="spellV2ListBodyB">
+                  <tr><td colspan="2" class="spell-v2-empty">Pick a spell level to begin.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="spellV2ListLoading" class="spell-v2-loading spell-v2-loading-inline" hidden>
+          <div class="spell-v2-loading-icon">
+            <img src="https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png" alt="Dog fetching spell scroll">
+          </div>
+          <div class="spell-v2-loading-text">Floof is fetching spell scrolls...</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="spellV2DetailPanel" class="v2-card spell-v2-detail-panel">
+      <div class="spell-v2-detail-header">
+        <div id="spellV2DetailTitle" class="v2-card-header spell-v2-detail-title">Select a Spell</div>
+      </div>
+      <div class="v2-card-body">
+        <div class="spell-v2-facts-grid spell-v2-facts-top">
+          <div class="spell-v2-fact">
+            <div class="spell-v2-fact-label">Cast Time</div>
+            <div id="spellV2CastTime" class="spell-v2-fact-value">--</div>
+          </div>
+          <div class="spell-v2-fact">
+            <div class="spell-v2-fact-label">Range/Area</div>
+            <div id="spellV2Range" class="spell-v2-fact-value">--</div>
+          </div>
+        </div>
+
+        <div class="spell-v2-facts-grid spell-v2-facts-mid">
+          <div class="spell-v2-fact">
+            <div class="spell-v2-fact-label">Components</div>
+            <div class="spell-v2-components-items">
+              <div id="spellV2CompV" class="spell-v2-component-icon">
+                <img src="https://i.ibb.co/vqR6TW1/floof-bark-128.png" alt="Verbal component">
+                <span>V</span>
+              </div>
+              <div id="spellV2CompS" class="spell-v2-component-icon">
+                <img src="https://i.ibb.co/hL5qBwc/floof-wave-hand-128.png" alt="Somatic component">
+                <span>S</span>
+              </div>
+              <div id="spellV2CompM" class="spell-v2-component-icon">
+                <img src="https://i.ibb.co/B6vKL0V/floof-give-bone-128-b.png" alt="Material component">
+                <span>M</span>
+              </div>
+            </div>
+            <div id="spellV2MaterialText" class="spell-v2-material-text"></div>
+          </div>
+          <div class="spell-v2-fact">
+            <div class="spell-v2-fact-label">Duration</div>
+            <div id="spellV2CompC" class="spell-v2-component-icon spell-v2-component-icon-duration">
+              <img src="https://i.ibb.co/vPsjc6F/floof-concentrate-128-b.png" alt="Concentration component">
+              <span>C</span>
+            </div>
+            <div id="spellV2Duration" class="spell-v2-fact-value">--</div>
+          </div>
+        </div>
+
+        <div class="spell-v2-description-wrap">
+          <div id="spellV2Description" class="spell-v2-description">Pick a spell to view details.</div>
+          <div id="spellV2DetailLoading" class="spell-v2-loading spell-v2-loading-overlay" hidden>
+            <div class="spell-v2-loading-icon">
+              <img src="https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png" alt="Dog fetching spell details">
+            </div>
+            <div class="spell-v2-loading-text">Floof is fetching spell details...</div>
+          </div>
+        </div>
+
+        <div class="spell-v2-facts-grid spell-v2-facts-bottom">
+          <div class="spell-v2-fact">
+            <div class="spell-v2-fact-label">Damage Type</div>
+            <div id="spellV2DamageEffect" class="spell-v2-fact-value">--</div>
+          </div>
+          <div class="spell-v2-fact">
+            <div class="spell-v2-fact-label">Saving Throw</div>
+            <div id="spellV2AttackSave" class="spell-v2-fact-value">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="v2-card-footer">
+        <div class="spell-v2-meta-row">
+          <div id="spellV2MetaLevel">--</div>
+          <div id="spellV2MetaSchool">--</div>
+          <div id="spellV2MetaSource">--</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

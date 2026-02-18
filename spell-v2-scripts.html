@@ -1,0 +1,413 @@
+<!-- spell-v2-scripts.html -->
+<script>
+  (function () {
+    let root;
+    let listStatus;
+    let listBodyA;
+    let listBodyB;
+    let filterInput;
+    let listLoadingNode;
+    let detailLoadingNode;
+
+    let detailTitle;
+    let castTimeNode;
+    let rangeNode;
+    let durationNode;
+    let attackSaveNode;
+    let damageEffectNode;
+    let componentVNode;
+    let componentSNode;
+    let componentMNode;
+    let componentCNode;
+    let materialNode;
+    let descriptionNode;
+    let metaLevelNode;
+    let metaSchoolNode;
+    let metaSourceNode;
+
+    let currentLevel = null;
+    let currentSpells = [];
+    let selectedSpellIndex = null;
+    let listRequestToken = 0;
+    let detailRequestToken = 0;
+
+    function isReRollSpell(spell) {
+      const name = String((spell && spell.name) || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]/g, "");
+      return name === "reroll";
+    }
+
+    function normalizeSpellRows(rawRows, level) {
+      const sourceRows = Array.isArray(rawRows) ? rawRows : [];
+      const baseRows = [];
+
+      sourceRows.forEach(function (spell, sourceIndex) {
+        if (!spell || isReRollSpell(spell)) return;
+        const normalizedSpell = Object.assign({}, spell);
+        normalizedSpell.detailIndex = sourceIndex;
+        normalizedSpell.isReRoll = false;
+        baseRows.push(normalizedSpell);
+      });
+
+      if (!baseRows.length) return [];
+
+      const rangePerSpell = Math.max(1, Math.floor(100 / baseRows.length));
+      const normalizedRows = baseRows.map(function (spell, visualIndex) {
+        const start = visualIndex * rangePerSpell + 1;
+        const end = (visualIndex + 1) * rangePerSpell;
+        return Object.assign({}, spell, {
+          diceRange: String(start) + "-" + String(end)
+        });
+      });
+
+      const lastEnd = rangePerSpell * baseRows.length;
+      if (lastEnd < 100) {
+        normalizedRows.push({
+          diceRange: String(lastEnd + 1) + "-100",
+          name: "Re-Roll",
+          level: level,
+          isReRoll: true,
+          detailIndex: -1
+        });
+      }
+
+      return normalizedRows;
+    }
+
+    function toBool(value) {
+      if (typeof value === "boolean") return value;
+      if (typeof value === "number") return value !== 0;
+      if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "y";
+      }
+      return false;
+    }
+
+    function setStatus(node, message, isError) {
+      if (!node) return;
+      node.textContent = message || "";
+      node.classList.toggle("is-error", !!isError);
+    }
+
+    function setListLoading(isLoading) {
+      if (listLoadingNode) {
+        listLoadingNode.hidden = !isLoading;
+      }
+    }
+
+    function setDetailLoading(isLoading) {
+      if (detailLoadingNode) {
+        detailLoadingNode.hidden = !isLoading;
+      }
+    }
+
+    function toggleDetailPanel(show) {
+      if (root) {
+        root.classList.toggle("spell-v2-has-detail", !!show);
+      }
+    }
+
+    function setLevelSelection(level) {
+      root.querySelectorAll('[data-action="pick-level"]').forEach(function (button) {
+        button.classList.toggle("is-selected", Number(button.getAttribute("data-level")) === level);
+      });
+    }
+
+    function clearTBody(tbody) {
+      while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    }
+
+    function addEmptyRow(tbody, message) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 2;
+      cell.className = "spell-v2-empty";
+      cell.textContent = message;
+      row.appendChild(cell);
+      tbody.appendChild(row);
+    }
+
+    function getFilteredRows() {
+      const term = filterInput.value.trim().toLowerCase();
+      return currentSpells
+        .map(function (spell, index) { return { spell: spell, index: index }; })
+        .filter(function (item) {
+          return !term || (item.spell.name || "").toLowerCase().indexOf(term) !== -1;
+        });
+    }
+
+    function buildSpellRow(item) {
+      const row = document.createElement("tr");
+      const isReRoll = !!item.spell.isReRoll;
+      row.className = "spell-v2-row"
+        + (isReRoll ? " spell-v2-row-reroll" : "")
+        + (item.index === selectedSpellIndex && !isReRoll ? " is-selected" : "");
+      row.setAttribute("data-index", String(item.index));
+      if (!isReRoll) {
+        row.addEventListener("click", function (event) {
+          event.stopPropagation();
+          loadSpellDetail(item.index);
+        });
+      }
+
+      const rangeCell = document.createElement("td");
+      rangeCell.textContent = item.spell.diceRange || "--";
+
+      const nameCell = document.createElement("td");
+      const pickButton = document.createElement("button");
+      pickButton.type = "button";
+      pickButton.className = "spell-v2-spell-btn";
+      pickButton.textContent = item.spell.name || "Unknown Spell";
+      if (isReRoll) {
+        pickButton.disabled = true;
+        pickButton.setAttribute("aria-disabled", "true");
+        pickButton.tabIndex = -1;
+      } else {
+        pickButton.setAttribute("data-action", "pick-spell");
+      }
+
+      nameCell.appendChild(pickButton);
+      row.appendChild(rangeCell);
+      row.appendChild(nameCell);
+      return row;
+    }
+
+    function renderSpellList() {
+      setListLoading(false);
+      const rows = getFilteredRows();
+      clearTBody(listBodyA);
+      clearTBody(listBodyB);
+
+      if (!rows.length) {
+        addEmptyRow(listBodyA, "No spells match this filter.");
+        addEmptyRow(listBodyB, "No spells match this filter.");
+        return;
+      }
+
+      const splitPoint = Math.ceil(rows.length / 2);
+      const firstHalf = rows.slice(0, splitPoint);
+      const secondHalf = rows.slice(splitPoint);
+
+      firstHalf.forEach(function (item) {
+        listBodyA.appendChild(buildSpellRow(item));
+      });
+
+      if (!secondHalf.length) {
+        addEmptyRow(listBodyB, "No additional spells.");
+      } else {
+        secondHalf.forEach(function (item) {
+          listBodyB.appendChild(buildSpellRow(item));
+        });
+      }
+    }
+
+    function setDetailPlaceholders(message, title) {
+      detailTitle.textContent = title !== undefined ? title : "Select a Spell";
+      castTimeNode.textContent = "--";
+      rangeNode.textContent = "--";
+      durationNode.textContent = "--";
+      attackSaveNode.textContent = "--";
+      damageEffectNode.textContent = "--";
+      materialNode.textContent = "";
+      descriptionNode.textContent = message === undefined || message === null ? "Pick a spell to view details." : message;
+      metaLevelNode.textContent = "--";
+      metaSchoolNode.textContent = "--";
+      metaSourceNode.textContent = "--";
+      [componentVNode, componentSNode, componentMNode, componentCNode].forEach(function (icon) {
+        icon.classList.remove("is-on");
+      });
+    }
+
+    function formatLevel(levelValue) {
+      const level = Number(levelValue);
+      if (!Number.isFinite(level)) return "--";
+      return level === 0 ? "Cantrip" : "Level " + level;
+    }
+
+    function renderDetail(detailData, fallbackName) {
+      detailTitle.textContent = fallbackName || detailData.name || "Select a Spell";
+      castTimeNode.textContent = detailData.castingTime || "--";
+      rangeNode.textContent = detailData.rangeOrArea || "--";
+      durationNode.textContent = detailData.duration || "--";
+      attackSaveNode.textContent = detailData.attackOrSave || "--";
+      damageEffectNode.textContent = detailData.damageOrEffect || "--";
+      materialNode.textContent = detailData.materialText || "";
+      descriptionNode.textContent = detailData.description || "No description available.";
+      metaLevelNode.textContent = formatLevel(detailData.level);
+      metaSchoolNode.textContent = detailData.school || "--";
+      metaSourceNode.textContent = detailData.source || "--";
+
+      componentVNode.classList.toggle("is-on", toBool(detailData.verbal));
+      componentSNode.classList.toggle("is-on", toBool(detailData.somatic));
+      componentMNode.classList.toggle("is-on", toBool(detailData.material));
+      componentCNode.classList.toggle("is-on", toBool(detailData.concentration));
+    }
+
+    function loadSpellDetail(index) {
+      if (currentLevel === null || index < 0 || index >= currentSpells.length) return;
+      const selectedSpell = currentSpells[index];
+      if (!selectedSpell || selectedSpell.isReRoll) return;
+
+      const detailIndex = Number(selectedSpell.detailIndex);
+      if (!Number.isInteger(detailIndex) || detailIndex < 0) return;
+
+      const fallbackName = selectedSpell.name ? selectedSpell.name : "Spell Details";
+      selectedSpellIndex = index;
+      renderSpellList();
+      toggleDetailPanel(true);
+      setDetailPlaceholders("", fallbackName);
+      setDetailLoading(true);
+      setStatus(listStatus, "Loading spell details for " + fallbackName + "...", false);
+
+      detailRequestToken += 1;
+      const token = detailRequestToken;
+      google.script.run
+        .withSuccessHandler(function (rawData) {
+          if (token !== detailRequestToken) return;
+          let detailData;
+          try {
+            detailData = JSON.parse(rawData);
+          } catch (error) {
+            setDetailLoading(false);
+            setStatus(listStatus, "Could not parse spell detail data.", true);
+            setDetailPlaceholders("Error loading spell detail.");
+            return;
+          }
+
+          renderDetail(detailData || {}, fallbackName);
+          setDetailLoading(false);
+          setStatus(listStatus, "Showing details for " + fallbackName + ".", false);
+        })
+        .withFailureHandler(function () {
+          if (token !== detailRequestToken) return;
+          setDetailLoading(false);
+          setStatus(listStatus, "Could not load spell detail.", true);
+          setDetailPlaceholders("Error loading spell detail.");
+        })
+        .getSpellScrollDetail(currentLevel, detailIndex);
+    }
+
+    function clearSelectedSpell() {
+      detailRequestToken += 1;
+      selectedSpellIndex = null;
+      renderSpellList();
+      toggleDetailPanel(false);
+      setDetailLoading(false);
+      setDetailPlaceholders("Pick a spell to view details.", " ");
+      setStatus(listStatus, currentSpells.length ? "Pick a spell to view details." : "No spells found for this level.", false);
+    }
+
+    function loadLevel(level) {
+      currentLevel = level;
+      currentSpells = [];
+      selectedSpellIndex = null;
+      detailRequestToken += 1;
+
+      setLevelSelection(level);
+      toggleDetailPanel(false);
+      setListLoading(true);
+      setDetailLoading(false);
+      setStatus(listStatus, "", false);
+      filterInput.value = "";
+      clearTBody(listBodyA);
+      clearTBody(listBodyB);
+      addEmptyRow(listBodyA, "Loading spells...");
+      addEmptyRow(listBodyB, "Loading spells...");
+      setDetailPlaceholders("Pick a spell to view details.", " ");
+
+      listRequestToken += 1;
+      const token = listRequestToken;
+
+      google.script.run
+        .withSuccessHandler(function (rawData) {
+          if (token !== listRequestToken) return;
+          let spellData;
+          try {
+            spellData = JSON.parse(rawData);
+          } catch (error) {
+            setListLoading(false);
+            setStatus(listStatus, "Error loading spell list.", true);
+            clearTBody(listBodyA);
+            clearTBody(listBodyB);
+            addEmptyRow(listBodyA, "Error loading spells.");
+            addEmptyRow(listBodyB, "Error loading spells.");
+            return;
+          }
+
+          currentSpells = normalizeSpellRows(spellData, level);
+          renderSpellList();
+          setListLoading(false);
+          setStatus(listStatus, currentSpells.length ? "Pick a spell to view details." : "No spells found for this level.", false);
+        })
+        .withFailureHandler(function () {
+          if (token !== listRequestToken) return;
+          setListLoading(false);
+          setStatus(listStatus, "Error loading spell list.", true);
+          clearTBody(listBodyA);
+          clearTBody(listBodyB);
+          addEmptyRow(listBodyA, "Error loading spells.");
+          addEmptyRow(listBodyB, "Error loading spells.");
+        })
+        .fetchSpellScrollData(level);
+    }
+
+    function handleDocumentClick(event) {
+      if (!root || !root.classList.contains("spell-v2-has-detail")) return;
+      if (event.target.closest("#spellV2DetailPanel")) return;
+      if (event.target.closest("#spellV2FilterInput")) return;
+      if (event.target.closest(".spell-v2-filter-label")) return;
+      if (event.target.closest("tr[data-index]")) return;
+      clearSelectedSpell();
+    }
+
+    function handleRootClick(event) {
+      const levelButton = event.target.closest('[data-action="pick-level"]');
+      if (levelButton && root.contains(levelButton)) {
+        const level = Number(levelButton.getAttribute("data-level"));
+        if (!Number.isNaN(level)) {
+          loadLevel(level);
+        }
+      }
+    }
+
+    function initSpellV2() {
+      root = document.getElementById("spellV2Root");
+      if (!root) return;
+
+      listStatus = document.getElementById("spellV2ListStatus");
+      listBodyA = document.getElementById("spellV2ListBodyA");
+      listBodyB = document.getElementById("spellV2ListBodyB");
+      filterInput = document.getElementById("spellV2FilterInput");
+      listLoadingNode = document.getElementById("spellV2ListLoading");
+      detailLoadingNode = document.getElementById("spellV2DetailLoading");
+
+      detailTitle = document.getElementById("spellV2DetailTitle");
+      castTimeNode = document.getElementById("spellV2CastTime");
+      rangeNode = document.getElementById("spellV2Range");
+      durationNode = document.getElementById("spellV2Duration");
+      attackSaveNode = document.getElementById("spellV2AttackSave");
+      damageEffectNode = document.getElementById("spellV2DamageEffect");
+      componentVNode = document.getElementById("spellV2CompV");
+      componentSNode = document.getElementById("spellV2CompS");
+      componentMNode = document.getElementById("spellV2CompM");
+      componentCNode = document.getElementById("spellV2CompC");
+      materialNode = document.getElementById("spellV2MaterialText");
+      descriptionNode = document.getElementById("spellV2Description");
+      metaLevelNode = document.getElementById("spellV2MetaLevel");
+      metaSchoolNode = document.getElementById("spellV2MetaSchool");
+      metaSourceNode = document.getElementById("spellV2MetaSource");
+
+      root.addEventListener("click", handleRootClick);
+      document.addEventListener("click", handleDocumentClick);
+      filterInput.addEventListener("input", renderSpellList);
+
+      setDetailPlaceholders("Pick a spell to view details.", " ");
+      loadLevel(0);
+    }
+
+    document.addEventListener("DOMContentLoaded", initSpellV2);
+  })();
+</script>

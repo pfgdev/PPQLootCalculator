@@ -1,0 +1,193 @@
+<!-- gold-v2-scripts.html -->
+<script>
+  (function () {
+    const LIMITS = {
+      minCr: 1,
+      maxCr: 20,
+      minKilled: 1,
+      maxKilled: 100,
+      minCheck: 1,
+      maxCheck: 40,
+      defaultCheck: 10
+    };
+
+    let root;
+    let tableBody;
+    let checkValueNode;
+    let expectedGoldNode;
+    let diceNotationNode;
+    let queryTimeNode;
+    let progressMessageNode;
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(value, max));
+    }
+
+    function createRow(crValue, killedValue) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = [
+        '<td>',
+        '  <div class="gold-v2-row-controls">',
+        '    <button class="gold-v2-row-btn" type="button" data-action="cr-dec">-</button>',
+        '    <div class="gold-v2-row-value" data-field="cr">' + crValue + "</div>",
+        '    <button class="gold-v2-row-btn" type="button" data-action="cr-inc">+</button>',
+        "  </div>",
+        "</td>",
+        "<td>",
+        '  <div class="gold-v2-row-controls">',
+        '    <button class="gold-v2-row-btn" type="button" data-action="killed-dec">-</button>',
+        '    <div class="gold-v2-row-value" data-field="killed">' + killedValue + "</div>",
+        '    <button class="gold-v2-row-btn" type="button" data-action="killed-inc">+</button>',
+        "  </div>",
+        "</td>",
+        "<td>",
+        '  <button class="gold-v2-row-btn gold-v2-remove-btn" type="button" data-action="remove-row" aria-label="Remove enemy row">-</button>',
+        "</td>"
+      ].join("");
+      return tr;
+    }
+
+    function refreshRemoveButtons() {
+      const show = tableBody.rows.length > 1;
+      tableBody.querySelectorAll('[data-action="remove-row"]').forEach(function (button) {
+        button.disabled = !show;
+        button.style.visibility = show ? "visible" : "hidden";
+      });
+    }
+
+    function setResultPlaceholders() {
+      expectedGoldNode.textContent = "--";
+      diceNotationNode.textContent = "--";
+      queryTimeNode.textContent = "--";
+    }
+
+    function addEnemyRow() {
+      tableBody.appendChild(createRow(LIMITS.minCr, LIMITS.minKilled));
+      refreshRemoveButtons();
+    }
+
+    function resetV2State() {
+      tableBody.innerHTML = "";
+      tableBody.appendChild(createRow(LIMITS.minCr, LIMITS.minKilled));
+      checkValueNode.textContent = String(LIMITS.defaultCheck);
+      progressMessageNode.hidden = true;
+      setResultPlaceholders();
+      refreshRemoveButtons();
+    }
+
+    function updateValue(node, delta, min, max) {
+      const current = parseInt(node.textContent, 10);
+      const safeCurrent = Number.isFinite(current) ? current : min;
+      node.textContent = String(clamp(safeCurrent + delta, min, max));
+    }
+
+    function collectInputs() {
+      const check = clamp(parseInt(checkValueNode.textContent, 10) || LIMITS.defaultCheck, LIMITS.minCheck, LIMITS.maxCheck);
+      const inputs = [];
+
+      Array.from(tableBody.rows).forEach(function (row) {
+        const crNode = row.querySelector('[data-field="cr"]');
+        const killedNode = row.querySelector('[data-field="killed"]');
+        const cr = clamp(parseInt(crNode.textContent, 10) || LIMITS.minCr, LIMITS.minCr, LIMITS.maxCr);
+        const killed = clamp(parseInt(killedNode.textContent, 10) || LIMITS.minKilled, LIMITS.minKilled, LIMITS.maxKilled);
+        inputs.push({ cr: cr, killed: killed, check: check });
+      });
+
+      return inputs;
+    }
+
+    function renderResult(response, elapsedMs) {
+      const expectedGold = Number(response && response.expectedGold);
+      expectedGoldNode.textContent = Number.isFinite(expectedGold) ? expectedGold.toFixed(3) : "Error";
+      diceNotationNode.textContent = response && response.diceNotation ? response.diceNotation : "Error";
+      queryTimeNode.textContent = elapsedMs.toFixed(2) + " ms";
+    }
+
+    function runCalculation() {
+      const inputs = collectInputs();
+      const startTime = performance.now();
+      progressMessageNode.hidden = false;
+
+      google.script.run
+        .withSuccessHandler(function (response) {
+          progressMessageNode.hidden = true;
+          renderResult(response, performance.now() - startTime);
+        })
+        .withFailureHandler(function () {
+          progressMessageNode.hidden = true;
+          expectedGoldNode.textContent = "Error";
+          diceNotationNode.textContent = "Error";
+          queryTimeNode.textContent = "Error";
+        })
+        .calculateGoldAndLog(inputs);
+    }
+
+    function onRootClick(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button || !root.contains(button)) {
+        return;
+      }
+
+      const action = button.getAttribute("data-action");
+      const row = button.closest("tr");
+
+      if (action === "calculate") {
+        runCalculation();
+        return;
+      }
+      if (action === "reset") {
+        resetV2State();
+        return;
+      }
+      if (action === "check-inc") {
+        updateValue(checkValueNode, 1, LIMITS.minCheck, LIMITS.maxCheck);
+        return;
+      }
+      if (action === "check-dec") {
+        updateValue(checkValueNode, -1, LIMITS.minCheck, LIMITS.maxCheck);
+        return;
+      }
+      if (action === "cr-inc") {
+        updateValue(row.querySelector('[data-field="cr"]'), 1, LIMITS.minCr, LIMITS.maxCr);
+        return;
+      }
+      if (action === "cr-dec") {
+        updateValue(row.querySelector('[data-field="cr"]'), -1, LIMITS.minCr, LIMITS.maxCr);
+        return;
+      }
+      if (action === "killed-inc") {
+        updateValue(row.querySelector('[data-field="killed"]'), 1, LIMITS.minKilled, LIMITS.maxKilled);
+        return;
+      }
+      if (action === "killed-dec") {
+        updateValue(row.querySelector('[data-field="killed"]'), -1, LIMITS.minKilled, LIMITS.maxKilled);
+        return;
+      }
+      if (action === "remove-row" && row && tableBody.rows.length > 1) {
+        row.remove();
+        refreshRemoveButtons();
+      }
+    }
+
+    function initGoldV2() {
+      root = document.getElementById("goldV2Root");
+      if (!root) {
+        return;
+      }
+
+      tableBody = document.getElementById("goldV2EnemyTableBody");
+      checkValueNode = document.getElementById("goldV2CheckValue");
+      expectedGoldNode = document.getElementById("goldV2ExpectedGold");
+      diceNotationNode = document.getElementById("goldV2DiceNotation");
+      queryTimeNode = document.getElementById("goldV2QueryTime");
+      progressMessageNode = document.getElementById("goldV2ProgressMessage");
+
+      root.addEventListener("click", onRootClick);
+      document.getElementById("goldV2AddEnemyBtn").addEventListener("click", addEnemyRow);
+
+      resetV2State();
+    }
+
+    document.addEventListener("DOMContentLoaded", initGoldV2);
+  })();
+</script>

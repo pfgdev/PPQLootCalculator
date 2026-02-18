@@ -70,7 +70,13 @@
 
   <div id="spellV2Workspace" class="spell-v2-workspace">
     <section class="v2-card spell-v2-list-panel">
-      <div class="v2-card-header">Step 2: Select Spell</div>
+      <div class="v2-card-header spell-v2-list-header">
+        <span class="spell-v2-list-title">Step 2: Select Spell</span>
+        <span class="spell-v2-roll-prefix">or</span>
+        <button id="spellV2RollButton" class="spell-v2-roll-btn" type="button" title="Roll random spell">
+          <span id="spellV2RollValue" class="spell-v2-roll-value">??</span>
+        </button>
+      </div>
       <div class="v2-card-body">
         <label class="spell-v2-filter-label" for="spellV2FilterInput">Filter Current Level</label>
         <input id="spellV2FilterInput" class="spell-v2-filter-input" type="search" placeholder="Type spell name...">

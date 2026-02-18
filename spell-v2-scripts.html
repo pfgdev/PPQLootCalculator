@@ -6,6 +6,8 @@
     let listBodyA;
     let listBodyB;
     let filterInput;
+    let rollButton;
+    let rollValueNode;
     let listLoadingNode;
     let detailLoadingNode;
 
@@ -30,6 +32,9 @@
     let selectedSpellIndex = null;
     let listRequestToken = 0;
     let detailRequestToken = 0;
+    let isRolling = false;
+    let rollTimerId = null;
+    let lastRollValue = null;
 
     function isReRollSpell(spell) {
       const name = String((spell && spell.name) || "")
@@ -58,17 +63,22 @@
         const start = visualIndex * rangePerSpell + 1;
         const end = (visualIndex + 1) * rangePerSpell;
         return Object.assign({}, spell, {
-          diceRange: String(start) + "-" + String(end)
+          diceRange: String(start) + "-" + String(end),
+          rollStart: start,
+          rollEnd: end
         });
       });
 
       const lastEnd = rangePerSpell * baseRows.length;
       if (lastEnd < 100) {
+        const reRollStart = lastEnd + 1;
         normalizedRows.push({
-          diceRange: String(lastEnd + 1) + "-100",
+          diceRange: String(reRollStart) + "-100",
           name: "Re-Roll",
           level: level,
           isReRoll: true,
+          rollStart: reRollStart,
+          rollEnd: 100,
           detailIndex: -1
         });
       }
@@ -137,6 +147,176 @@
         .filter(function (item) {
           return !term || (item.spell.name || "").toLowerCase().indexOf(term) !== -1;
         });
+    }
+
+    function randomD100() {
+      return Math.floor(Math.random() * 100) + 1;
+    }
+
+    function findSpellIndexByRollValue(rollValue) {
+      const roll = Number(rollValue);
+      if (!Number.isFinite(roll)) return -1;
+      for (let i = 0; i < currentSpells.length; i += 1) {
+        const spell = currentSpells[i];
+        const start = Number(spell.rollStart);
+        const end = Number(spell.rollEnd);
+        if (Number.isFinite(start) && Number.isFinite(end) && roll >= start && roll <= end) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function getFirstRollableIndex() {
+      return currentSpells.findIndex(function (spell) {
+        return spell && !spell.isReRoll;
+      });
+    }
+
+    function updateRollValueDisplay(value) {
+      if (!rollValueNode) return;
+      rollValueNode.textContent = value === null || value === undefined ? "??" : String(value);
+    }
+
+    function scrollSpellRowIntoView(index) {
+      if (!root) return;
+      const listScroll = document.getElementById("spellV2ListScroll");
+      if (!listScroll) return;
+      const row = root.querySelector('tr[data-index="' + String(index) + '"]');
+      if (!row) return;
+
+      const hostRect = listScroll.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      const padding = 8;
+
+      if (rowRect.top < hostRect.top + padding) {
+        listScroll.scrollTop += rowRect.top - hostRect.top - padding;
+      } else if (rowRect.bottom > hostRect.bottom - padding) {
+        listScroll.scrollTop += rowRect.bottom - hostRect.bottom + padding;
+      }
+    }
+
+    function setRollingState(nextRolling) {
+      isRolling = !!nextRolling;
+      if (root) {
+        root.classList.toggle("spell-v2-is-rolling", isRolling);
+      }
+      if (rollButton) {
+        rollButton.classList.toggle("is-rolling", isRolling);
+        rollButton.disabled = isRolling;
+      }
+      if (filterInput) {
+        filterInput.disabled = isRolling;
+      }
+      if (root) {
+        root.querySelectorAll('[data-action="pick-level"]').forEach(function (button) {
+          button.disabled = isRolling;
+        });
+      }
+    }
+
+    function cancelRollSequence(resetDisplay) {
+      if (rollTimerId) {
+        clearTimeout(rollTimerId);
+        rollTimerId = null;
+      }
+      if (!isRolling && !resetDisplay) return;
+      setRollingState(false);
+      if (resetDisplay) {
+        lastRollValue = null;
+        updateRollValueDisplay(null);
+      }
+    }
+
+    function previewRoll(rollValue) {
+      lastRollValue = rollValue;
+      updateRollValueDisplay(rollValue);
+
+      const previewIndex = findSpellIndexByRollValue(rollValue);
+      if (previewIndex < 0) return;
+      selectedSpellIndex = previewIndex;
+      renderSpellList();
+      toggleDetailPanel(true);
+      setDetailLoading(false);
+      setDetailPlaceholders("Rolling d100...", currentSpells[previewIndex].name || "Rolling...");
+    }
+
+    function finishRoll() {
+      const maxAttempts = 40;
+      let attempts = 0;
+      let chosenRoll = Number(lastRollValue);
+      let chosenIndex = findSpellIndexByRollValue(chosenRoll);
+
+      while (
+        attempts < maxAttempts &&
+        (chosenIndex < 0 || !currentSpells[chosenIndex] || currentSpells[chosenIndex].isReRoll)
+      ) {
+        chosenRoll = randomD100();
+        chosenIndex = findSpellIndexByRollValue(chosenRoll);
+        attempts += 1;
+      }
+
+      if (chosenIndex < 0 || !currentSpells[chosenIndex] || currentSpells[chosenIndex].isReRoll) {
+        chosenIndex = getFirstRollableIndex();
+        if (chosenIndex < 0) {
+          cancelRollSequence(false);
+          return;
+        }
+        chosenRoll = currentSpells[chosenIndex].rollStart;
+      }
+
+      setRollingState(false);
+      previewRoll(chosenRoll);
+      scrollSpellRowIntoView(chosenIndex);
+      loadSpellDetail(chosenIndex);
+    }
+
+    function startRollSequence() {
+      if (isRolling || !currentSpells.length) return;
+      if (!root || !root.closest("#SpellScrollsV2") || !document.getElementById("SpellScrollsV2").classList.contains("active")) {
+        return;
+      }
+
+      const hasRollableSpell = getFirstRollableIndex() >= 0;
+      if (!hasRollableSpell) return;
+
+      detailRequestToken += 1;
+      setDetailLoading(false);
+      if (filterInput && filterInput.value.trim()) {
+        filterInput.value = "";
+      }
+      selectedSpellIndex = null;
+      renderSpellList();
+      toggleDetailPanel(true);
+
+      setRollingState(true);
+      setStatus(listStatus, "Rolling d100...", false);
+
+      const startedAt = Date.now();
+      const rollDurationMs = 2450;
+
+      const tick = function () {
+        if (!isRolling) return;
+        const spellTab = document.getElementById("SpellScrollsV2");
+        if (!spellTab || !spellTab.classList.contains("active")) {
+          cancelRollSequence(false);
+          return;
+        }
+
+        const elapsed = Date.now() - startedAt;
+        const progress = Math.min(1, elapsed / rollDurationMs);
+        previewRoll(randomD100());
+
+        if (progress >= 1) {
+          finishRoll();
+          return;
+        }
+
+        const nextDelay = 46 + Math.floor(progress * progress * 210);
+        rollTimerId = setTimeout(tick, nextDelay);
+      };
+
+      tick();
     }
 
     function buildSpellRow(item) {
@@ -247,6 +427,7 @@
     }
 
     function loadSpellDetail(index) {
+      if (isRolling) return;
       if (currentLevel === null || index < 0 || index >= currentSpells.length) return;
       const selectedSpell = currentSpells[index];
       if (!selectedSpell || selectedSpell.isReRoll) return;
@@ -291,6 +472,7 @@
     }
 
     function clearSelectedSpell() {
+      cancelRollSequence(false);
       detailRequestToken += 1;
       selectedSpellIndex = null;
       renderSpellList();
@@ -301,6 +483,7 @@
     }
 
     function loadLevel(level) {
+      cancelRollSequence(true);
       currentLevel = level;
       currentSpells = [];
       selectedSpellIndex = null;
@@ -355,21 +538,37 @@
     }
 
     function handleDocumentClick(event) {
+      if (isRolling) return;
       if (!root || !root.classList.contains("spell-v2-has-detail")) return;
       if (event.target.closest("#spellV2DetailPanel")) return;
       if (event.target.closest("#spellV2FilterInput")) return;
       if (event.target.closest(".spell-v2-filter-label")) return;
+      if (event.target.closest("#spellV2RollButton")) return;
       if (event.target.closest("tr[data-index]")) return;
       clearSelectedSpell();
     }
 
     function handleRootClick(event) {
+      const rollTrigger = event.target.closest("#spellV2RollButton");
+      if (rollTrigger && root.contains(rollTrigger)) {
+        event.preventDefault();
+        startRollSequence();
+        return;
+      }
+
       const levelButton = event.target.closest('[data-action="pick-level"]');
       if (levelButton && root.contains(levelButton)) {
         const level = Number(levelButton.getAttribute("data-level"));
         if (!Number.isNaN(level)) {
           loadLevel(level);
         }
+      }
+    }
+
+    function handleTabChanged(event) {
+      const nextTab = event && event.detail ? event.detail.tabName : "";
+      if (nextTab !== "SpellScrollsV2") {
+        cancelRollSequence(true);
       }
     }
 
@@ -381,6 +580,8 @@
       listBodyA = document.getElementById("spellV2ListBodyA");
       listBodyB = document.getElementById("spellV2ListBodyB");
       filterInput = document.getElementById("spellV2FilterInput");
+      rollButton = document.getElementById("spellV2RollButton");
+      rollValueNode = document.getElementById("spellV2RollValue");
       listLoadingNode = document.getElementById("spellV2ListLoading");
       detailLoadingNode = document.getElementById("spellV2DetailLoading");
 
@@ -402,8 +603,10 @@
 
       root.addEventListener("click", handleRootClick);
       document.addEventListener("click", handleDocumentClick);
+      document.addEventListener("app:tab-changed", handleTabChanged);
       filterInput.addEventListener("input", renderSpellList);
 
+      updateRollValueDisplay(null);
       setDetailPlaceholders("Pick a spell to view details.", " ");
       loadLevel(0);
     }

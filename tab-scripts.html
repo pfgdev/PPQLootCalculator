@@ -22,6 +22,7 @@
       document.getElementById(tabName).style.display = "block";
       document.getElementById(tabName).classList.add("active");
       evt.currentTarget.className += " active";
+      document.dispatchEvent(new CustomEvent("app:tab-changed", { detail: { tabName: tabName } }));
   }
 
   // Default Tab on Page Load

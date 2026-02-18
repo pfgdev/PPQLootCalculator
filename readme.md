@@ -3,6 +3,49 @@
 ## Description
 This is a personal project. In order to teach myself JavaScript and HTML through Google App Script, I am turning my Dungeons and Dragons Gold and Loot Calculator spreadsheet into an web app with a more friendly interface. For now, no one uses this web app for me. This is a silly project, but simply a means through which I intend to learn skills I can translate elsewhere.
 
+## Current Project Context (Session Snapshot)
+
+### Rebuild Strategy
+- Legacy tabs are kept intact while v2 tabs are built in parallel.
+- Goal: improve modularity/readability first, then continue UX improvements and feature parity.
+
+### Current Tab Order
+1. Gold v2
+2. Spell Scrolls v2
+3. Gold Calculator
+4. Spell Scrolls
+5. Beta Version
+
+### Spell Scrolls v2 Status
+- Two-column spell list with shared scroll container.
+- Slide-out detail panel behavior is restored.
+- Click-off behavior collapses detail panel (with filter area exempt).
+- Floof loading states restored for list/detail fetching.
+- Dice ranges are normalized to 1-100 (no 0-based ranges).
+- Final table row includes Re-Roll when applicable.
+- Re-Roll row is non-clickable in v2.
+- Added random interaction in Step 2 header:
+  - `or` + interactive dice circle.
+  - Rolling animates d100 values and cycles spell names in the detail title.
+  - Detail panel is forced open during rolling.
+  - Interactions are locked during roll.
+  - If roll lands on Re-Roll, it auto-rerolls internally until a real spell is selected.
+  - Final roll auto-scrolls table viewport to keep selected row visible.
+  - Leaving the Spell Scrolls v2 tab cancels rolling and clears displayed roll value.
+
+### Gold v2 Status
+- Functional parallel rebuild tab exists and is already improved over legacy.
+- Legacy Gold Calculator remains available and unchanged.
+
+### Next UX Work (Likely)
+- Continue fine-tuning Step 2 header sizing/alignment in Spell Scrolls v2.
+- Optional visual polish: table pulse/highlight effects tied to random roll ticks.
+- Continue small responsive/layout passes (desktop + tablet visibility consistency).
+
+### Working Notes
+- After local changes, deploy manually with `clasp push` to test in Apps Script web app.
+- If starting a fresh chat, this section should be treated as the baseline handoff context.
+
 
 ## Functionality
 This tool tells a DnD DM how much gold to award the party based on what monsters they defeated. It is my personal enhancement to the official DnD systems for tabulating gold rewards, as it interpolates values more fairly and also takes the party's best investigation check in-mind in those calculations.

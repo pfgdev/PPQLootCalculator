@@ -209,5 +209,5 @@ It relies on tables set up in my spreadsheet version, and those tables are passe
 - This is the DM lets the players roll to determine their rewards
 
 
-## Contact
+## Contact!
 pmfeller@gmail.com

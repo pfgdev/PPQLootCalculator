@@ -9,7 +9,8 @@
             <tr>
               <th>Enemy CR</th>
               <th>Number Killed</th>
-              <th>Remove</th>
+              <th>Base Gold</th>
+              <th>DC (L/M/H)</th>
             </tr>
           </thead>
           <tbody id="goldV2EnemyTableBody"></tbody>
@@ -36,8 +37,24 @@
         <button class="button gold-v2-primary" type="button" data-action="calculate">Calculate</button>
         <button class="button gold-v2-secondary" type="button" data-action="reset">Reset</button>
       </div>
-      <div class="v2-card-footer">
-        <div id="goldV2ProgressMessage" class="progress-message" hidden>Calculating, please wait...</div>
+      <div class="v2-card-footer gold-v2-progress-slot">
+        <div id="goldV2FloofStage" class="gold-v2-floof-stage">
+          <div class="gold-v2-floof-hint">Calculate to let Floof out</div>
+          <div class="gold-v2-floof-lane" aria-hidden="true">
+            <div class="gold-v2-floof-mover">
+              <div class="gold-v2-floof-facing">
+                <div class="gold-v2-floof-react-shell">
+                  <div class="gold-v2-floof-runner gold-v2-floof-bounce">
+                    <img class="gold-v2-floof-frame frame-1" src="https://i.ibb.co/99MQDwW8/floof-1-icon-edited.png" alt="" />
+                    <img class="gold-v2-floof-frame frame-2" src="https://i.ibb.co/LDYWjJk4/floof-2-icon-edited.png" alt="" />
+                    <img class="gold-v2-floof-frame frame-3" src="https://i.ibb.co/FbYNwJxg/floof-3-icon-edited.png" alt="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="goldV2ProgressMessage" class="progress-message gold-v2-progress">Floof loves you! ❤️</div>
       </div>
     </section>
   </div>
@@ -53,10 +70,6 @@
         <div class="gold-v2-result-item">
           <div class="gold-v2-result-label">Dice Notation</div>
           <div id="goldV2DiceNotation" class="gold-v2-result-value">--</div>
-        </div>
-        <div class="gold-v2-result-item">
-          <div class="gold-v2-result-label">Query Time</div>
-          <div id="goldV2QueryTime" class="gold-v2-result-value">--</div>
         </div>
       </div>
     </section>

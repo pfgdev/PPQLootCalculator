@@ -10,6 +10,8 @@
     --gold-v2-primary-dark: #1158c7;
     --gold-v2-secondary: #dc5a5a;
     --gold-v2-secondary-dark: #b93f3f;
+    --gold-v2-floof-width: 64px;
+    --gold-v2-floof-height: 52px;
     max-width: 1100px;
     margin: 0 auto;
     padding: 0 12px 20px;
@@ -39,7 +41,7 @@
     font-weight: 700;
     color: var(--gold-v2-ink);
     text-align: left;
-    padding: 16px 18px;
+    padding: 13px 18px;
     border-bottom: 1px solid var(--gold-v2-card-border);
     background: linear-gradient(90deg, #eef4ff 0%, #f9fbff 70%);
   }
@@ -52,10 +54,39 @@
     padding: 0 18px 16px;
   }
 
+  .v2-enemies-card .v2-card-body {
+    padding-left: 34px;
+    padding-right: 34px;
+  }
+
+  .gold-v2-progress {
+    visibility: hidden;
+  }
+
+  .gold-v2-progress.is-visible {
+    visibility: visible;
+  }
+
+  .gold-v2-progress-slot {
+    position: relative;
+    min-height: 82px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 2px;
+    padding-bottom: 6px;
+    background: linear-gradient(180deg, #e4f3ff 0%, #e4f3ff 63%, #d3eac7 63%, #d3eac7 100%);
+    border-top: 1px solid #d3dcef;
+  }
+
   .gold-v2-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
+    overflow: visible;
   }
 
   .gold-v2-table th,
@@ -78,6 +109,20 @@
 
   .gold-v2-table tbody tr:nth-child(even) {
     background: #f3f7ff;
+  }
+
+  .gold-v2-table td {
+    overflow: visible;
+  }
+
+  .gold-v2-table th:nth-child(3),
+  .gold-v2-table td:nth-child(3) {
+    width: 150px;
+  }
+
+  .gold-v2-table th:nth-child(4),
+  .gold-v2-table td:nth-child(4) {
+    width: 140px;
   }
 
   .gold-v2-stepper {
@@ -123,6 +168,10 @@
     gap: 6px;
   }
 
+  .gold-v2-cr-cell {
+    position: relative;
+  }
+
   .gold-v2-row-value {
     min-width: 48px;
     height: 38px;
@@ -160,6 +209,46 @@
 
   .gold-v2-remove-btn:hover {
     background: #ffd8dd;
+  }
+
+  .gold-v2-remove-gutter {
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 25px;
+    height: 25px;
+    border-radius: 6px;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    z-index: 1;
+  }
+
+  .gold-v2-derived {
+    font-weight: 700;
+    color: #233451;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gold-v2-dc-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 108px;
+    padding: 6px 8px;
+    border: 1px solid #ccd7ec;
+    border-radius: 999px;
+    background: #f7faff;
+    color: #3c4e70;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gold-v2-dc-pill.is-empty {
+    color: #7c8aa5;
   }
 
   .gold-v2-label {
@@ -205,7 +294,7 @@
 
   .gold-v2-results-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
     gap: 12px;
   }
 
@@ -231,6 +320,173 @@
     font-weight: 700;
   }
 
+  .gold-v2-floof-runner {
+    position: relative;
+    width: var(--gold-v2-floof-width);
+    height: var(--gold-v2-floof-height);
+    flex: 0 0 auto;
+  }
+
+  .gold-v2-floof-react-shell {
+    width: var(--gold-v2-floof-width);
+    height: var(--gold-v2-floof-height);
+  }
+
+  .gold-v2-floof-stage.is-reacting .gold-v2-floof-react-shell {
+    animation: gold-v2-floof-react-hop 360ms cubic-bezier(0.22, 0.68, 0.22, 1);
+  }
+
+  .gold-v2-floof-stage {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    height: calc(var(--gold-v2-floof-height) + 8px);
+  }
+
+  .gold-v2-floof-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #41557a;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: opacity 180ms ease;
+  }
+
+  .gold-v2-floof-lane {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 180ms ease;
+  }
+
+  .gold-v2-floof-stage.is-unlocked .gold-v2-floof-hint {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .gold-v2-floof-stage.is-unlocked .gold-v2-floof-lane {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .gold-v2-floof-mover {
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: var(--gold-v2-floof-width);
+    height: var(--gold-v2-floof-height);
+    animation: gold-v2-floof-travel 3.2s linear infinite alternate;
+    will-change: left;
+  }
+
+  .gold-v2-floof-facing {
+    width: var(--gold-v2-floof-width);
+    height: var(--gold-v2-floof-height);
+    animation: gold-v2-floof-facing 6.4s steps(1, end) infinite;
+  }
+
+  .gold-v2-floof-bounce {
+    animation: gold-v2-floof-bounce 280ms ease-in-out infinite;
+  }
+
+  .gold-v2-floof-frame {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: auto;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    image-rendering: pixelated;
+    animation: gold-v2-floof-cycle 360ms steps(1, end) infinite;
+  }
+
+  .gold-v2-floof-frame.frame-1 {
+    animation-delay: 0ms;
+  }
+
+  .gold-v2-floof-frame.frame-2 {
+    animation-delay: 120ms;
+  }
+
+  .gold-v2-floof-frame.frame-3 {
+    animation-delay: 240ms;
+  }
+
+  @keyframes gold-v2-floof-cycle {
+    0%,
+    33.333% {
+      opacity: 1;
+    }
+    33.334%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes gold-v2-floof-travel {
+    from {
+      left: 0;
+    }
+    to {
+      left: calc(100% - var(--gold-v2-floof-width));
+    }
+  }
+
+  @keyframes gold-v2-floof-facing {
+    0%,
+    49.999% {
+      transform: scaleX(1);
+    }
+    50%,
+    100% {
+      transform: scaleX(-1);
+    }
+  }
+
+  @keyframes gold-v2-floof-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes gold-v2-floof-react-hop {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    34% {
+      transform: translateY(-7px) scale(1.03);
+    }
+    62% {
+      transform: translateY(1px) scale(0.985);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .gold-v2-progress {
+    position: static;
+    margin-top: 2px;
+    min-height: 14px;
+    font-size: 13px;
+    line-height: 1.1;
+    text-align: center;
+    font-style: normal;
+    color: #2f4b78;
+    font-weight: 600;
+  }
+
   @media (max-width: 1024px) {
     .gold-v2-layout {
       grid-template-columns: 1fr;
@@ -252,7 +508,7 @@
 
     .v2-card-header {
       font-size: 22px;
-      padding: 14px;
+      padding: 12px 14px;
     }
 
     .v2-card-body,
@@ -261,10 +517,26 @@
       padding-right: 14px;
     }
 
+    .v2-enemies-card .v2-card-body {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
     .gold-v2-table th,
     .gold-v2-table td {
       padding: 8px 6px;
       font-size: 14px;
+    }
+
+    .gold-v2-table th:nth-child(3),
+    .gold-v2-table td:nth-child(3),
+    .gold-v2-table th:nth-child(4),
+    .gold-v2-table td:nth-child(4) {
+      width: auto;
+    }
+
+    .gold-v2-remove-gutter {
+      left: -14px;
     }
 
     .gold-v2-stepper-value {

@@ -16,17 +16,47 @@
     let checkValueNode;
     let expectedGoldNode;
     let diceNotationNode;
-    let queryTimeNode;
     let progressMessageNode;
+    let floofStageNode;
+    let hasFloofUnlocked = false;
+    let previewByCr = {};
+    let previewModifiers = null;
+    let previewDiceTable = [];
+    let repeatDelayTimer = null;
+    let repeatIntervalTimer = null;
+    let floofReactionTimer = null;
+
+    const REPEATABLE_ACTIONS = new Set([
+      "cr-inc",
+      "cr-dec",
+      "killed-inc",
+      "killed-dec",
+      "check-inc",
+      "check-dec"
+    ]);
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(value, max));
     }
 
+    function toNumber(value, fallback) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function getRowValues(row) {
+      const crNode = row.querySelector('[data-field="cr"]');
+      const killedNode = row.querySelector('[data-field="killed"]');
+      const cr = clamp(parseInt(crNode.textContent, 10) || LIMITS.minCr, LIMITS.minCr, LIMITS.maxCr);
+      const killed = clamp(parseInt(killedNode.textContent, 10) || LIMITS.minKilled, LIMITS.minKilled, LIMITS.maxKilled);
+      return { cr: cr, killed: killed };
+    }
+
     function createRow(crValue, killedValue) {
       const tr = document.createElement("tr");
       tr.innerHTML = [
-        '<td>',
+        '<td class="gold-v2-cr-cell">',
+        '    <button class="gold-v2-row-btn gold-v2-remove-btn gold-v2-remove-gutter" type="button" data-action="remove-row" aria-label="Remove enemy row">-</button>',
         '  <div class="gold-v2-row-controls">',
         '    <button class="gold-v2-row-btn" type="button" data-action="cr-dec">-</button>',
         '    <div class="gold-v2-row-value" data-field="cr">' + crValue + "</div>",
@@ -41,7 +71,10 @@
         "  </div>",
         "</td>",
         "<td>",
-        '  <button class="gold-v2-row-btn gold-v2-remove-btn" type="button" data-action="remove-row" aria-label="Remove enemy row">-</button>',
+        '  <div class="gold-v2-derived" data-field="base-gold">--</div>',
+        "</td>",
+        "<td>",
+        '  <div class="gold-v2-dc-pill is-empty" data-field="dc-pill" title="Low / Medium / High DC">-- / -- / --</div>',
         "</td>"
       ].join("");
       return tr;
@@ -55,14 +88,115 @@
       });
     }
 
+    function updateRowDerived(row) {
+      if (!row) return;
+      const values = getRowValues(row);
+      const preview = previewByCr[values.cr];
+      const baseGoldNode = row.querySelector('[data-field="base-gold"]');
+      const dcPillNode = row.querySelector('[data-field="dc-pill"]');
+
+      if (!preview) {
+        baseGoldNode.textContent = "--";
+        dcPillNode.textContent = "-- / -- / --";
+        dcPillNode.classList.add("is-empty");
+        dcPillNode.title = "Low / Medium / High DC";
+        return;
+      }
+
+      const rowBaseGold = toNumber(preview.goldTarget, 0) * values.killed;
+      baseGoldNode.textContent = rowBaseGold.toFixed(3);
+
+      const low = toNumber(preview.lowDc, 0);
+      const medium = toNumber(preview.mediumDc, 0);
+      const high = toNumber(preview.highDc, 0);
+      dcPillNode.textContent = low + " / " + medium + " / " + high;
+      dcPillNode.classList.remove("is-empty");
+      dcPillNode.title = "Low DC: " + low + " | Medium DC: " + medium + " | High DC: " + high;
+    }
+
+    function refreshAllRowDerived() {
+      Array.from(tableBody.rows).forEach(function (row) {
+        updateRowDerived(row);
+      });
+    }
+
     function setResultPlaceholders() {
       expectedGoldNode.textContent = "--";
       diceNotationNode.textContent = "--";
-      queryTimeNode.textContent = "--";
+    }
+
+    function setProgressVisible(show) {
+      if (!progressMessageNode) return;
+      progressMessageNode.classList.toggle("is-visible", !!show);
+    }
+
+    function setFloofUnlocked(show) {
+      hasFloofUnlocked = !!show;
+      if (!floofStageNode) return;
+      floofStageNode.classList.toggle("is-unlocked", hasFloofUnlocked);
+      setProgressVisible(hasFloofUnlocked);
+      if (!hasFloofUnlocked) {
+        floofStageNode.classList.remove("is-reacting");
+        if (floofReactionTimer) {
+          clearTimeout(floofReactionTimer);
+          floofReactionTimer = null;
+        }
+      }
+    }
+
+    function triggerFloofReaction() {
+      if (!floofStageNode || !hasFloofUnlocked) return;
+      if (floofStageNode.classList.contains("is-reacting")) return;
+      floofStageNode.classList.add("is-reacting");
+      if (floofReactionTimer) {
+        clearTimeout(floofReactionTimer);
+      }
+      floofReactionTimer = setTimeout(function () {
+        if (floofStageNode) {
+          floofStageNode.classList.remove("is-reacting");
+        }
+        floofReactionTimer = null;
+      }, 390);
+    }
+
+    function loadPreviewData() {
+      google.script.run
+        .withSuccessHandler(function (rawData) {
+          let parsed;
+          try {
+            parsed = JSON.parse(rawData);
+          } catch (error) {
+            previewByCr = {};
+            previewModifiers = null;
+            previewDiceTable = [];
+            refreshAllRowDerived();
+            return;
+          }
+          previewByCr = parsed && parsed.byCr ? parsed.byCr : {};
+          previewModifiers = parsed && parsed.modifiers ? parsed.modifiers : null;
+          previewDiceTable = parsed && Array.isArray(parsed.diceTable) ? parsed.diceTable.slice().sort(function (a, b) {
+            return toNumber(a.value, 0) - toNumber(b.value, 0);
+          }) : [];
+          refreshAllRowDerived();
+        })
+        .withFailureHandler(function () {
+          previewByCr = {};
+          previewModifiers = null;
+          previewDiceTable = [];
+          refreshAllRowDerived();
+        })
+        .getGoldV2PreviewData();
     }
 
     function addEnemyRow() {
-      tableBody.appendChild(createRow(LIMITS.minCr, LIMITS.minKilled));
+      let seedCr = LIMITS.minCr;
+      const lastRow = tableBody.rows.length ? tableBody.rows[tableBody.rows.length - 1] : null;
+      if (lastRow) {
+        const lastCrNode = lastRow.querySelector('[data-field="cr"]');
+        seedCr = clamp(parseInt(lastCrNode.textContent, 10) || LIMITS.minCr, LIMITS.minCr, LIMITS.maxCr);
+      }
+      tableBody.appendChild(createRow(seedCr, LIMITS.minKilled));
+      updateRowDerived(tableBody.rows[tableBody.rows.length - 1]);
       refreshRemoveButtons();
     }
 
@@ -70,8 +204,10 @@
       tableBody.innerHTML = "";
       tableBody.appendChild(createRow(LIMITS.minCr, LIMITS.minKilled));
       checkValueNode.textContent = String(LIMITS.defaultCheck);
-      progressMessageNode.hidden = true;
+      setFloofUnlocked(false);
+      setProgressVisible(false);
       setResultPlaceholders();
+      refreshAllRowDerived();
       refreshRemoveButtons();
     }
 
@@ -86,51 +222,93 @@
       const inputs = [];
 
       Array.from(tableBody.rows).forEach(function (row) {
-        const crNode = row.querySelector('[data-field="cr"]');
-        const killedNode = row.querySelector('[data-field="killed"]');
-        const cr = clamp(parseInt(crNode.textContent, 10) || LIMITS.minCr, LIMITS.minCr, LIMITS.maxCr);
-        const killed = clamp(parseInt(killedNode.textContent, 10) || LIMITS.minKilled, LIMITS.minKilled, LIMITS.maxKilled);
-        inputs.push({ cr: cr, killed: killed, check: check });
+        const values = getRowValues(row);
+        inputs.push({ cr: values.cr, killed: values.killed, check: check });
       });
 
       return inputs;
     }
 
-    function renderResult(response, elapsedMs) {
+    function renderResult(response) {
       const expectedGold = Number(response && response.expectedGold);
       expectedGoldNode.textContent = Number.isFinite(expectedGold) ? expectedGold.toFixed(3) : "Error";
       diceNotationNode.textContent = response && response.diceNotation ? response.diceNotation : "Error";
-      queryTimeNode.textContent = elapsedMs.toFixed(2) + " ms";
+    }
+
+    function canCalculateClientSide() {
+      return !!previewModifiers && previewDiceTable.length > 0 && Object.keys(previewByCr).length > 0;
+    }
+
+    function getRowModifier(preview, check) {
+      const low = toNumber(preview.lowDc, 0);
+      const medium = toNumber(preview.mediumDc, 0);
+      const high = toNumber(preview.highDc, 0);
+      if (check >= high) return toNumber(previewModifiers.high, 1);
+      if (check >= medium) return toNumber(previewModifiers.medium, 1);
+      if (check >= low) return toNumber(previewModifiers.low, 1);
+      return toNumber(previewModifiers.fail, 1);
+    }
+
+    function convertGoldToDiceLocal(totalGold) {
+      let bestNotation = "No matching dice notation";
+      for (let i = 0; i < previewDiceTable.length; i++) {
+        const row = previewDiceTable[i];
+        const value = toNumber(row.value, NaN);
+        if (!Number.isFinite(value)) continue;
+        if (totalGold >= value) {
+          bestNotation = row.notation;
+        } else {
+          break;
+        }
+      }
+      return bestNotation;
+    }
+
+    function calculateClientSide(inputs) {
+      let totalGold = 0;
+      for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        const preview = previewByCr[input.cr];
+        if (!preview) continue;
+        const goldTarget = toNumber(preview.goldTarget, 0);
+        const modifier = getRowModifier(preview, input.check);
+        totalGold += goldTarget * modifier * input.killed;
+      }
+      totalGold = Number(totalGold.toFixed(3));
+      return {
+        expectedGold: totalGold,
+        diceNotation: convertGoldToDiceLocal(totalGold)
+      };
     }
 
     function runCalculation() {
       const inputs = collectInputs();
-      const startTime = performance.now();
-      progressMessageNode.hidden = false;
+      const wasFloofVisible = hasFloofUnlocked;
+      if (!hasFloofUnlocked) {
+        setFloofUnlocked(true);
+      }
+      if (wasFloofVisible) {
+        triggerFloofReaction();
+      }
+
+      if (canCalculateClientSide()) {
+        const response = calculateClientSide(inputs);
+        renderResult(response);
+        return;
+      }
 
       google.script.run
         .withSuccessHandler(function (response) {
-          progressMessageNode.hidden = true;
-          renderResult(response, performance.now() - startTime);
+          renderResult(response);
         })
         .withFailureHandler(function () {
-          progressMessageNode.hidden = true;
           expectedGoldNode.textContent = "Error";
           diceNotationNode.textContent = "Error";
-          queryTimeNode.textContent = "Error";
         })
         .calculateGoldAndLog(inputs);
     }
 
-    function onRootClick(event) {
-      const button = event.target.closest("button[data-action]");
-      if (!button || !root.contains(button)) {
-        return;
-      }
-
-      const action = button.getAttribute("data-action");
-      const row = button.closest("tr");
-
+    function applyAction(action, row) {
       if (action === "calculate") {
         runCalculation();
         return;
@@ -147,26 +325,67 @@
         updateValue(checkValueNode, -1, LIMITS.minCheck, LIMITS.maxCheck);
         return;
       }
-      if (action === "cr-inc") {
+      if (action === "cr-inc" && row) {
         updateValue(row.querySelector('[data-field="cr"]'), 1, LIMITS.minCr, LIMITS.maxCr);
+        updateRowDerived(row);
         return;
       }
-      if (action === "cr-dec") {
+      if (action === "cr-dec" && row) {
         updateValue(row.querySelector('[data-field="cr"]'), -1, LIMITS.minCr, LIMITS.maxCr);
+        updateRowDerived(row);
         return;
       }
-      if (action === "killed-inc") {
+      if (action === "killed-inc" && row) {
         updateValue(row.querySelector('[data-field="killed"]'), 1, LIMITS.minKilled, LIMITS.maxKilled);
+        updateRowDerived(row);
         return;
       }
-      if (action === "killed-dec") {
+      if (action === "killed-dec" && row) {
         updateValue(row.querySelector('[data-field="killed"]'), -1, LIMITS.minKilled, LIMITS.maxKilled);
+        updateRowDerived(row);
         return;
       }
       if (action === "remove-row" && row && tableBody.rows.length > 1) {
         row.remove();
         refreshRemoveButtons();
       }
+    }
+
+    function clearRepeatTimers() {
+      if (repeatDelayTimer) {
+        clearTimeout(repeatDelayTimer);
+        repeatDelayTimer = null;
+      }
+      if (repeatIntervalTimer) {
+        clearInterval(repeatIntervalTimer);
+        repeatIntervalTimer = null;
+      }
+    }
+
+    function onRootPointerDown(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button || !root.contains(button)) return;
+      const action = button.getAttribute("data-action");
+      if (!REPEATABLE_ACTIONS.has(action)) return;
+
+      const row = button.closest("tr");
+      clearRepeatTimers();
+      repeatDelayTimer = setTimeout(function () {
+        repeatIntervalTimer = setInterval(function () {
+          applyAction(action, row);
+        }, 75);
+      }, 280);
+    }
+
+    function onRootClick(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button || !root.contains(button)) {
+        return;
+      }
+
+      const action = button.getAttribute("data-action");
+      const row = button.closest("tr");
+      applyAction(action, row);
     }
 
     function initGoldV2() {
@@ -179,13 +398,20 @@
       checkValueNode = document.getElementById("goldV2CheckValue");
       expectedGoldNode = document.getElementById("goldV2ExpectedGold");
       diceNotationNode = document.getElementById("goldV2DiceNotation");
-      queryTimeNode = document.getElementById("goldV2QueryTime");
       progressMessageNode = document.getElementById("goldV2ProgressMessage");
+      floofStageNode = document.getElementById("goldV2FloofStage");
 
       root.addEventListener("click", onRootClick);
+      root.addEventListener("pointerdown", onRootPointerDown);
+      root.addEventListener("pointerup", clearRepeatTimers);
+      root.addEventListener("pointercancel", clearRepeatTimers);
+      root.addEventListener("pointerleave", clearRepeatTimers);
+      document.addEventListener("pointerup", clearRepeatTimers);
+      document.addEventListener("pointercancel", clearRepeatTimers);
       document.getElementById("goldV2AddEnemyBtn").addEventListener("click", addEnemyRow);
 
       resetV2State();
+      loadPreviewData();
     }
 
     document.addEventListener("DOMContentLoaded", initGoldV2);

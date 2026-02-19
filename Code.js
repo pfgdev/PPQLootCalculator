@@ -1,6 +1,6 @@
 // Code.gs
 // Define global variables
-var investigationData, goldData, cleanedInvestigationData, cleanedGoldData;
+var investigationData, goldData, cleanedInvestigationData, cleanedGoldData, goldToDiceData;
 var highSuccessMod, mediumSuccessMod, lowSuccessMod, failedCheckMod;
 var LOGGING_ENABLED = false; // Toggle to enable/disable logging
 var MAX_LOG_SIZE = 100; // Set a maximum log size
@@ -101,6 +101,71 @@ function readProperties() {
     lowSuccessMod: scriptProperties.getProperty('lowSuccessMod'),
     failedCheckMod: scriptProperties.getProperty('failedCheckMod')
   };
+}
+
+/**
+ * Returns lightweight lookup data for Gold v2 live row previews.
+ * Response shape:
+ * {
+ *   byCr: {
+ *     "1": { goldTarget: 1.3, lowDc: 8, mediumDc: 12, highDc: 16 },
+ *     ...
+ *   }
+ * }
+ */
+function getGoldV2PreviewData() {
+  try {
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const cleanedGoldData = JSON.parse(scriptProperties.getProperty('cleanedGoldData') || '[]');
+    const cleanedInvestigationData = JSON.parse(scriptProperties.getProperty('cleanedInvestigationData') || '[]');
+    const goldToDiceData = JSON.parse(scriptProperties.getProperty('goldToDiceData') || '[]');
+    const highSuccessMod = Number(scriptProperties.getProperty('highSuccessMod')) || 1;
+    const mediumSuccessMod = Number(scriptProperties.getProperty('mediumSuccessMod')) || 1;
+    const lowSuccessMod = Number(scriptProperties.getProperty('lowSuccessMod')) || 1;
+    const failedCheckMod = Number(scriptProperties.getProperty('failedCheckMod')) || 1;
+    const byCr = {};
+    const diceTable = [];
+
+    for (let i = 1; i < cleanedGoldData.length; i++) {
+      const row = cleanedGoldData[i];
+      const cr = Number(row[CR_COLUMN_INDEX]);
+      if (!Number.isFinite(cr)) continue;
+      if (!byCr[cr]) byCr[cr] = {};
+      byCr[cr].goldTarget = Number(row[GOLD_TARGET_COLUMN_INDEX]) || 0;
+    }
+
+    for (let i = 1; i < cleanedInvestigationData.length; i++) {
+      const row = cleanedInvestigationData[i];
+      const cr = Number(row[CR_COLUMN_INDEX]);
+      if (!Number.isFinite(cr)) continue;
+      if (!byCr[cr]) byCr[cr] = {};
+      byCr[cr].lowDc = Number(row[LOW_DC_COLUMN_INDEX]) || 0;
+      byCr[cr].mediumDc = Number(row[MEDIUM_DC_COLUMN_INDEX]) || 0;
+      byCr[cr].highDc = Number(row[HIGH_DC_COLUMN_INDEX]) || 0;
+    }
+
+    for (let i = 1; i < goldToDiceData.length; i++) {
+      const row = goldToDiceData[i];
+      const notation = row[0];
+      const value = Number(row[1]);
+      if (!notation || !Number.isFinite(value)) continue;
+      diceTable.push({ notation: notation, value: value });
+    }
+
+    return JSON.stringify({
+      byCr: byCr,
+      modifiers: {
+        high: highSuccessMod,
+        medium: mediumSuccessMod,
+        low: lowSuccessMod,
+        fail: failedCheckMod
+      },
+      diceTable: diceTable
+    });
+  } catch (error) {
+    addToLog('getGoldV2PreviewData error: ' + error.message);
+    return JSON.stringify({ byCr: {}, modifiers: {}, diceTable: [] });
+  }
 }
 
 // Calculate Gold and Log  //

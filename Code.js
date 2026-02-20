@@ -45,12 +45,8 @@ function doGet() {
     addToLog('Initialization already completed at ' + new Date().toISOString());
   } 
 
-  // Determine logging status
-  var loggingEnabled = LOGGING_ENABLED;
-
-  // Get HTML template and pass the logging status
+  // Get HTML template
   var template = HtmlService.createTemplateFromFile('Index');
-  template.loggingEnabled = loggingEnabled;
 
   return template.evaluate().setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

@@ -8,10 +8,6 @@
 
   <!-- Base components and specific styles -->
   <?!= include('buttons.css.html') ?>
-  <?!= include('spinner.css.html') ?>
-  <?!= include('debug-log.css.html') ?>
-  <?!= include('custom-input.css.html') ?>
-  <?!= include('tables.css.html') ?>
   <?!= include('icon-styles.css.html') ?> 
   <?!= include('gold-v2.css.html') ?>
   <?!= include('spell-v2.css.html') ?>
@@ -19,95 +15,20 @@
   <?!= include('global.css.html') ?>
   
   <!-- Importing our scripts -->
-  <?!= include('table-scripts.html') ?>
-  <?!= include('calculation-scripts.html') ?>
   <?!= include('main-scripts.html') ?>
   <?!= include('tab-scripts.html') ?>
-  <?!= include('spell-scroll-scripts.html') ?>
   <?!= include('gold-v2-scripts.html') ?>
   <?!= include('spell-v2-scripts.html') ?>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
 
 </head>
 <body onload="onPageLoad()">
   <div class="main-container">
   <?!= include('header.html') ?>
 
-    <!-- Gold Calculator Tab Content -->
-    <section id="GoldCalculator" class="tab-section active">
-      <?!= include('goldcalculatorheader.html') ?>
-      <div class="category-container">
-          <?!= include('table.html') ?>
-          <?!= include('investigation.html') ?>
-      </div>
-      <div class="category-container">
-        <?!= include('gold-results.html') ?>
-      </div>
-      <button onclick="initializeAndLog()">Initialize and Log</button>
-      <? if (loggingEnabled) { ?>
-        <div class="debug-log">
-          <textarea id="logArea" readonly></textarea>
-        </div>
-      <? } ?>
-    </section>
-
     <!-- Gold Calculator v2 Tab Content (parallel build path) -->
-    <section id="GoldCalculatorV2" class="tab-section">
+    <section id="GoldCalculatorV2" class="tab-section active">
       <?!= include('goldcalculatorv2header.html') ?>
       <?!= include('goldcalculatorv2-shell.html') ?>
-    </section>
-
-    <!-- Beta section for testing the new structure -->
-    <section id="BetaVersion" class="tab-section">
-      <?!= include('betaversionheader.html') ?>
-      <!-- Category container to hold sections -->
-      <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover">
-          <img src="https://i.ibb.co/vqR6TW1/floof-bark-128.png">
-          <span class="icon-number bottom-right rarity-color-1">V</span>
-      </div>
-      <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover">
-          <img src="https://i.ibb.co/hL5qBwc/floof-wave-hand-128.png">
-          <span class="icon-number bottom-right rarity-color-1">S</span>
-      </div>
-      <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover">
-          <img src="https://i.ibb.co/B6vKL0V/floof-give-bone-128-b.png">
-          <span class="icon-number bottom-right rarity-color-1">M</span>
-      </div>
-      <div class="icon icon-indicator icon-medium icon-border icon-border-medium rarity-color-1 no-hover">
-        <img src="https://i.ibb.co/vPsjc6F/floof-concentrate-128-b.png">
-        <span class="icon-number bottom-right rarity-color-1">C</span>
-    </div>
-    <div class="icon icon-indicator icon-small icon-border icon-border-small rarity-color-1 no-hover">
-      <img src="https://i.ibb.co/vqR6TW1/floof-bark-128.png">
-      <span class="icon-number bottom-right rarity-color-1">V</span>
-    </div>
-    <div class="icon icon-indicator icon-small icon-border icon-border-small rarity-color-1 no-hover">
-        <img src="https://i.ibb.co/hL5qBwc/floof-wave-hand-128.png">
-        <span class="icon-number bottom-right rarity-color-1">S</span>
-    </div>
-    <div class="icon icon-indicator icon-small icon-border icon-border-small rarity-color-1 no-hover">
-        <img src="https://i.ibb.co/B6vKL0V/floof-give-bone-128-b.png">
-        <span class="icon-number bottom-right rarity-color-1">M</span>
-    </div>
-    <?!= include('price-is-right.html') ?>
-    <?!= include('price-is-right-scripts-v2.html') ?>
-    </section>
-          
-          
-
-    <!-- Spell Scrolls Tab Content -->
-    <section id="SpellScrolls" class="tab-section">
-      <!-- <?!= include('spellscrollsheader.html') ?> -->
-      <div class="category-container">
-        <?!= include('scroll-level-section.html') ?>
-      </div>
-      <div class="category-container" style="gap: 20px;">
-        <?!= include('scroll-list-current.html') ?>
-        <?!= include('spell-stat-block.html') ?>
-      </div>
     </section>
 
     <!-- Spell Scrolls v2 Tab Content (parallel build path) -->

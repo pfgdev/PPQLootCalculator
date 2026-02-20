@@ -3,48 +3,9 @@
 
     // Page Load Initialization
     function onPageLoad() {
-        google.script.run.withSuccessHandler(updateLog).initializeData();
+        google.script.run
+            .withSuccessHandler(function () {})
+            .initializeData();
     }
-
-
-    // Show and Hide Spinner and Progress Message
-    function showSpinner() {
-        document.getElementById("spinner").style.display = "block";
-    }
-    function hideSpinner() {
-        document.getElementById("spinner").style.display = "none";
-    }
-    function showProgressMessage() {
-        document.getElementById("progressMessage").style.display = "block";
-    }
-    function hideProgressMessage() {
-        document.getElementById("progressMessage").style.display = "none";
-    }
-
-
-    // Update Log Area
-    function updateLog(message) {
-        const logArea = document.getElementById("logArea");
-        if (logArea) {
-            logArea.value += message + "\n"; // Append new messages
-            logArea.scrollTop = logArea.scrollHeight; // Automatically scroll to the bottom
-
-            const logCount = document.getElementById("logCount");
-            if (logCount) {
-                logCount.innerText = `Log Count: ${message.split("\n").length}`;
-            }
-        }
-    }
-
-    // Increment/Decrement Investigation Check Value
-    function changeInvestigationCheck(change) {
-        const investigationCheckDisplay = document.getElementById('investigationCheckDisplay');
-        let currentValue = parseInt(investigationCheckDisplay.innerText);
-        currentValue = isNaN(currentValue) ? 10 : currentValue;
-        currentValue = Math.max(1, Math.min(currentValue + change, 40)); // Ensure the value stays between 1 and 40
-        investigationCheckDisplay.innerText = currentValue;
-    }
-
-    
 
 </script>

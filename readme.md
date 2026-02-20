@@ -1,6 +1,7 @@
 # PPQ Loot Calculator (Google Apps Script)
 
 This repo is a personal DM tool for DnD sessions. It currently ships only the v2 experience in runtime.
+Last updated: 2026-02-20
 
 ## Current App State
 
@@ -73,7 +74,7 @@ Script Properties keys populated during initialization:
 
 ### Server
 - `Code.js`
-- `initialization.js.js`
+- `initialization.js`
 - `spell-scroll-initialization.js`
 - `spell-scroll.js`
 
@@ -94,6 +95,7 @@ Script Properties keys populated during initialization:
 - `header.html`
 - `tab-scripts.html`
 - `global.css.html`
+- `v2-cards.css.html`
 
 ### Retained Icon System
 - `icon-styles.css.html` is intentionally retained and included globally.
@@ -114,6 +116,7 @@ Script Properties keys populated during initialization:
 ## Documentation Map
 - Current technical handoff: `CODEX_CONTEXT.md`
 - Loot chest planning and implementation handoff: `docs/LOOT_CHEST_HANDOFF.md`
+- Quick regression checklist: `docs/SMOKE_TEST.md`
 
 ## Notes
 - This README is intentionally concise and practical.

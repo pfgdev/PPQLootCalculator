@@ -36,11 +36,26 @@ function doGet() {
   addToLog('Cache initializationComplete: ' + initializationComplete);
 
   if (!initializationComplete) {
-    addToLog('Initialization starting at ' + new Date().toISOString());
-    var initLog = initializeData();
-    cache.put('initializationComplete', 'true', 3600); // Cache for 1 hour
-    addToLog(initLog);
-    addToLog('Initialization completed and cached at ' + new Date().toISOString());
+    var lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(10000);
+      initializationComplete = cache.get('initializationComplete');
+      if (!initializationComplete) {
+        addToLog('Initialization starting at ' + new Date().toISOString());
+        var initLog = initializeData();
+        cache.put('initializationComplete', 'true', 3600); // Cache for 1 hour
+        addToLog(initLog);
+        addToLog('Initialization completed and cached at ' + new Date().toISOString());
+      }
+    } catch (error) {
+      addToLog('Initialization lock error: ' + error.message);
+    } finally {
+      try {
+        lock.releaseLock();
+      } catch (lockError) {
+        addToLog('Initialization lock release error: ' + lockError.message);
+      }
+    }
   } else {
     addToLog('Initialization already completed at ' + new Date().toISOString());
   } 
@@ -148,7 +163,7 @@ function getGoldV2PreviewData() {
       diceTable.push({ notation: notation, value: value });
     }
 
-    return JSON.stringify({
+    return {
       byCr: byCr,
       modifiers: {
         high: highSuccessMod,
@@ -157,10 +172,10 @@ function getGoldV2PreviewData() {
         fail: failedCheckMod
       },
       diceTable: diceTable
-    });
+    };
   } catch (error) {
     addToLog('getGoldV2PreviewData error: ' + error.message);
-    return JSON.stringify({ byCr: {}, modifiers: {}, diceTable: [] });
+    return { byCr: {}, modifiers: {}, diceTable: [] };
   }
 }
 

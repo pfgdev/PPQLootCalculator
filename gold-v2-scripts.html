@@ -161,20 +161,11 @@
 
     function loadPreviewData() {
       google.script.run
-        .withSuccessHandler(function (rawData) {
-          let parsed;
-          try {
-            parsed = JSON.parse(rawData);
-          } catch (error) {
-            previewByCr = {};
-            previewModifiers = null;
-            previewDiceTable = [];
-            refreshAllRowDerived();
-            return;
-          }
-          previewByCr = parsed && parsed.byCr ? parsed.byCr : {};
-          previewModifiers = parsed && parsed.modifiers ? parsed.modifiers : null;
-          previewDiceTable = parsed && Array.isArray(parsed.diceTable) ? parsed.diceTable.slice().sort(function (a, b) {
+        .withSuccessHandler(function (data) {
+          const parsed = data || {};
+          previewByCr = parsed.byCr || {};
+          previewModifiers = parsed.modifiers || null;
+          previewDiceTable = Array.isArray(parsed.diceTable) ? parsed.diceTable.slice().sort(function (a, b) {
             return toNumber(a.value, 0) - toNumber(b.value, 0);
           }) : [];
           refreshAllRowDerived();

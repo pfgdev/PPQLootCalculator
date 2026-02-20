@@ -1,7 +1,7 @@
 # Codex Context Handoff
 
 Purpose: fast onboarding for the next coding session with code-accurate state.
-Last updated: 2026-02-19
+Last updated: 2026-02-20
 
 ## 1) Current Runtime Snapshot
 
@@ -31,7 +31,7 @@ Header currently exposes only:
 
 ### `Code.js`
 - `doGet()`
-  - initializes via cache gate and serves `Index` template.
+  - initializes via cache gate + `LockService` and serves `Index` template.
 - `include(filename)`
 - Logging helpers (`addToLog`, `isLoggingEnabled`)
 - Gold APIs:
@@ -43,8 +43,9 @@ Header currently exposes only:
   - `getModifier`
   - `convertGoldToDice`
 
-### `initialization.js.js`
+### `initialization.js`
 - `initializeData()` loads named ranges and script properties.
+- Initialization path uses `LockService` to avoid concurrent first-load writes.
 - Initializes:
   - investigation table
   - gold table
@@ -59,6 +60,7 @@ Header currently exposes only:
 - `spell-scroll.js`
   - `fetchSpellScrollData(level)`
   - `getSpellScrollDetail(level, index)`
+  - returns native objects/arrays (not JSON strings).
 
 ## 4) Gold v2 Behavior (Current)
 
@@ -126,6 +128,10 @@ Behavior:
 - `combinedSpellScrollData`
 - `initializationComplete`
 
+### Transport Contract
+- Server-to-client RPC payloads are native objects/arrays.
+- Do not introduce JSON-string RPC payloads for new work unless there is a strong reason.
+
 ## 7) Icon System (Explicitly Retained)
 
 File:
@@ -151,8 +157,8 @@ Capabilities retained:
 
 ## 8) Known Issues and Technical Debt
 
-1. `initialization.js.js` has a nonstandard filename (double extension style).
-- Functional but awkward for maintainability.
+1. Server payloads are now native objects; keep new endpoints consistent with this pattern.
+2. Initialization and cache logic is stable but still spread across `doGet()` and `initializeData()` paths.
 
 ## 9) Manual Smoke Test Checklist
 
@@ -178,7 +184,24 @@ After any nontrivial change:
 Primary planned pivot is Loot Chest implementation.
 Authoritative planning file:
 - `docs/LOOT_CHEST_HANDOFF.md`
+- `docs/SMOKE_TEST.md`
 
 ## 11) Start Prompt for New Session
 
 "Read `CODEX_CONTEXT.md` and `docs/LOOT_CHEST_HANDOFF.md`. Start Phase 1 Loot Chest implementation only. Keep Gold v2 and Spell Scrolls v2 behavior unchanged. Propose migration steps first, then implement API + UI in small testable increments."
+
+## 12) Dev Diagnostics
+
+Useful quick checks while editing:
+
+1. Verify all includes in `Index.html` resolve:
+`$includes = Select-String -Path Index.html -Pattern \"include\\('([^']+)'\\)\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique; $missing = @(); foreach ($f in $includes) { if (-not (Test-Path $f)) { $missing += $f } }; if ($missing.Count -eq 0) { 'All Index includes resolve.' } else { 'Missing includes:'; $missing }`
+
+2. Check for stale references to removed/legacy files:
+`rg -n \"betaversionheader|price-is-right|table-scripts|spell-scroll-scripts|goldcalculatorheader|spellscrollsheader\" -g \"*.html\" -g \"*.js\" -g \"*.md\"`
+
+3. Check for old JSON string transport patterns:
+`rg -n \"JSON\\.parse\\(rawData\\)|return JSON\\.stringify\\(\" -g \"*.html\" -g \"*.js\"`
+
+4. List changed files before push:
+`git status --short`

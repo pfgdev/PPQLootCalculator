@@ -1,32 +1,42 @@
-//initialization.js.gs
+// initialization.js.gs
 function initializeData() {
-  var scriptProperties = PropertiesService.getScriptProperties();
-  var isInitialized = scriptProperties.getProperty(initializationCompleteFlag);
-
-  if (isInitialized) {
-    addToLog('Skipping initialization as it is already completed at ' + new Date().toISOString());
-    return 'Skipping initialization as it is already completed.';
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    addToLog('Skipping initialization because lock is already held.');
+    return 'Skipping initialization because another initialization is in progress.';
   }
 
-  addToLog('initializeData called at the start ' + new Date().toISOString());
+  var scriptProperties = PropertiesService.getScriptProperties();
+  try {
+    var isInitialized = scriptProperties.getProperty(initializationCompleteFlag);
 
-  var investigationLog = initializeInvestigationData();
-  var goldLog = initializeGoldData();
-  var modsLog = initializeMods();
-  var goldToDiceLog = initializeGoldToDiceTranslation();
-  var spellScrollLog = initializeSpellScrollData();
+    if (isInitialized) {
+      addToLog('Skipping initialization as it is already completed at ' + new Date().toISOString());
+      return 'Skipping initialization as it is already completed.';
+    }
 
-  addToLog(investigationLog);
-  addToLog(goldLog);
-  addToLog(modsLog);
-  addToLog(goldToDiceLog);
-  addToLog(spellScrollLog);
+    addToLog('initializeData called at the start ' + new Date().toISOString());
 
-  scriptProperties.setProperty(initializationCompleteFlag, 'true'); // Mark as initialized
-  addToLog('Script Properties set initializationComplete to true');
+    var investigationLog = initializeInvestigationData();
+    var goldLog = initializeGoldData();
+    var modsLog = initializeMods();
+    var goldToDiceLog = initializeGoldToDiceTranslation();
+    var spellScrollLog = initializeSpellScrollData();
 
-  addToLog('initializeData complete at ' + new Date().toISOString());
-  return logMessages.filter(msg => msg !== 'initializeData complete').join("\n")
+    addToLog(investigationLog);
+    addToLog(goldLog);
+    addToLog(modsLog);
+    addToLog(goldToDiceLog);
+    addToLog(spellScrollLog);
+
+    scriptProperties.setProperty(initializationCompleteFlag, 'true'); // Mark as initialized
+    addToLog('Script Properties set initializationComplete to true');
+
+    addToLog('initializeData complete at ' + new Date().toISOString());
+    return logMessages.filter(msg => msg !== 'initializeData complete').join("\n");
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function initializeInvestigationData() {
@@ -45,7 +55,6 @@ function initializeInvestigationData() {
     PropertiesService.getScriptProperties().setProperty('cleanedInvestigationData', JSON.stringify(cleanedInvestigationData));
     addToLog("Investigation Data initialized.");
 
-    isInvestigationDataInitialized = true;
     return "Investigation Data initialized.";
   }
   return "Investigation Data already initialized.";

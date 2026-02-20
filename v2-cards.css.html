@@ -1,0 +1,58 @@
+<!-- v2-cards.css.html -->
+<style>
+  :root {
+    --v2-color-white: #fff;
+    --v2-color-ink: #223049;
+    --v2-color-ink-soft: #24324a;
+    --v2-color-muted: #5e6d87;
+    --v2-color-muted-soft: #5a6782;
+    --v2-color-panel-top: #ffffff;
+    --v2-color-panel-bottom: #f8faff;
+    --v2-color-border: #d7dbe5;
+  }
+
+  .v2-card {
+    border: 1px solid var(--v2-card-border, var(--v2-color-border));
+    border-radius: 12px;
+    background: var(--v2-card-bg, linear-gradient(180deg, var(--v2-color-panel-top) 0%, var(--v2-color-panel-bottom) 100%));
+    box-shadow: var(--v2-card-shadow, 0 8px 20px rgba(31, 62, 120, 0.08));
+    overflow: hidden;
+  }
+
+  .v2-card-header {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--v2-card-header-color, var(--v2-color-ink-soft));
+    text-align: left;
+    padding: var(--v2-card-header-padding, 13px 18px);
+    border-bottom: 1px solid var(--v2-card-border, var(--v2-color-border));
+    background: var(--v2-card-header-bg, linear-gradient(90deg, #eef4ff 0%, #f9fbff 70%));
+  }
+
+  .v2-card-body {
+    padding: var(--v2-card-body-padding, 16px 18px);
+  }
+
+  .v2-card-footer {
+    padding: var(--v2-card-footer-padding, 0 18px 16px);
+  }
+
+  @media (max-width: 1024px) {
+    .v2-card-header {
+      font-size: 24px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .v2-card-header {
+      font-size: 22px;
+      padding: 12px 14px;
+    }
+
+    .v2-card-body,
+    .v2-card-footer {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+  }
+</style>

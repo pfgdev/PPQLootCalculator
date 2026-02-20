@@ -3,9 +3,9 @@
   .gold-v2 {
     --gold-v2-gap: 20px;
     --gold-v2-card-border: #d7dbe5;
-    --gold-v2-card-bg: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
-    --gold-v2-ink: #24324a;
-    --gold-v2-muted: #5a6782;
+    --gold-v2-card-bg: linear-gradient(180deg, var(--v2-color-panel-top) 0%, var(--v2-color-panel-bottom) 100%);
+    --gold-v2-ink: var(--v2-color-ink-soft);
+    --gold-v2-muted: var(--v2-color-muted-soft);
     --gold-v2-primary: #1f6feb;
     --gold-v2-primary-dark: #1158c7;
     --gold-v2-secondary: #dc5a5a;
@@ -28,30 +28,12 @@
     margin-top: var(--gold-v2-gap);
   }
 
-  .v2-card {
-    border: 1px solid var(--gold-v2-card-border);
-    border-radius: 12px;
-    background: var(--gold-v2-card-bg);
-    box-shadow: 0 8px 20px rgba(31, 62, 120, 0.08);
-    overflow: hidden;
-  }
-
-  .v2-card-header {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--gold-v2-ink);
-    text-align: left;
-    padding: 13px 18px;
-    border-bottom: 1px solid var(--gold-v2-card-border);
-    background: linear-gradient(90deg, #eef4ff 0%, #f9fbff 70%);
-  }
-
-  .v2-card-body {
-    padding: 16px 18px;
-  }
-
-  .v2-card-footer {
-    padding: 0 18px 16px;
+  .gold-v2 .v2-card {
+    --v2-card-border: var(--gold-v2-card-border);
+    --v2-card-bg: var(--gold-v2-card-bg);
+    --v2-card-shadow: 0 8px 20px rgba(31, 62, 120, 0.08);
+    --v2-card-header-color: var(--gold-v2-ink);
+    --v2-card-header-bg: linear-gradient(90deg, #eef4ff 0%, #f9fbff 70%);
   }
 
   .v2-enemies-card .v2-card-body {
@@ -155,7 +137,7 @@
     justify-content: center;
     border: 1px solid #b8c2d8;
     border-radius: 8px;
-    background: #fff;
+    background: var(--v2-color-white);
     font-size: 24px;
     font-weight: 700;
     color: #1f2b3f;
@@ -180,7 +162,7 @@
     justify-content: center;
     border: 1px solid #c4cce0;
     border-radius: 7px;
-    background: #fff;
+    background: var(--v2-color-white);
     color: #1e2a3e;
     font-weight: 700;
   }
@@ -276,7 +258,7 @@
 
   .gold-v2-primary {
     background: var(--gold-v2-primary);
-    color: #fff;
+    color: var(--v2-color-white);
   }
 
   .gold-v2-primary:hover {
@@ -285,7 +267,7 @@
 
   .gold-v2-secondary {
     background: var(--gold-v2-secondary);
-    color: #fff;
+    color: var(--v2-color-white);
   }
 
   .gold-v2-secondary:hover {
@@ -301,7 +283,7 @@
   .gold-v2-result-item {
     border: 1px solid #dae2f4;
     border-radius: 10px;
-    background: #ffffff;
+    background: var(--v2-color-white);
     padding: 14px;
   }
 
@@ -495,26 +477,11 @@
     .gold-v2-results-grid {
       grid-template-columns: 1fr;
     }
-
-    .v2-card-header {
-      font-size: 24px;
-    }
   }
 
   @media (max-width: 640px) {
     .gold-v2 {
       padding: 0 8px 16px;
-    }
-
-    .v2-card-header {
-      font-size: 22px;
-      padding: 12px 14px;
-    }
-
-    .v2-card-body,
-    .v2-card-footer {
-      padding-left: 14px;
-      padding-right: 14px;
     }
 
     .v2-enemies-card .v2-card-body {

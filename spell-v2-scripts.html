@@ -1,6 +1,11 @@
 <!-- spell-v2-scripts.html -->
 <script>
   (function () {
+    const SPELL_V2_PRELOAD_URLS = [
+      "https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png",
+      "https://i.ibb.co/HTGHfXp/floof-fetch-scroll-A-128.png"
+    ];
+
     let root;
     let listBodyA;
     let listBodyB;
@@ -34,6 +39,13 @@
     let isRolling = false;
     let rollTimerId = null;
     let lastRollValue = null;
+
+    function preloadSpellV2Assets() {
+      SPELL_V2_PRELOAD_URLS.forEach(function (url) {
+        const img = new Image();
+        img.src = url;
+      });
+    }
 
     function isReRollSpell(spell) {
       const name = String((spell && spell.name) || "")
@@ -436,16 +448,8 @@
       detailRequestToken += 1;
       const token = detailRequestToken;
       google.script.run
-        .withSuccessHandler(function (rawData) {
+        .withSuccessHandler(function (detailData) {
           if (token !== detailRequestToken) return;
-          let detailData;
-          try {
-            detailData = JSON.parse(rawData);
-          } catch (error) {
-            setDetailLoading(false);
-            setDetailPlaceholders("Error loading spell detail.");
-            return;
-          }
 
           renderDetail(detailData || {}, fallbackName);
           setDetailLoading(false);
@@ -490,20 +494,8 @@
       const token = listRequestToken;
 
       google.script.run
-        .withSuccessHandler(function (rawData) {
+        .withSuccessHandler(function (spellData) {
           if (token !== listRequestToken) return;
-          let spellData;
-          try {
-            spellData = JSON.parse(rawData);
-          } catch (error) {
-            setListLoading(false);
-            clearTBody(listBodyA);
-            clearTBody(listBodyB);
-            addEmptyRow(listBodyA, "Error loading spells.");
-            addEmptyRow(listBodyB, "Error loading spells.");
-            return;
-          }
-
           currentSpells = normalizeSpellRows(spellData, level);
           renderSpellList();
           setListLoading(false);
@@ -557,6 +549,8 @@
     function initSpellV2() {
       root = document.getElementById("spellV2Root");
       if (!root) return;
+
+      preloadSpellV2Assets();
 
       listBodyA = document.getElementById("spellV2ListBodyA");
       listBodyB = document.getElementById("spellV2ListBodyB");

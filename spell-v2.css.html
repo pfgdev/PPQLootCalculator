@@ -2,10 +2,10 @@
 <style>
   .spell-v2 {
     --spell-v2-gap: 20px;
-    --spell-v2-ink: #223049;
-    --spell-v2-muted: #5e6d87;
+    --spell-v2-ink: var(--v2-color-ink);
+    --spell-v2-muted: var(--v2-color-muted);
     --spell-v2-edge: #d5deef;
-    --spell-v2-panel: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    --spell-v2-panel: linear-gradient(180deg, var(--v2-color-panel-top) 0%, #f7fbff 100%);
     --spell-v2-selected: #fef7e2;
     max-width: 1120px;
     margin: 0 auto;
@@ -255,7 +255,7 @@
     border-radius: 10px;
     overflow: visible;
     max-height: none;
-    background: #fff;
+    background: var(--v2-color-white);
   }
 
   .spell-v2-list-table {
@@ -275,7 +275,7 @@
     top: 0;
     z-index: 1;
     background: #41527a;
-    color: #fff;
+    color: var(--v2-color-white);
     text-transform: uppercase;
     font-size: 12px;
     letter-spacing: 0.06em;
@@ -392,7 +392,7 @@
     border: 1px solid #dce4f3;
     border-radius: 10px;
     padding: 10px 12px;
-    background: #fff;
+    background: var(--v2-color-white);
     text-align: center;
   }
 
@@ -484,7 +484,7 @@
   .spell-v2-description {
     border: 1px solid #dbe4f3;
     border-radius: 10px;
-    background: #fff;
+    background: var(--v2-color-white);
     padding: 12px;
     color: #2d3a53;
     line-height: 1.45;
@@ -541,6 +541,7 @@
   }
 
   .spell-v2-loading-icon {
+    position: relative;
     width: 142px;
     height: 142px;
     border-radius: 0;
@@ -550,11 +551,21 @@
     animation: fetch-bounce 1.5s infinite;
   }
 
-  .spell-v2-loading-icon img {
+  .spell-v2-loading-frame {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
-    animation: fetch-image-swap 1s infinite;
+    opacity: 0;
+  }
+
+  .spell-v2-loading-frame.frame-a {
+    animation: fetch-frame-a 1.5s steps(1, end) infinite;
+  }
+
+  .spell-v2-loading-frame.frame-b {
+    animation: fetch-frame-b 1.5s steps(1, end) infinite;
   }
 
   .spell-v2-loading-text {
@@ -579,12 +590,27 @@
     }
   }
 
-  @keyframes fetch-image-swap {
-    0%, 100% {
-      content: url('https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png');
+  @keyframes fetch-frame-a {
+    0%, 11.999% {
+      opacity: 1;
     }
-    50% {
-      content: url('https://i.ibb.co/HTGHfXp/floof-fetch-scroll-A-128.png');
+    12%, 41.999% {
+      opacity: 0;
+    }
+    62%, 100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fetch-frame-b {
+    0%, 11.999% {
+      opacity: 0;
+    }
+    12%, 41.999% {
+      opacity: 1;
+    }
+    62%, 100% {
+      opacity: 0;
     }
   }
 

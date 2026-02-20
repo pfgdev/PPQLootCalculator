@@ -1,7 +1,7 @@
 # Loot Chest Handoff
 
 Purpose: implementation packet for the Loot Chest workstream.
-Last updated: 2026-02-19
+Last updated: 2026-02-20
 Owner: PPQ
 
 ## 1) Product Goal
@@ -9,6 +9,19 @@ Create a fast DM-facing Loot Chest interface that replaces spreadsheet editing d
 
 Core principle:
 - Minimize clicks and context switching during game sessions.
+
+## 1.1) Current Technical Baseline (Post-Cleanup)
+- Runtime UI is v2-only:
+  - Gold v2
+  - Spell Scrolls v2
+- Legacy tabs and beta files were removed from runtime and repo.
+- Shared v2 card primitives now live in `v2-cards.css.html`.
+- RPC data contract is native object transport (not JSON strings).
+- Initialization now uses `LockService` for safer first-load behavior.
+
+Implication for Loot Chest:
+- Build as a new v2-style feature, following current runtime patterns only.
+- Avoid reintroducing legacy include patterns or JSON-string payload patterns.
 
 ## 2) Current Source of Truth (Spreadsheet)
 Current model is a large unified table (`PPQ Magic Item Table`) containing:
@@ -177,26 +190,40 @@ UX targets:
 
 ## 12) Open Decisions for PPQ
 
-1. Token uniqueness:
-- Must token be unique in a chest, or can token map to multiple entries?
+Resolved decisions:
 
-2. Delete policy:
-- No delete, soft delete, or hard delete?
+1. Token uniqueness
+- Tokens are unique per chest.
+- One token maps to exactly one item.
 
-3. Chest model:
-- Single active chest only, or multiple concurrently editable?
+2. Delete policy
+- Use soft delete in phase 1.
+- Deleted rows are hidden from normal DM flow and retained for recovery/testing.
 
-4. Awarded editing:
-- Keep awarded rows fully editable, or partially locked?
+3. Chest model / selection
+- Support selecting a chest.
+- Default behavior can be either:
+  - load a default chest (recommended: active/default chest), or
+  - restore last selected chest.
+- For phase 1 implementation, start with a deterministic default chest load; optional remember-last behavior can be added after core flow is stable.
+
+4. Status toggle vs edit mode
+- Main view supports fast `AWARDED` <-> `IN_BOX` toggles.
+- Editing item fields should be a separate edit flow (open item -> edit -> submit), not mixed inline with every control.
+
+5. Economy detail scope
+- Keep heavy economy valuation out of phase 1.
+- Focus on chest operations and state management over gold-progress analytics.
 
 ## 13) Suggested Build Order
 
 1. Add server read endpoints and schema guards.
 2. Implement tab shell and read-only table.
 3. Implement status toggles + metrics refresh.
-4. Implement add/edit flows.
-5. Add filters and search.
-6. Add migration script/helpers.
+4. Implement add/edit mode flow (separate from toggle flow).
+5. Implement soft delete flow.
+6. Add filters and search.
+7. Add migration script/helpers.
 
 ## 14) New Session Prompt
 

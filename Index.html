@@ -12,6 +12,7 @@
   <?!= include('icon-styles.css.html') ?> 
   <?!= include('gold-v2.css.html') ?>
   <?!= include('spell-v2.css.html') ?>
+  <?!= include('loot.css.html') ?>
 
   <?!= include('global.css.html') ?>
   
@@ -20,6 +21,7 @@
   <?!= include('tab-scripts.html') ?>
   <?!= include('gold-v2-scripts.html') ?>
   <?!= include('spell-v2-scripts.html') ?>
+  <?!= include('loot-scripts.html') ?>
 
 </head>
 <body onload="onPageLoad()">
@@ -28,14 +30,16 @@
 
     <!-- Gold Calculator v2 Tab Content (parallel build path) -->
     <section id="GoldCalculatorV2" class="tab-section active">
-      <?!= include('goldcalculatorv2header.html') ?>
       <?!= include('goldcalculatorv2-shell.html') ?>
     </section>
 
     <!-- Spell Scrolls v2 Tab Content (parallel build path) -->
     <section id="SpellScrollsV2" class="tab-section">
-      <?!= include('spellscrollsv2header.html') ?>
       <?!= include('spellscrollsv2-shell.html') ?>
+    </section>
+
+    <section id="LootChestsV2" class="tab-section">
+      <?!= include('lootchests-shell.html') ?>
     </section>
 
   </div>

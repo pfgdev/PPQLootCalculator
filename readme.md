@@ -8,6 +8,7 @@ Last updated: 2026-02-20
 ### Visible Tabs (Header)
 1. Gold v2
 2. Spell Scrolls v2
+3. PPQ Loot Chests
 
 ### Deprecated Tabs
 - Legacy Gold Calculator, Spell Scrolls, and Beta runtime code has been removed from `Index.html`.
@@ -50,6 +51,30 @@ Last updated: 2026-02-20
   - detail fetch overlay loader
 - Click-off behavior collapses detail panel (except rows, filter controls, and roll button).
 
+### Loot Chests (prototype v1)
+- Play and Manage modes.
+- Chest selector with local dummy data.
+- One-tap status transitions:
+  - `IN_CHEST -> AWARDED`
+  - `AWARDED -> IN_CHEST`
+  - `UNUSED -> IN_CHEST`
+- Grouped status list support (`In Chest`, `Awarded`, `Unused`) via `All Statuses` view.
+- Right-side detail panel for item data:
+  - token
+  - status
+  - item name
+  - rarity
+  - type
+  - attunement
+  - description
+  - notes
+- Quick token generation:
+  - color theme + optional label override + numeric range (`1-10,12,15-18`)
+  - skips active token collisions
+- Add single token.
+- Local-only Save/Revert snapshot model for fast iteration.
+- Floof sync lane shown during simulated save delay.
+
 ## Spreadsheet Dependencies
 
 Named ranges required:
@@ -89,6 +114,11 @@ Script Properties keys populated during initialization:
   - `spellscrollsv2-shell.html`
   - `spell-v2.css.html`
   - `spell-v2-scripts.html`
+- Loot Chests (prototype v1):
+  - `lootchestsheader.html`
+  - `lootchests-shell.html`
+  - `loot.css.html`
+  - `loot-scripts.html`
 
 ### Shared composition and tab wiring
 - `Index.html`
@@ -111,11 +141,13 @@ Script Properties keys populated during initialization:
 - Open deployed web app and smoke test:
   1. Gold v2: add/remove rows, check stepper, calculate, reset, Floof toggle.
   2. Spell Scrolls v2: level load, row click detail, click-off collapse, d100 roll.
-  3. Tablet/mobile: header wrapping, detail panel behavior, list scroll behavior.
+  3. Loot Chests: mode switch, status toggle, generate range skip behavior, detail save, local save/revert.
+  4. Tablet/mobile: header wrapping, detail panel behavior, list scroll behavior.
 
 ## Documentation Map
 - Current technical handoff: `CODEX_CONTEXT.md`
 - Loot chest planning and implementation handoff: `docs/LOOT_CHEST_HANDOFF.md`
+- Loot chest v1 prototype UI contract: `docs/LOOT_CHEST_V1_UI_SPEC.md`
 - Quick regression checklist: `docs/SMOKE_TEST.md`
 
 ## Notes

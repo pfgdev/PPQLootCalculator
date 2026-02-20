@@ -9,6 +9,7 @@ Last updated: 2026-02-20
 Header currently exposes only:
 1. `GoldCalculatorV2` (`Gold v2`)
 2. `SpellScrollsV2` (`Spell Scrolls v2`)
+3. `LootChestsV2` (`PPQ Loot Chests`)
 
 ### Deprecated Runtime
 - Legacy `GoldCalculator`, `SpellScrolls`, and `BetaVersion` sections were removed from `Index.html`.
@@ -108,7 +109,32 @@ Behavior:
   - auto-scroll to final selected row
 - Switching away from Spell Scrolls v2 tab cancels active roll and resets displayed roll value.
 
+## 5.1) Loot Chests v1 Behavior (Prototype)
+
+Files:
+- `lootchestsheader.html`
+- `lootchests-shell.html`
+- `loot.css.html`
+- `loot-scripts.html`
+
+Behavior:
+- Play and Manage modes.
+- Local dummy chest data (no spreadsheet IO yet).
+- One-tap status transitions:
+  - `IN_CHEST -> AWARDED`
+  - `AWARDED -> IN_CHEST`
+  - `UNUSED -> IN_CHEST`
+- `All Statuses` view groups rows as In Chest, Awarded, Unused.
+- Detail panel supports item editing plus soft-delete in local working state.
+- Quick generation supports numeric range input and collision skip.
+- Save/Revert is local snapshot only with simulated sync lane.
+
 ## 6) Data Contracts
+
+Loot Chests note:
+- Current Loot Chests runtime is prototype-local only.
+- Save/Revert currently operate on local in-memory snapshot state.
+- Spreadsheet integration is intentionally deferred.
 
 ### Named ranges
 - `Investigation_DCs`
@@ -175,7 +201,13 @@ After any nontrivial change:
 - Open detail, click-off collapse.
 - Trigger d100 roll, verify lock and final selection.
 - Switch tabs during roll and ensure cancellation/reset.
-4. Tablet/mobile:
+4. Loot Chests v1 (prototype):
+- Toggle Play/Manage modes.
+- Toggle status and Undo.
+- Generate missing token range and confirm collision skips.
+- Edit selected item and save item details.
+- Save/Revert local snapshot and confirm sync lane behavior.
+5. Tablet/mobile:
 - Check header heights and no layout hitching.
 - Check panel behavior and scroll interactions.
 

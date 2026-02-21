@@ -118,7 +118,11 @@ Script Properties keys populated during initialization:
   - `lootchestsheader.html`
   - `lootchests-shell.html`
   - `loot.css.html`
-  - `loot-scripts.html`
+  - `loot-v2-scripts.state.html`
+  - `loot-v2-scripts.helpers.html`
+  - `loot-v2-scripts.render.html`
+  - `loot-v2-scripts.actions.html`
+  - `loot-v2-scripts.events-init.html`
 
 ### Shared composition and tab wiring
 - `Index.html`
@@ -138,6 +142,7 @@ Script Properties keys populated during initialization:
 
 ## Deploy and Test
 - Push GAS files: `clasp push`
+- Validate template include expansion + script parse locally: `node scripts/validate-index.js`
 - Open deployed web app and smoke test:
   1. Gold v2: add/remove rows, check stepper, calculate, reset, Floof toggle.
   2. Spell Scrolls v2: level load, row click detail, click-off collapse, d100 roll.

@@ -115,7 +115,11 @@ Files:
 - `lootchestsheader.html`
 - `lootchests-shell.html`
 - `loot.css.html`
-- `loot-scripts.html`
+- `loot-v2-scripts.state.html`
+- `loot-v2-scripts.helpers.html`
+- `loot-v2-scripts.render.html`
+- `loot-v2-scripts.actions.html`
+- `loot-v2-scripts.events-init.html`
 
 Behavior:
 - Play and Manage modes.

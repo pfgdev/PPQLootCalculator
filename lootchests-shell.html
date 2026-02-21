@@ -7,18 +7,13 @@
         <div class="loot-v2-controls-panel">
           <div class="loot-v2-toolbar-main">
             <label class="loot-v2-field loot-v2-chest-field">
-              <span>Select Loot Chest</span>
-              <select id="lootV2ChestSelect"></select>
+              <select id="lootV2ChestSelect" aria-label="Select Loot Chest"></select>
             </label>
           </div>
 
-          <div class="loot-v2-save-actions">
+          <div class="loot-v2-action-row">
             <button class="button loot-v2-primary" type="button" data-action="save-working">Save</button>
             <button class="button loot-v2-secondary" type="button" data-action="revert-working">Revert All</button>
-            <div id="lootV2DirtyState" class="loot-v2-dirty-state">All changes saved</div>
-          </div>
-
-          <div class="loot-v2-undo-row">
             <button id="lootV2UndoLastBtn" class="button loot-v2-secondary" type="button" data-action="undo-status-change">Undo Last</button>
             <div id="lootV2HistoryState" class="loot-v2-history-state">No changes made.</div>
           </div>
@@ -27,7 +22,6 @@
         <div class="loot-v2-context-area">
           <div id="lootV2TableToolsCard" class="loot-v2-manage-inline">
             <div class="loot-v2-manage-mode-field">
-              <div class="loot-v2-manage-label">Manage</div>
               <div class="loot-v2-manage-tabs" role="tablist" aria-label="Manage tools">
                 <button class="loot-v2-manage-tab is-active" type="button" data-action="set-manage-tab" data-manage-tab="chest">Manage Chests</button>
                 <button class="loot-v2-manage-tab" type="button" data-action="set-manage-tab" data-manage-tab="group-create">Create Group</button>
@@ -41,7 +35,7 @@
                 <div class="loot-v2-manage-row loot-v2-manage-row-chest">
                   <label class="loot-v2-field">
                     <span>Loot Chest Name</span>
-                    <input id="lootV2NewChestName" type="text" placeholder="Ex: My Loot Chest">
+                    <input id="lootV2NewChestName" type="text" placeholder="Enter Chest name...">
                   </label>
                   <button id="lootV2AddChestBtn" class="button loot-v2-primary loot-v2-side-btn" type="button" data-action="create-chest">Add Chest</button>
                   <label class="loot-v2-field">
@@ -56,7 +50,7 @@
                 <div class="loot-v2-manage-row loot-v2-manage-row-group-create">
                   <label class="loot-v2-field">
                     <span>Group Name</span>
-                    <input id="lootV2CreateGroupName" type="text" placeholder="Ex: Blue">
+                    <input id="lootV2CreateGroupName" type="text" placeholder="Enter Token Group name...">
                   </label>
                   <label class="loot-v2-field">
                     <span>Theme</span>
@@ -66,7 +60,7 @@
                     <span>Tokens</span>
                     <div class="loot-v2-stepper" role="group" aria-label="Token count">
                       <button class="loot-v2-stepper-btn" type="button" data-action="group-count-dec" aria-label="Decrease token count">-</button>
-                      <input id="lootV2CreateGroupCount" type="number" min="1" max="999" step="1" value="1" inputmode="numeric" aria-label="Token count">
+                      <input id="lootV2CreateGroupCount" type="number" min="1" max="999" step="1" value="10" inputmode="numeric" aria-label="Token count">
                       <button class="loot-v2-stepper-btn" type="button" data-action="group-count-inc" aria-label="Increase token count">+</button>
                     </div>
                   </label>
@@ -82,7 +76,7 @@
                   </label>
                   <label class="loot-v2-field">
                     <span>Name</span>
-                    <input id="lootV2ManageGroupName" type="text" placeholder="Change Group Name">
+                    <input id="lootV2ManageGroupName" type="text" placeholder="Enter new name...">
                   </label>
                   <label class="loot-v2-field">
                     <span>Theme</span>
@@ -135,9 +129,9 @@
             <button class="loot-v2-list-filter-btn is-active" type="button" data-action="toggle-list-status-filter" data-status="AWARDED">Awarded</button>
             <button class="loot-v2-list-filter-btn" type="button" data-action="toggle-list-status-filter" data-status="UNUSED">Unused</button>
           </div>
-        </div>
-        <div class="loot-v2-token-search">
-          <input id="lootV2SearchInput" type="search" placeholder="Type token or item name...">
+          <div class="loot-v2-token-search">
+            <input id="lootV2SearchInput" type="search" placeholder="Enter filter text...">
+          </div>
         </div>
         <div id="lootV2TableScroll" class="loot-v2-table-scroll">
           <div class="loot-v2-list-columns">
@@ -250,9 +244,9 @@
               <input id="lootV2EditItemUrl" type="url" placeholder="https://www.dndbeyond.com/...">
             </label>
 
-            <label class="loot-v2-field loot-v2-field-span-2">
+            <label class="loot-v2-field loot-v2-field-span-2 loot-v2-notes-field">
               <span>Notes</span>
-              <textarea id="lootV2EditNotes" rows="2" placeholder="Optional DM notes" disabled></textarea>
+              <textarea id="lootV2EditNotes" rows="1" placeholder="Optional DM notes" disabled></textarea>
             </label>
           </div>
 

@@ -16,6 +16,7 @@
       min: 1,
       max: 999
     };
+    const DEFAULT_GROUP_COUNT = 10;
 
     const GROUP_COUNT_REPEATABLE_ACTIONS = new Set([
       "group-count-inc",
@@ -149,6 +150,7 @@
     let editTypeNode;
     let editDescriptionNode;
     let editItemUrlNode;
+    let itemUrlEditFieldNode;
     let itemUrlViewNode;
     let itemUrlAnchorNode;
     let editNotesNode;
@@ -519,6 +521,16 @@
     }
 
     function updateDirtyState() {
+      const hasChest = chestList.length > 0;
+      const dirty = hasChest && isDirty();
+      if (saveWorkingButtonNode) {
+        saveWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
+        saveWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "All changes saved" : "";
+      }
+      if (revertWorkingButtonNode) {
+        revertWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
+        revertWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "No unsaved changes" : "";
+      }
       if (!chestList.length) {
         setDirtyStateMessage("Create a chest to begin", "is-dirty");
         return;
@@ -744,6 +756,7 @@
       const tokenHeader = document.createElement("th");
       tokenHeader.textContent = "Token";
       const itemHeader = document.createElement("th");
+      itemHeader.className = "loot-v2-item-col-heading";
       itemHeader.textContent = "Item";
       headerRow.appendChild(tokenHeader);
       headerRow.appendChild(itemHeader);
@@ -759,6 +772,25 @@
       wrap.appendChild(table);
       card.appendChild(wrap);
       return card;
+    }
+
+    function autoSizeNotesField() {
+      if (!editNotesNode) return;
+      const styles = window.getComputedStyle(editNotesNode);
+      const lineHeight = parseFloat(styles.lineHeight) || 16.4;
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const borderTop = parseFloat(styles.borderTopWidth) || 0;
+      const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+      const minHeight = Math.ceil(lineHeight + paddingTop + paddingBottom + borderTop + borderBottom);
+      if (!normalizeWhitespace(editNotesNode.value)) {
+        editNotesNode.style.height = minHeight + "px";
+        return;
+      }
+      editNotesNode.style.height = "auto";
+      const measured = editNotesNode.scrollHeight || 0;
+      const nextHeight = Math.max(minHeight, Math.ceil(measured + borderTop + borderBottom));
+      editNotesNode.style.height = nextHeight + "px";
     }
 
     function renderEmptyColumn(columnNode, message) {
@@ -839,15 +871,20 @@
 
     function renderItemUrlView(item) {
       if (!itemUrlViewNode || !itemUrlAnchorNode) return;
+      if (itemUrlEditFieldNode) {
+        itemUrlEditFieldNode.hidden = !isDetailEditing;
+      }
       if (isDetailEditing || !item) {
         itemUrlViewNode.hidden = true;
         itemUrlAnchorNode.removeAttribute("href");
+        itemUrlAnchorNode.textContent = "";
         return;
       }
       const safeHref = toSafeExternalHref(item.item_url || "");
       if (!safeHref) {
         itemUrlViewNode.hidden = true;
         itemUrlAnchorNode.removeAttribute("href");
+        itemUrlAnchorNode.textContent = "";
         return;
       }
       itemUrlViewNode.hidden = false;
@@ -915,6 +952,7 @@
       editDescriptionNode.value = item.description || "";
       editItemUrlNode.value = item.item_url || "";
       editNotesNode.value = item.notes || "";
+      autoSizeNotesField();
       renderItemUrlView(item);
     }
 
@@ -943,6 +981,7 @@
       if (detailEditButtonNode) {
         detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit";
       }
+      autoSizeNotesField();
       renderItemUrlView(getItemById(selectedItemId));
     }
 
@@ -1021,17 +1060,19 @@
     }
 
     function renderChestSelect() {
-      const current = chestSelectNode.value || selectedChestId || CREATE_CHEST_OPTION;
+      const current = selectedChestId || chestSelectNode.value || CREATE_CHEST_OPTION;
       clearNode(chestSelectNode);
       chestList.forEach(function (chest) {
         const option = document.createElement("option");
         option.value = chest.chest_id;
         option.textContent = chest.chest_name;
+        option.style.fontWeight = "700";
         chestSelectNode.appendChild(option);
       });
       const createOption = document.createElement("option");
       createOption.value = CREATE_CHEST_OPTION;
       createOption.textContent = "Create New Chest...";
+      createOption.style.fontWeight = "700";
       chestSelectNode.appendChild(createOption);
 
       const hasCurrentChest = chestList.some(function (chest) {
@@ -1071,7 +1112,7 @@
 
       const prompt = document.createElement("option");
       prompt.value = "";
-      prompt.textContent = "Select chest...";
+      prompt.textContent = "Select Chest to delete";
       deleteChestSelectNode.appendChild(prompt);
 
       chestList.forEach(function (chest) {
@@ -1102,7 +1143,7 @@
       const selectedDeleteId = deleteChestSelectNode.value || "";
       const armed = !!pendingDeleteChestId && pendingDeleteChestId === selectedDeleteId;
       deleteChestButtonNode.disabled = !selectedDeleteId && !armed;
-      deleteChestButtonNode.title = selectedDeleteId ? "" : "Select chest";
+      deleteChestButtonNode.title = selectedDeleteId ? "" : "Select Chest to delete";
       deleteChestButtonNode.textContent = armed ? "Confirm" : "Delete Chest";
     }
 
@@ -1217,7 +1258,7 @@
       const hasValidCreateCount = Number.isInteger(createCount)
         && createCount >= GROUP_COUNT_LIMITS.min
         && createCount <= GROUP_COUNT_LIMITS.max;
-      const createTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value) || COLOR_THEMES[0].value;
+      const createTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value);
       const hasGroupNameConflict = summaries.some(function (summary) {
         return normalizePrefixKey(summary.name) === normalizePrefixKey(createName);
       });
@@ -1226,14 +1267,14 @@
         addGroupDisableReason = "Create a chest first";
       } else if (!createName) {
         addGroupDisableReason = "Name required";
+      } else if (!createTheme) {
+        addGroupDisableReason = "Theme required";
       } else if (hasGroupNameConflict) {
         addGroupDisableReason = "Name already exists";
       } else if (!Number.isInteger(createCount)) {
         addGroupDisableReason = "Tokens must be a whole number";
       } else if (createCount < GROUP_COUNT_LIMITS.min || createCount > GROUP_COUNT_LIMITS.max) {
         addGroupDisableReason = "Tokens must be 1-999";
-      } else if (!createTheme) {
-        addGroupDisableReason = "Theme required";
       }
 
       if (addGroupButtonNode) {
@@ -1252,6 +1293,10 @@
           manageGroupSelectNode.value = "";
           manageGroupSelectNode.disabled = true;
         } else {
+          const prompt = document.createElement("option");
+          prompt.value = "";
+          prompt.textContent = "Select group...";
+          manageGroupSelectNode.appendChild(prompt);
           summaries.forEach(function (summary) {
             const option = document.createElement("option");
             option.value = summary.name;
@@ -1259,49 +1304,69 @@
             manageGroupSelectNode.appendChild(option);
           });
           const hasPrevious = summaries.some(function (summary) { return summary.name === previous; });
-          manageGroupSelectNode.value = hasPrevious ? previous : summaries[0].name;
+          manageGroupSelectNode.value = hasPrevious ? previous : "";
           manageGroupSelectNode.disabled = noChest;
         }
       }
 
       const selected = manageGroupSelectNode ? getGroupByName(manageGroupSelectNode.value) : null;
       if (manageGroupNameNode) {
-        const shouldSync = !manageGroupNameNode.dataset.userEdited || manageGroupNameNode.dataset.groupSource !== (selected ? selected.name : "");
-        if (selected && shouldSync) {
-          manageGroupNameNode.value = selected.name;
-          manageGroupNameNode.dataset.groupSource = selected.name;
+        const selectedSource = selected ? selected.name : "";
+        const sourceChanged = manageGroupNameNode.dataset.groupSource !== selectedSource;
+        if (selected && sourceChanged) {
+          manageGroupNameNode.value = "";
+          manageGroupNameNode.dataset.groupSource = selectedSource;
+          manageGroupNameNode.dataset.userEdited = "";
         } else if (!selected) {
           manageGroupNameNode.value = "";
           delete manageGroupNameNode.dataset.groupSource;
+          manageGroupNameNode.dataset.userEdited = "";
         }
         manageGroupNameNode.disabled = noChest || !selected;
       }
 
       if (manageGroupThemeNode) {
-        const shouldSyncTheme = !manageGroupThemeNode.dataset.userEdited
-          || manageGroupThemeNode.dataset.groupSource !== (selected ? selected.name : "");
-        if (selected && shouldSyncTheme) {
-          manageGroupThemeNode.value = resolveThemeValue(selected.theme) || COLOR_THEMES[0].value;
-          manageGroupThemeNode.dataset.groupSource = selected.name;
+        const selectedSource = selected ? selected.name : "";
+        const sourceChanged = manageGroupThemeNode.dataset.groupSource !== selectedSource;
+        if (selected && sourceChanged) {
+          manageGroupThemeNode.value = "";
+          manageGroupThemeNode.dataset.groupSource = selectedSource;
+          manageGroupThemeNode.dataset.userEdited = "";
         } else if (!selected) {
-          manageGroupThemeNode.value = COLOR_THEMES[0].value;
+          manageGroupThemeNode.value = "";
           delete manageGroupThemeNode.dataset.groupSource;
+          manageGroupThemeNode.dataset.userEdited = "";
         }
         manageGroupThemeNode.disabled = noChest || !selected;
       }
 
       const nextName = normalizeWhitespace(manageGroupNameNode && manageGroupNameNode.value);
-      const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value) || COLOR_THEMES[0].value;
+      const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value);
       const hasRenameConflict = !!selected && summaries.some(function (summary) {
         return normalizePrefixKey(summary.name) === normalizePrefixKey(nextName)
           && normalizePrefixKey(summary.name) !== normalizePrefixKey(selected.name);
       });
-      const isThemeChanged = !!selected && resolveThemeValue(selected.theme) !== nextTheme;
+      const isThemeChanged = !!selected && !!nextTheme && resolveThemeValue(selected.theme) !== nextTheme;
       const isNameChanged = !!selected && normalizePrefixKey(selected.name) !== normalizePrefixKey(nextName);
-      const canUpdate = !!selected && !!nextName && !hasRenameConflict && (isNameChanged || isThemeChanged);
+      const canUpdate = !!selected && !!nextName && !!nextTheme && !hasRenameConflict && (isNameChanged || isThemeChanged);
+      let updateDisableReason = "";
+      if (noChest) {
+        updateDisableReason = "Create a chest first";
+      } else if (!selected) {
+        updateDisableReason = "Select group";
+      } else if (!nextName) {
+        updateDisableReason = "Name required";
+      } else if (!nextTheme) {
+        updateDisableReason = "Select new theme";
+      } else if (hasRenameConflict) {
+        updateDisableReason = "Name already exists";
+      } else if (!canUpdate) {
+        updateDisableReason = "No changes to update";
+      }
 
       if (updateGroupButtonNode) {
         updateGroupButtonNode.disabled = noChest || !canUpdate;
+        updateGroupButtonNode.title = updateGroupButtonNode.disabled ? updateDisableReason : "";
       }
 
       const armedDelete = !!selected
@@ -1310,6 +1375,7 @@
       if (deleteGroupButtonNode) {
         deleteGroupButtonNode.textContent = armedDelete ? "Confirm" : "Delete";
         deleteGroupButtonNode.disabled = noChest || !selected;
+        deleteGroupButtonNode.title = (noChest || !selected) ? "Select group" : "";
       }
     }
 
@@ -1322,6 +1388,18 @@
     function renderColorOptions() {
       if (createGroupThemeNode) clearNode(createGroupThemeNode);
       if (manageGroupThemeNode) clearNode(manageGroupThemeNode);
+      if (createGroupThemeNode) {
+        const createPrompt = document.createElement("option");
+        createPrompt.value = "";
+        createPrompt.textContent = "Select theme...";
+        createGroupThemeNode.appendChild(createPrompt);
+      }
+      if (manageGroupThemeNode) {
+        const managePrompt = document.createElement("option");
+        managePrompt.value = "";
+        managePrompt.textContent = "Select new theme...";
+        manageGroupThemeNode.appendChild(managePrompt);
+      }
       COLOR_THEMES.forEach(function (theme) {
         const option = document.createElement("option");
         option.value = theme.value;
@@ -1333,8 +1411,8 @@
           manageGroupThemeNode.appendChild(option.cloneNode(true));
         }
       });
-      if (createGroupThemeNode) createGroupThemeNode.value = COLOR_THEMES[0].value;
-      if (manageGroupThemeNode) manageGroupThemeNode.value = COLOR_THEMES[0].value;
+      if (createGroupThemeNode) createGroupThemeNode.value = "";
+      if (manageGroupThemeNode) manageGroupThemeNode.value = "";
     }
 
     function renderStatusScope() {
@@ -1371,8 +1449,6 @@
       renderGroupEditorState();
       renderTokenRangeState();
       const noChest = !hasSelectedChest();
-      if (saveWorkingButtonNode) saveWorkingButtonNode.disabled = noChest || isSyncing;
-      if (revertWorkingButtonNode) revertWorkingButtonNode.disabled = noChest || isSyncing;
       if (searchInputNode) searchInputNode.disabled = noChest;
       renderListStatusFilters();
       renderUndoActionState();
@@ -1579,6 +1655,10 @@
         empty.textContent = "No groups available";
         tokenRangeGroupNode.appendChild(empty);
       } else {
+        const prompt = document.createElement("option");
+        prompt.value = "";
+        prompt.textContent = "Select group...";
+        tokenRangeGroupNode.appendChild(prompt);
         summaries.forEach(function (summary) {
           const option = document.createElement("option");
           option.value = summary.name;
@@ -1590,7 +1670,7 @@
       if (summaries.length && summaries.some(function (summary) { return summary.name === previous; })) {
         tokenRangeGroupNode.value = previous;
       } else {
-        tokenRangeGroupNode.value = summaries.length ? summaries[0].name : "";
+        tokenRangeGroupNode.value = "";
       }
 
       const disableControls = noChest || !summaries.length;
@@ -1706,10 +1786,10 @@
     function createGroup() {
       if (!hasSelectedChest()) return;
       const groupName = normalizeWhitespace(createGroupNameNode && createGroupNameNode.value);
-      const groupTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value) || COLOR_THEMES[0].value;
+      const groupTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value);
       const tokenCountRaw = Number(normalizeWhitespace(createGroupCountNode && createGroupCountNode.value));
 
-      if (!groupName) {
+      if (!groupName || !groupTheme) {
         return;
       }
       if (!Number.isInteger(tokenCountRaw) || tokenCountRaw < GROUP_COUNT_LIMITS.min || tokenCountRaw > GROUP_COUNT_LIMITS.max) {
@@ -1755,7 +1835,7 @@
       pendingDeleteGroupPrefix = "";
 
       if (createGroupNameNode) createGroupNameNode.value = "";
-      if (createGroupCountNode) createGroupCountNode.value = String(GROUP_COUNT_LIMITS.min);
+      if (createGroupCountNode) createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
       setManageTab("group-manage");
       renderAll();
       if (manageGroupSelectNode) {
@@ -1771,8 +1851,8 @@
       if (!group) return;
 
       const nextName = normalizeWhitespace(manageGroupNameNode && manageGroupNameNode.value);
-      const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value) || COLOR_THEMES[0].value;
-      if (!nextName) {
+      const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value);
+      if (!nextName || !nextTheme) {
         return;
       }
 
@@ -1957,7 +2037,7 @@
         mode: "undo",
         can_toggle: true
       };
-      setHistoryState("Last change: " + describeStatusMove(item.token, status), "is-info");
+      setHistoryState("Last: " + describeStatusMove(item.token, status), "is-info");
       renderAll();
     }
 
@@ -2219,8 +2299,9 @@
 
     function handleDocumentClick(event) {
       if (!root || !root.classList.contains("loot-v2-has-detail")) return;
-      if (detailPanelNode && detailPanelNode.contains(event.target)) return;
-      if (event.target.closest("tr[data-item-id]")) return;
+      const path = typeof event.composedPath === "function" ? event.composedPath() : null;
+      if (path && path.indexOf(root) !== -1) return;
+      if (root.contains(event.target)) return;
       clearSelectedItem();
     }
 
@@ -2264,6 +2345,10 @@
       if (event.target === searchInputNode) {
         searchTerm = searchInputNode.value.trim().toLowerCase();
         renderAll();
+        return;
+      }
+      if (event.target === editNotesNode) {
+        autoSizeNotesField();
       }
     }
 
@@ -2317,7 +2402,7 @@
         if (Number.isInteger(parsed)) {
           setCreateGroupCountValue(parsed);
         } else if (!raw) {
-          createGroupCountNode.value = String(GROUP_COUNT_LIMITS.min);
+          createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
         }
         renderGroupEditorState();
         return;
@@ -2359,6 +2444,7 @@
       editTypeNode = document.getElementById("lootV2EditType");
       editDescriptionNode = document.getElementById("lootV2EditDescription");
       editItemUrlNode = document.getElementById("lootV2EditItemUrl");
+      itemUrlEditFieldNode = root.querySelector(".loot-v2-item-url-edit");
       itemUrlViewNode = document.getElementById("lootV2ItemUrlView");
       itemUrlAnchorNode = document.getElementById("lootV2ItemUrlAnchor");
       editNotesNode = document.getElementById("lootV2EditNotes");

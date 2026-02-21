@@ -469,7 +469,8 @@
   }
 
   .loot-v2-manage-row-group-manage {
-    grid-template-columns: minmax(130px, 1.2fr) minmax(128px, 1.35fr) minmax(96px, 0.9fr) minmax(88px, 0.8fr) minmax(88px, 0.8fr);
+    grid-template-columns: minmax(108px, 1.15fr) minmax(108px, 1.15fr) minmax(92px, 0.95fr) minmax(82px, 0.74fr) minmax(82px, 0.74fr);
+    gap: 6px;
   }
 
   .loot-v2-manage-row-group-create .loot-v2-field,
@@ -619,7 +620,7 @@
   .loot-v2-manage-panel[data-manage-panel="tokens"] {
     --loot-v2-token-tools-height: var(--loot-v2-action-height);
     overflow: hidden;
-    padding-right: 0;
+    padding-right: 6px;
     padding-top: 4px;
   }
 
@@ -878,12 +879,16 @@
     background: #fff8e5 !important;
   }
 
+  .loot-v2-row.status-in-chest td {
+    opacity: 1;
+  }
+
   .loot-v2-row.status-awarded td {
-    opacity: 0.72;
+    opacity: 0.8;
   }
 
   .loot-v2-row.status-unused td {
-    opacity: 0.6;
+    opacity: 0.68;
   }
 
   .loot-v2-token {
@@ -892,10 +897,55 @@
   }
 
   .loot-v2-item-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+  }
+
+  .loot-v2-item-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .loot-v2-item-name.is-unassigned .loot-v2-item-name-text {
+    font-style: italic;
+  }
+
+  .loot-v2-item-name-unused .loot-v2-item-name-text {
+    color: #5a6f94;
+  }
+
+  .loot-v2-item-status-marker {
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1;
+    border: none;
+    background: transparent;
+    color: inherit;
+  }
+
+  .loot-v2-item-status-in-chest {
+    color: #2a5ea8;
+  }
+
+  .loot-v2-item-status-awarded {
+    color: #2d7b4f;
+  }
+
+  .loot-v2-item-status-unused {
+    color: #66758f;
   }
 
   .loot-v2-quick-btn {
@@ -997,6 +1047,70 @@
     margin-bottom: 12px;
   }
 
+  .loot-v2-detail-summary {
+    border: 1px solid #d4deef;
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    min-height: 56px;
+    text-align: left;
+  }
+
+  .loot-v2-detail-summary-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .loot-v2-detail-summary-read {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .loot-v2-detail-item-name-read {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.12;
+    color: #223453;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .loot-v2-detail-item-name-read.is-empty {
+    font-style: italic;
+    color: #4b5f83;
+  }
+
+  .loot-v2-detail-tag-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+  }
+
+  .loot-v2-detail-tag {
+    border: 1px solid #c8d7ee;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: #344f78;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    line-height: 1;
+  }
+
   .loot-v2-detail-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1013,33 +1127,112 @@
     gap: 8px;
   }
 
+  .loot-v2-status-lock-hint {
+    display: none;
+    margin-top: 4px;
+    color: #607090;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  .loot-v2.loot-v2-detail-editing .loot-v2-status-lock-hint {
+    display: block;
+  }
+
+  .loot-v2.loot-v2-detail-editing .loot-v2-status-field {
+    display: none;
+  }
+
+  .loot-v2.loot-v2-detail-editing .loot-v2-detail-summary {
+    display: none;
+  }
+
+  .loot-v2:not(.loot-v2-detail-editing) .loot-v2-item-name-edit-field {
+    display: none;
+  }
+
+  .loot-v2:not(.loot-v2-detail-editing) .loot-v2-rarity-edit-field,
+  .loot-v2:not(.loot-v2-detail-editing) .loot-v2-type-edit-field {
+    display: none;
+  }
+
   .loot-v2-status-toggle button {
+    position: relative;
     border: 1px solid #b5c6e7;
     border-radius: 8px;
-    background: #eef4ff;
-    color: #2f466d;
+    background: #f2f6ff;
+    color: #2b4268;
     font-size: 13px;
     font-weight: 700;
-    min-width: 96px;
+    min-width: 98px;
     min-height: 48px;
-    padding: 10px 14px;
+    padding: 10px 14px 10px 30px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, color 120ms ease;
+  }
+
+  .loot-v2-status-toggle button::before {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 400;
+    border: none;
+    background: transparent;
+    color: inherit;
+    content: "";
+  }
+
+  .loot-v2-status-toggle button[data-status="IN_CHEST"]::before {
+    content: "\1F4E6";
+  }
+
+  .loot-v2-status-toggle button[data-status="AWARDED"]::before {
+    content: "\2705";
+  }
+
+  .loot-v2-status-toggle button[data-status="UNUSED"]::before {
+    content: "\2796";
   }
 
   .loot-v2-status-toggle button:hover {
     background: #e1ebff;
   }
 
+  .loot-v2-status-toggle button:not(.is-selected) {
+    opacity: 0.86;
+  }
+
   .loot-v2-status-toggle button.is-selected {
-    border-color: #dab869;
-    background: #fef7e2;
-    color: #6b4f18;
-    box-shadow: 0 1px 4px rgba(131, 102, 33, 0.2);
+    border-color: #d3aa4c;
+    background: #fff3d4;
+    color: #5f4a17;
+    box-shadow: 0 0 0 1px rgba(211, 170, 76, 0.35), 0 2px 8px rgba(127, 99, 35, 0.22);
+    opacity: 1;
+  }
+
+  .loot-v2-status-toggle.is-locked button {
+    cursor: default;
+    opacity: 0.72;
+    box-shadow: none;
+  }
+
+  .loot-v2-status-toggle.is-locked button.is-selected {
+    opacity: 0.9;
   }
 
   .loot-v2-field :is(input, select, textarea):disabled {

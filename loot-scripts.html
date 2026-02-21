@@ -140,6 +140,10 @@
 
     let detailEmptyNode;
     let detailContentNode;
+    let detailItemNameReadNode;
+    let detailRarityTagNode;
+    let detailTypeTagNode;
+    let detailStatusToggleNode;
     let editItemNameNode;
     let editRarityNode;
     let editTypeNode;
@@ -177,7 +181,7 @@
     let selectedItemId = "";
     let currentMode = MODE.MANAGE;
     let statusScope = STATUS.IN_CHEST;
-    let activeListStatusFilters = new Set([STATUS.IN_CHEST]);
+    let activeListStatusFilters = new Set([STATUS.IN_CHEST, STATUS.AWARDED]);
     let searchTerm = "";
     let isSyncing = false;
     let isDetailEditing = false;
@@ -258,9 +262,23 @@
     }
 
     function getStatusClass(status) {
+      if (status === STATUS.IN_CHEST) return "status-in-chest";
       if (status === STATUS.AWARDED) return "status-awarded";
       if (status === STATUS.UNUSED) return "status-unused";
       return "";
+    }
+
+    function getStatusClassSuffix(status) {
+      if (status === STATUS.IN_CHEST) return "in-chest";
+      if (status === STATUS.AWARDED) return "awarded";
+      if (status === STATUS.UNUSED) return "unused";
+      return "unknown";
+    }
+
+    function getStatusGlyph(status) {
+      if (status === STATUS.AWARDED) return "\u2705";
+      if (status === STATUS.UNUSED) return "\u2796";
+      return "\ud83d\udce6";
     }
 
     function normalizeThemeKey(value) {
@@ -548,6 +566,14 @@
       activeListStatusFilters = next;
     }
 
+    function ensureListStatusFilter(status) {
+      if (!STATUS_LABELS[status]) return;
+      if (activeListStatusFilters.has(status)) return;
+      const next = new Set(activeListStatusFilters);
+      next.add(status);
+      activeListStatusFilters = next;
+    }
+
     function toggleListStatusFilter(status) {
       if (!STATUS_LABELS[status]) return;
       const next = new Set(activeListStatusFilters);
@@ -631,8 +657,19 @@
 
       const nameCell = document.createElement("td");
       const nameNode = document.createElement("div");
-      nameNode.className = "loot-v2-item-name";
-      nameNode.textContent = item.item_name || "(Unassigned)";
+      nameNode.className = "loot-v2-item-name loot-v2-item-name-" + getStatusClassSuffix(item.status);
+      if (!normalizeWhitespace(item.item_name)) {
+        nameNode.classList.add("is-unassigned");
+      }
+      const markerNode = document.createElement("span");
+      markerNode.className = "loot-v2-item-status-marker loot-v2-item-status-" + getStatusClassSuffix(item.status);
+      markerNode.setAttribute("aria-hidden", "true");
+      markerNode.textContent = getStatusGlyph(item.status);
+      const textNode = document.createElement("span");
+      textNode.className = "loot-v2-item-name-text";
+      textNode.textContent = item.item_name || "(Unassigned)";
+      nameNode.appendChild(markerNode);
+      nameNode.appendChild(textNode);
       nameCell.appendChild(nameNode);
 
       tr.appendChild(tokenCell);
@@ -829,6 +866,18 @@
         if (detailEditButtonNode) {
           detailEditButtonNode.disabled = true;
         }
+        if (detailItemNameReadNode) {
+          detailItemNameReadNode.textContent = "";
+          detailItemNameReadNode.classList.remove("is-empty");
+        }
+        if (detailRarityTagNode) {
+          detailRarityTagNode.textContent = "";
+          detailRarityTagNode.hidden = true;
+        }
+        if (detailTypeTagNode) {
+          detailTypeTagNode.textContent = "";
+          detailTypeTagNode.hidden = true;
+        }
         renderItemUrlView(null);
         return;
       }
@@ -840,6 +889,21 @@
       }
       if (detailEditButtonNode) {
         detailEditButtonNode.disabled = false;
+      }
+      if (detailItemNameReadNode) {
+        const itemName = normalizeWhitespace(item.item_name);
+        detailItemNameReadNode.textContent = itemName || "(Unassigned item)";
+        detailItemNameReadNode.classList.toggle("is-empty", !itemName);
+      }
+      if (detailRarityTagNode) {
+        const rarityLabel = normalizeWhitespace(item.rarity);
+        detailRarityTagNode.textContent = rarityLabel;
+        detailRarityTagNode.hidden = !rarityLabel;
+      }
+      if (detailTypeTagNode) {
+        const typeLabel = normalizeWhitespace(item.type);
+        detailTypeTagNode.textContent = typeLabel;
+        detailTypeTagNode.hidden = !typeLabel;
       }
       root.querySelectorAll('[data-action="set-detail-status"]').forEach(function (button) {
         const isSelected = button.getAttribute("data-status") === item.status;
@@ -861,10 +925,21 @@
         });
     }
 
+    function setDetailStatusDisabled(disabled) {
+      const isDisabled = !!disabled;
+      if (!detailStatusToggleNode) return;
+      detailStatusToggleNode.classList.toggle("is-locked", isDisabled);
+      detailStatusToggleNode.querySelectorAll('button[data-action="set-detail-status"]').forEach(function (button) {
+        button.disabled = isDisabled;
+        button.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+      });
+    }
+
     function setDetailEditMode(editing) {
       isDetailEditing = !!editing;
       root.classList.toggle("loot-v2-detail-editing", isDetailEditing);
       setDetailFieldDisabled(!isDetailEditing);
+      setDetailStatusDisabled(isDetailEditing);
       if (detailEditButtonNode) {
         detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit";
       }
@@ -1317,6 +1392,11 @@
       historyStateNode.classList.add(toneClass || "is-idle");
     }
 
+    function clearUndoHistoryState() {
+      lastChangeState = null;
+      setHistoryState("No changes made.", "is-idle");
+    }
+
     function describeStatusMove(token, toStatus) {
       return token + " -> " + toDisplayStatus(toStatus);
     }
@@ -1590,6 +1670,7 @@
         if (firstCreatedId) {
           selectedItemId = firstCreatedId;
         }
+        ensureListStatusFilter(STATUS.UNUSED);
         setTokenRangeStatus("Added " + String(affected) + ". Skipped " + String(skipped) + ".", "is-info");
       } else {
         let selectedDeleted = false;
@@ -1610,8 +1691,7 @@
         setTokenRangeStatus("Deleted " + String(affected) + ". Missing " + String(skipped) + ".", "is-info");
       }
 
-      lastChangeState = null;
-      setHistoryState("Updated tokens in " + plan.group.name + ".", "is-info");
+      clearUndoHistoryState();
       renderAll();
     }
 
@@ -1630,11 +1710,9 @@
       const tokenCountRaw = Number(normalizeWhitespace(createGroupCountNode && createGroupCountNode.value));
 
       if (!groupName) {
-        setHistoryState("Group name is required.", "is-warn");
         return;
       }
       if (!Number.isInteger(tokenCountRaw) || tokenCountRaw < GROUP_COUNT_LIMITS.min || tokenCountRaw > GROUP_COUNT_LIMITS.max) {
-        setHistoryState("Tokens must be a whole number from 1 to 999.", "is-warn");
         return;
       }
       const tokenCount = clampNumber(tokenCountRaw, GROUP_COUNT_LIMITS.min, GROUP_COUNT_LIMITS.max);
@@ -1644,7 +1722,6 @@
         return normalizePrefixKey(summary.name) === normalizePrefixKey(groupName);
       });
       if (exists) {
-        setHistoryState("A group with that name already exists.", "is-warn");
         renderAll();
         return;
       }
@@ -1668,15 +1745,14 @@
       }
 
       if (!firstItemId) {
-        setHistoryState("No tokens were created for that group.", "is-warn");
         renderAll();
         return;
       }
 
       selectedItemId = firstItemId;
-      lastChangeState = null;
+      ensureListStatusFilter(STATUS.UNUSED);
+      clearUndoHistoryState();
       pendingDeleteGroupPrefix = "";
-      setHistoryState("Created group " + groupName + " with " + String(tokenCount) + " token(s).", "is-info");
 
       if (createGroupNameNode) createGroupNameNode.value = "";
       if (createGroupCountNode) createGroupCountNode.value = String(GROUP_COUNT_LIMITS.min);
@@ -1697,7 +1773,6 @@
       const nextName = normalizeWhitespace(manageGroupNameNode && manageGroupNameNode.value);
       const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value) || COLOR_THEMES[0].value;
       if (!nextName) {
-        setHistoryState("Group name is required.", "is-warn");
         return;
       }
 
@@ -1707,14 +1782,12 @@
           && normalizePrefixKey(summary.name) !== normalizePrefixKey(group.name);
       });
       if (nameConflict) {
-        setHistoryState("Another group already uses that name.", "is-warn");
         renderAll();
         return;
       }
 
       const targets = getItemsForGroup(group.name);
       if (!targets.length) {
-        setHistoryState("No active tokens found for that group.", "is-warn");
         return;
       }
 
@@ -1725,7 +1798,6 @@
         return tokenExistsActive(selectedChestId, nextToken, item.item_id);
       });
       if (collisionToken) {
-        setHistoryState("Rename would collide with an existing token.", "is-warn");
         return;
       }
 
@@ -1746,8 +1818,7 @@
         manageGroupThemeNode.dataset.groupSource = nextName;
       }
       pendingDeleteGroupPrefix = "";
-      lastChangeState = null;
-      setHistoryState("Updated group " + group.name + ".", "is-info");
+      clearUndoHistoryState();
       renderAll();
       if (manageGroupSelectNode) {
         manageGroupSelectNode.value = nextName;
@@ -1769,7 +1840,6 @@
       const targets = getItemsForGroup(selectedName);
       if (!targets.length) {
         clearDeleteGroupConfirmState();
-        setHistoryState("No active tokens found for that group.", "is-warn");
         return;
       }
 
@@ -1783,8 +1853,7 @@
       }
 
       pendingDeleteGroupPrefix = "";
-      lastChangeState = null;
-      setHistoryState("Removed group " + selectedName + ".", "is-info");
+      clearUndoHistoryState();
       renderAll();
     }
 
@@ -1820,9 +1889,9 @@
       selectedItemId = "";
       pendingDeleteChestId = "";
       pendingDeleteGroupPrefix = "";
-      lastChangeState = null;
+      clearUndoHistoryState();
       if (newChestNameNode) newChestNameNode.value = "";
-      setManageTab("chest");
+      setManageTab("group-create");
       setResultMessage(chestToolsResultNode, "Created chest " + chestName + ".", false);
       renderAll();
     }
@@ -1850,7 +1919,7 @@
       delete workingItemsByChest[chestId];
       pendingDeleteChestId = "";
       pendingDeleteGroupPrefix = "";
-      lastChangeState = null;
+      clearUndoHistoryState();
 
       if (selectedChestId === chestId) {
         selectedChestId = chestList.length ? chestList[0].chest_id : "";
@@ -1861,7 +1930,7 @@
       if (!chestList.length) {
         selectedChestId = "";
         setManageTab("chest");
-        setListStatusFilters([STATUS.IN_CHEST]);
+        setListStatusFilters([STATUS.IN_CHEST, STATUS.AWARDED]);
       }
 
       const deletedName = deleted ? deleted.chest_name : chestId;
@@ -1870,6 +1939,7 @@
     }
 
     function applyStatusFromDetail(nextStatus) {
+      if (isDetailEditing) return;
       const item = getItemById(selectedItemId);
       if (!item) return;
       const status = String(nextStatus || "").trim();
@@ -1960,7 +2030,6 @@
     function revertItemDraft() {
       setDetailEditMode(false);
       renderDetail();
-      setHistoryState("Reverted unsaved item edits.", "is-warn");
     }
 
     function deleteSelectedToken() {
@@ -1971,9 +2040,8 @@
       selectedItemId = "";
       setDetailEditMode(false);
       if (lastChangeState && lastChangeState.item_id === item.item_id) {
-        lastChangeState = null;
+        clearUndoHistoryState();
       }
-      setHistoryState("Removed token " + item.token + " from active list.", "is-warn");
       renderAll();
     }
 
@@ -1983,8 +2051,7 @@
       selectedItemId = "";
       pendingDeleteChestId = "";
       pendingDeleteGroupPrefix = "";
-      lastChangeState = null;
-      setHistoryState("No changes made.", "is-idle");
+      clearUndoHistoryState();
       setDetailEditMode(false);
       renderAll();
     }
@@ -2025,8 +2092,7 @@
       if (!chestList.length) return;
       workingItemsByChest = deepClone(persistedItemsByChest);
       selectedItemId = "";
-      lastChangeState = null;
-      setHistoryState("Reverted all unsaved changes.", "is-warn");
+      clearUndoHistoryState();
       setDetailEditMode(false);
       renderAll();
     }
@@ -2284,6 +2350,10 @@
 
       detailEmptyNode = document.getElementById("lootV2DetailEmpty");
       detailContentNode = document.getElementById("lootV2DetailContent");
+      detailItemNameReadNode = document.getElementById("lootV2DetailItemNameRead");
+      detailRarityTagNode = document.getElementById("lootV2DetailRarityTag");
+      detailTypeTagNode = document.getElementById("lootV2DetailTypeTag");
+      detailStatusToggleNode = document.getElementById("lootV2DetailStatusToggle");
       editItemNameNode = document.getElementById("lootV2EditItemName");
       editRarityNode = document.getElementById("lootV2EditRarity");
       editTypeNode = document.getElementById("lootV2EditType");

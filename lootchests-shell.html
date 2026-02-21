@@ -30,7 +30,7 @@
               <div class="loot-v2-manage-label">Manage</div>
               <div class="loot-v2-manage-tabs" role="tablist" aria-label="Manage tools">
                 <button class="loot-v2-manage-tab is-active" type="button" data-action="set-manage-tab" data-manage-tab="chest">Manage Chests</button>
-                <button class="loot-v2-manage-tab" type="button" data-action="set-manage-tab" data-manage-tab="group-create">Create Token Group</button>
+                <button class="loot-v2-manage-tab" type="button" data-action="set-manage-tab" data-manage-tab="group-create">Create Group</button>
                 <button class="loot-v2-manage-tab" type="button" data-action="set-manage-tab" data-manage-tab="group-manage">Manage Groups</button>
                 <button class="loot-v2-manage-tab" type="button" data-action="set-manage-tab" data-manage-tab="tokens">Manage Tokens</button>
               </div>
@@ -132,7 +132,7 @@
         <div class="loot-v2-filter-row">
           <div class="loot-v2-list-filters" role="group" aria-label="Token list status filters">
             <button class="loot-v2-list-filter-btn is-active" type="button" data-action="toggle-list-status-filter" data-status="IN_CHEST">In Chest</button>
-            <button class="loot-v2-list-filter-btn" type="button" data-action="toggle-list-status-filter" data-status="AWARDED">Awarded</button>
+            <button class="loot-v2-list-filter-btn is-active" type="button" data-action="toggle-list-status-filter" data-status="AWARDED">Awarded</button>
             <button class="loot-v2-list-filter-btn" type="button" data-action="toggle-list-status-filter" data-status="UNUSED">Unused</button>
           </div>
         </div>
@@ -175,24 +175,37 @@
         </div>
 
         <div id="lootV2DetailContent" hidden>
+          <div id="lootV2DetailSummary" class="loot-v2-detail-summary">
+            <div class="loot-v2-detail-summary-row">
+              <div class="loot-v2-detail-summary-read">
+                <div id="lootV2DetailItemNameRead" class="loot-v2-detail-item-name-read">(Unassigned item)</div>
+                <div class="loot-v2-detail-tag-row">
+                  <span id="lootV2DetailRarityTag" class="loot-v2-detail-tag" hidden></span>
+                  <span id="lootV2DetailTypeTag" class="loot-v2-detail-tag" hidden></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="loot-v2-detail-grid">
-            <label class="loot-v2-field loot-v2-field-span-2">
+            <label class="loot-v2-field loot-v2-field-span-2 loot-v2-status-field">
               <span>Status</span>
-              <div class="loot-v2-status-toggle" role="group" aria-label="Item status">
+              <div id="lootV2DetailStatusToggle" class="loot-v2-status-toggle" role="group" aria-label="Item status">
                 <button type="button" data-action="set-detail-status" data-status="IN_CHEST">In Chest</button>
                 <button type="button" data-action="set-detail-status" data-status="AWARDED">Awarded</button>
                 <button type="button" data-action="set-detail-status" data-status="UNUSED">Unused</button>
               </div>
+              <div class="loot-v2-status-lock-hint">Status is locked while editing item details.</div>
             </label>
 
-            <label class="loot-v2-field loot-v2-field-span-2">
+            <label class="loot-v2-field loot-v2-field-span-2 loot-v2-item-name-edit-field">
               <span>Item Name</span>
-              <input id="lootV2EditItemName" type="text" placeholder="Item name" disabled>
+              <input id="lootV2EditItemName" type="text" placeholder="Item name" disabled aria-label="Item name">
             </label>
 
-            <label class="loot-v2-field">
+            <label class="loot-v2-field loot-v2-rarity-edit-field">
               <span>Rarity</span>
-              <select id="lootV2EditRarity" disabled>
+              <select id="lootV2EditRarity" disabled aria-label="Rarity">
                 <option value="">--</option>
                 <option value="Common">Common</option>
                 <option value="Uncommon">Uncommon</option>
@@ -203,9 +216,9 @@
               </select>
             </label>
 
-            <label class="loot-v2-field">
+            <label class="loot-v2-field loot-v2-type-edit-field">
               <span>Type</span>
-              <select id="lootV2EditType" disabled>
+              <select id="lootV2EditType" disabled aria-label="Type">
                 <option value="">--</option>
                 <option value="Ammunition">Ammunition</option>
                 <option value="Armor">Armor</option>
@@ -252,3 +265,4 @@
     </aside>
   </div>
 </div>
+

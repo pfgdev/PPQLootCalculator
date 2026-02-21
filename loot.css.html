@@ -18,7 +18,6 @@
     --loot-v2-secondary-dark: #dfe8ff;
     --loot-v2-danger: #d25a5a;
     --loot-v2-danger-dark: #b64747;
-    --loot-v2-top-context-height: 174px;
     max-width: 1160px;
     margin: 0 auto;
     padding: 0 10px 20px;
@@ -40,7 +39,7 @@
 
   .loot-v2-top-card .v2-card-body {
     padding-top: 10px;
-    padding-bottom: var(--loot-v2-row-gap);
+    padding-bottom: 10px;
   }
 
   .loot-v2-top-card {
@@ -51,17 +50,7 @@
     display: grid;
     grid-template-columns: minmax(280px, 0.45fr) minmax(320px, 0.55fr);
     gap: var(--loot-v2-gap);
-    align-items: stretch;
-  }
-
-  .loot-v2:not(.loot-v2-manage-mode).loot-v2-has-detail .loot-v2-top-layout {
-    grid-template-columns: minmax(280px, 0.45fr) minmax(320px, 0.55fr);
-    gap: var(--loot-v2-gap);
-  }
-
-  .loot-v2.loot-v2-manage-mode.loot-v2-has-detail .loot-v2-top-layout {
-    grid-template-columns: minmax(280px, 0.45fr) minmax(320px, 0.55fr);
-    gap: var(--loot-v2-gap);
+    align-items: start;
   }
 
   .loot-v2-controls-panel {
@@ -77,36 +66,8 @@
     align-items: stretch;
   }
 
-  .loot-v2-manage-teaser,
   .loot-v2-manage-inline {
     width: 100%;
-  }
-
-  .loot-v2-manage-teaser {
-    border: 1px solid #d8e2f2;
-    border-radius: 10px;
-    background: linear-gradient(180deg, #fafdff 0%, #f4f9ff 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 10px 12px;
-    height: 100%;
-  }
-
-  .loot-v2-manage-teaser-text {
-    color: #4d6187;
-    font-size: 13px;
-    font-weight: 700;
-  }
-
-  .loot-v2-manage-teaser-btn {
-    min-height: 36px;
-    padding: 8px 12px;
-  }
-
-  .loot-v2-toolbar-main {
-    display: block;
   }
 
   .loot-v2-chest-field {
@@ -171,10 +132,6 @@
     border-color: #6f90ca;
   }
 
-  .loot-v2-field-search input {
-    min-height: 40px;
-  }
-
   .loot-v2-token-search {
     margin-bottom: 0;
     min-width: 0;
@@ -204,7 +161,6 @@
     grid-template-columns: max-content max-content max-content minmax(0, 1fr);
     align-items: center;
     gap: 8px;
-    margin-left: 0;
   }
 
   .loot-v2-action-row .button {
@@ -271,6 +227,9 @@
     font-size: 13px;
     font-weight: 700;
     padding: 0 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .loot-v2-history-state.is-idle {
@@ -311,9 +270,8 @@
     border-radius: 0;
     background: transparent;
     padding: 0;
-    height: 100%;
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
     gap: var(--loot-v2-row-gap);
     overflow: visible;
   }
@@ -436,14 +394,6 @@
     align-items: center;
   }
 
-  .loot-v2-manage-row-generate {
-    grid-template-columns: minmax(120px, 155px) minmax(170px, 1fr) minmax(170px, 1fr) minmax(118px, 128px);
-  }
-
-  .loot-v2-manage-row-single {
-    grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(118px, 128px) minmax(132px, 152px);
-  }
-
   .loot-v2-manage-row-token-range {
     grid-template-columns: minmax(116px, 1.9fr) minmax(72px, 0.95fr) minmax(72px, 0.95fr) minmax(88px, 1.05fr) minmax(96px, 1.15fr);
   }
@@ -488,10 +438,6 @@
     width: 100%;
   }
 
-  .loot-v2-manage-row-group-create .loot-v2-field {
-    min-width: 0;
-  }
-
   .loot-v2-manage-row-group-create #lootV2AddGroupBtn {
     align-self: end;
     min-width: 0;
@@ -499,18 +445,6 @@
 
   .loot-v2-manage-row-chest {
     grid-template-columns: minmax(140px, 3.2fr) minmax(96px, 1.1fr) minmax(140px, 3.2fr) minmax(96px, 1.1fr);
-  }
-
-  .loot-v2-manage-panel[data-manage-panel="chest"] {
-    padding-top: 0;
-  }
-
-  .loot-v2-manage-panel[data-manage-panel="group-create"] {
-    padding-top: 0;
-  }
-
-  .loot-v2-manage-panel[data-manage-panel="group-manage"] {
-    padding-top: 0;
   }
 
   .loot-v2-manage-row-chest .loot-v2-field {
@@ -632,16 +566,6 @@
     -moz-appearance: textfield;
   }
 
-  .loot-v2-manage-hint {
-    border: 1px dashed #c6d6ef;
-    border-radius: 8px;
-    background: #f8fbff;
-    color: #4e6185;
-    font-size: 13px;
-    line-height: 1.35;
-    padding: 10px 11px;
-  }
-
   .loot-v2-list-header {
     display: block;
   }
@@ -721,10 +645,6 @@
       background: #edf4ff;
       border-color: #7f99c7;
     }
-  }
-
-  .loot-v2-table-tools-body {
-    display: none;
   }
 
   .loot-v2-table-body {
@@ -936,22 +856,6 @@
 
   .loot-v2-item-status-unused {
     color: #66758f;
-  }
-
-  .loot-v2-quick-btn {
-    border: 1px solid #bccce7;
-    border-radius: 7px;
-    background: #edf3ff;
-    color: #2f466d;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 6px 8px;
-    cursor: pointer;
-    width: 100%;
-  }
-
-  .loot-v2-quick-btn:hover {
-    background: #dfeafe;
   }
 
   .loot-v2-empty {
@@ -1321,26 +1225,6 @@
     width: 100%;
   }
 
-  .loot-v2-side-result {
-    min-height: 0;
-    height: 0;
-    margin-top: 0;
-    overflow: hidden;
-    color: #536585;
-    font-size: 12px;
-    line-height: 1.3;
-  }
-
-  .loot-v2-side-result.is-visible {
-    height: auto;
-    min-height: 15px;
-    margin-top: 4px;
-  }
-
-  .loot-v2-side-result.is-error {
-    color: #a03e43;
-  }
-
   .loot-v2-sync-lane {
     width: 100%;
     margin-top: 10px;
@@ -1362,10 +1246,6 @@
   }
 
   @media (max-width: 1020px) {
-    .loot-v2-toolbar-main {
-      align-items: center;
-    }
-
     .loot-v2-top-layout {
       grid-template-columns: 1fr;
     }
@@ -1376,12 +1256,9 @@
     }
 
     .loot-v2-action-row {
-      margin-left: 0;
       justify-content: flex-start;
     }
 
-    .loot-v2-manage-row-generate,
-    .loot-v2-manage-row-single,
     .loot-v2-manage-row-token-range,
     .loot-v2-manage-row-group-create,
     .loot-v2-manage-row-group-manage,
@@ -1450,8 +1327,6 @@
       padding: 0 6px 14px;
     }
 
-    .loot-v2-manage-row-generate,
-    .loot-v2-manage-row-single,
     .loot-v2-manage-row-token-range,
     .loot-v2-manage-row-group-create,
     .loot-v2-manage-row-group-manage,
@@ -1494,11 +1369,6 @@
       gap: 6px;
     }
 
-    .loot-v2-manage-teaser {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
     .loot-v2-field-span-2 {
       grid-column: auto;
     }
@@ -1524,4 +1394,3 @@
     }
   }
 </style>
-

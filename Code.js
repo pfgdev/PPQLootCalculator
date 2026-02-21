@@ -72,7 +72,22 @@ function doGet() {
  * @returns {string} The content of the included file.
  */
 function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  return includeRecursive_(filename, {});
+}
+
+function includeRecursive_(filename, activeStack) {
+  if (activeStack[filename]) {
+    throw new Error('Circular include detected for file: ' + filename);
+  }
+  activeStack[filename] = true;
+
+  var content = HtmlService.createHtmlOutputFromFile(filename).getContent();
+  content = content.replace(/<\?!=\s*include\((['"])(.+?)\1\)\s*\?>/g, function (_, __, nestedFilename) {
+    return includeRecursive_(nestedFilename, activeStack);
+  });
+
+  delete activeStack[filename];
+  return content;
 }
 
 

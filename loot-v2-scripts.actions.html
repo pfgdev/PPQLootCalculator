@@ -1,0 +1,638 @@
+    function setHistoryState(message, toneClass) {
+      if (!historyStateNode) return;
+      historyStateNode.textContent = message || "No changes made.";
+      historyStateNode.classList.remove("is-idle", "is-info", "is-success", "is-warn");
+      historyStateNode.classList.add(toneClass || "is-idle");
+    }
+
+    function clearUndoHistoryState() {
+      lastChangeState = null;
+      setHistoryState("No changes made.", "is-idle");
+    }
+
+    function describeStatusMove(token, toStatus) {
+      return token + " -> " + toDisplayStatus(toStatus);
+    }
+
+    function snapshotEditableFields(item) {
+      return {
+        item_name: item.item_name || "",
+        rarity: item.rarity || "",
+        type: item.type || "",
+        description: item.description || "",
+        item_url: item.item_url || "",
+        notes: item.notes || ""
+      };
+    }
+
+    function applyEditableFieldSnapshot(item, snapshot) {
+      if (!item || !snapshot) return;
+      item.item_name = snapshot.item_name || "";
+      item.rarity = snapshot.rarity || "";
+      item.type = snapshot.type || "";
+      item.description = snapshot.description || "";
+      item.item_url = snapshot.item_url || "";
+      item.notes = snapshot.notes || "";
+    }
+
+    function tokenExistsActive(chestId, token, excludeItemId) {
+      const normalizedToken = normalizeWhitespace(token).toLowerCase();
+      return getActiveItems(chestId).some(function (item) {
+        if (excludeItemId && item.item_id === excludeItemId) return false;
+        return normalizeWhitespace(item.token).toLowerCase() === normalizedToken;
+      });
+    }
+
+    function buildGroupNumberLookup(groupName) {
+      const lookup = {};
+      const groupKey = normalizePrefixKey(groupName);
+      getActiveItems(selectedChestId).forEach(function (item) {
+        const parts = parseTokenParts(item.token);
+        if (normalizePrefixKey(parts.prefix) !== groupKey) return;
+        if (!Number.isFinite(parts.number)) return;
+        lookup[parts.number] = item;
+      });
+      return lookup;
+    }
+
+    function parseTokenRangeSpan() {
+      const fromRaw = normalizeWhitespace(tokenRangeFromNode && tokenRangeFromNode.value);
+      const toRaw = normalizeWhitespace(tokenRangeToNode && tokenRangeToNode.value);
+      if (!fromRaw && !toRaw) {
+        return { empty: true };
+      }
+
+      const baseRaw = fromRaw || toRaw;
+      const fromParsed = Number(baseRaw);
+      if (!Number.isInteger(fromParsed) || fromParsed < 1 || fromParsed > 999) {
+        return { error: "Use 1-999" };
+      }
+
+      let toParsed = fromParsed;
+      if (toRaw) {
+        toParsed = Number(toRaw);
+        if (!Number.isInteger(toParsed) || toParsed < 1 || toParsed > 999) {
+          return { error: "Use 1-999" };
+        }
+      }
+
+      const start = Math.min(fromParsed, toParsed);
+      const end = Math.max(fromParsed, toParsed);
+      return {
+        from: start,
+        to: end,
+        count: (end - start) + 1
+      };
+    }
+
+    function formatTokenRangeLabel(from, to) {
+      return from === to ? String(from) : (String(from) + "-" + String(to));
+    }
+
+    function evaluateTokenRangePlan(action) {
+      if (!hasSelectedChest()) {
+        return { canApply: false, summary: "", reason: "Create chest first", isError: false };
+      }
+
+      const summaries = getGroupSummaries();
+      if (!summaries.length) {
+        return { canApply: false, summary: "", reason: "No groups available", isError: false };
+      }
+
+      const groupName = normalizeWhitespace(tokenRangeGroupNode && tokenRangeGroupNode.value);
+      const group = getGroupByName(groupName);
+      if (!group) {
+        return { canApply: false, summary: "", reason: "Group required", isError: false };
+      }
+
+      const span = parseTokenRangeSpan();
+      if (span.empty) {
+        return { canApply: false, summary: "", reason: "Set range", isError: false, group: group };
+      }
+      if (span.error) {
+        return { canApply: false, summary: span.error, reason: span.error, isError: true, group: group };
+      }
+
+      const lookup = buildGroupNumberLookup(group.name);
+      let existing = 0;
+      for (let number = span.from; number <= span.to; number += 1) {
+        if (lookup[number]) existing += 1;
+      }
+      const missing = span.count - existing;
+      const willAdd = missing;
+      const willDelete = existing;
+      const rangeLabel = formatTokenRangeLabel(span.from, span.to);
+      let summary = "";
+      let reason = "";
+      let canApply = false;
+
+      if (action === "add") {
+        if (willAdd > 0) {
+          canApply = true;
+          summary = "R " + rangeLabel + " | +" + String(willAdd);
+        } else {
+          summary = "R " + rangeLabel + " | no change";
+          reason = "All tokens already exist";
+        }
+      } else {
+        if (willDelete > 0) {
+          canApply = true;
+          summary = "R " + rangeLabel + " | -" + String(willDelete);
+        } else {
+          summary = "R " + rangeLabel + " | no change";
+          reason = "No tokens found in range";
+        }
+      }
+
+      return {
+        canApply: canApply,
+        summary: summary,
+        reason: reason,
+        isError: false,
+        action: action,
+        group: group,
+        from: span.from,
+        to: span.to,
+        count: span.count,
+        existing: existing,
+        missing: missing,
+        willAdd: willAdd,
+        willDelete: willDelete,
+        lookup: lookup
+      };
+    }
+
+    function renderTokenRangeState() {
+      if (!tokenRangeGroupNode) return;
+      const noChest = !hasSelectedChest();
+      const summaries = getGroupSummaries();
+      const previous = tokenRangeGroupNode.value;
+
+      clearNode(tokenRangeGroupNode);
+      if (!summaries.length) {
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = "No groups available";
+        tokenRangeGroupNode.appendChild(empty);
+      } else {
+        const prompt = document.createElement("option");
+        prompt.value = "";
+        prompt.textContent = "Select group...";
+        tokenRangeGroupNode.appendChild(prompt);
+        summaries.forEach(function (summary) {
+          const option = document.createElement("option");
+          option.value = summary.name;
+          option.textContent = summary.name;
+          tokenRangeGroupNode.appendChild(option);
+        });
+      }
+
+      if (summaries.length && summaries.some(function (summary) { return summary.name === previous; })) {
+        tokenRangeGroupNode.value = previous;
+      } else {
+        tokenRangeGroupNode.value = "";
+      }
+
+      const disableControls = noChest || !summaries.length;
+      tokenRangeGroupNode.disabled = disableControls;
+      if (tokenRangeFromNode) tokenRangeFromNode.disabled = disableControls;
+      if (tokenRangeToNode) tokenRangeToNode.disabled = disableControls;
+      if (tokenRangeAddButtonNode) tokenRangeAddButtonNode.disabled = disableControls;
+      if (tokenRangeDeleteButtonNode) tokenRangeDeleteButtonNode.disabled = disableControls;
+
+      const addPlan = evaluateTokenRangePlan("add");
+      const deletePlan = evaluateTokenRangePlan("delete");
+      const addCountLabel = addPlan && Number.isInteger(addPlan.willAdd) ? String(addPlan.willAdd) : "--";
+      const deleteCountLabel = deletePlan && Number.isInteger(deletePlan.willDelete) ? String(deletePlan.willDelete) : "--";
+
+      if (tokenRangeAddButtonNode) {
+        tokenRangeAddButtonNode.disabled = disableControls || !addPlan.canApply;
+        tokenRangeAddButtonNode.title = addPlan.canApply ? "" : (addPlan.reason || "");
+        tokenRangeAddButtonNode.textContent = "Add (" + addCountLabel + ")";
+      }
+      if (tokenRangeDeleteButtonNode) {
+        tokenRangeDeleteButtonNode.disabled = disableControls || !deletePlan.canApply;
+        tokenRangeDeleteButtonNode.title = deletePlan.canApply ? "" : (deletePlan.reason || "");
+        tokenRangeDeleteButtonNode.textContent = "Delete (" + deleteCountLabel + ")";
+      }
+
+    }
+
+    function applyTokenRangeChanges(action) {
+      if (!hasSelectedChest()) return;
+      const plan = evaluateTokenRangePlan(action);
+      if (!plan.canApply) return;
+
+      const items = getWorkingItems(selectedChestId);
+      let firstCreatedId = "";
+
+      if (plan.action === "add") {
+        for (let number = plan.from; number <= plan.to; number += 1) {
+          const token = plan.group.name + " " + String(number);
+          if (plan.lookup[number]) {
+            continue;
+          }
+          const newItem = createItem(selectedChestId, {
+            token: token,
+            item_name: "",
+            status: STATUS.UNUSED,
+            color_theme: plan.group.theme,
+            category_label: plan.group.name
+          });
+          items.push(newItem);
+          plan.lookup[number] = newItem;
+          if (!firstCreatedId) firstCreatedId = newItem.item_id;
+        }
+        if (firstCreatedId) {
+          selectedItemId = firstCreatedId;
+        }
+        ensureListStatusFilter(STATUS.UNUSED);
+      } else {
+        let selectedDeleted = false;
+        for (let number = plan.from; number <= plan.to; number += 1) {
+          const item = plan.lookup[number];
+          if (!item) {
+            continue;
+          }
+          if (item.item_id === selectedItemId) selectedDeleted = true;
+          item.deleted = true;
+        }
+        if (selectedDeleted) {
+          selectedItemId = "";
+          setDetailEditMode(false);
+        }
+      }
+
+      clearUndoHistoryState();
+      renderAll();
+    }
+
+    function getItemsForGroup(groupName) {
+      const groupKey = normalizePrefixKey(groupName);
+      return getActiveItems(selectedChestId).filter(function (item) {
+        const parts = parseTokenParts(item.token);
+        return normalizePrefixKey(parts.prefix) === groupKey;
+      });
+    }
+
+    function createGroup() {
+      if (!hasSelectedChest()) return;
+      const groupName = normalizeWhitespace(createGroupNameNode && createGroupNameNode.value);
+      const groupTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value);
+      const tokenCountRaw = Number(normalizeWhitespace(createGroupCountNode && createGroupCountNode.value));
+
+      if (!groupName || !groupTheme) {
+        return;
+      }
+      if (!Number.isInteger(tokenCountRaw) || tokenCountRaw < GROUP_COUNT_LIMITS.min || tokenCountRaw > GROUP_COUNT_LIMITS.max) {
+        return;
+      }
+      const tokenCount = clampNumber(tokenCountRaw, GROUP_COUNT_LIMITS.min, GROUP_COUNT_LIMITS.max);
+
+      const summaries = getGroupSummaries();
+      const exists = summaries.some(function (summary) {
+        return normalizePrefixKey(summary.name) === normalizePrefixKey(groupName);
+      });
+      if (exists) {
+        renderAll();
+        return;
+      }
+
+      const items = getWorkingItems(selectedChestId);
+      let firstItemId = "";
+      for (let idx = 1; idx <= tokenCount; idx += 1) {
+        const token = groupName + " " + String(idx);
+        if (tokenExistsActive(selectedChestId, token, "")) continue;
+        const newItem = createItem(selectedChestId, {
+          token: token,
+          item_name: "",
+          status: STATUS.UNUSED,
+          color_theme: groupTheme,
+          category_label: groupName
+        });
+        items.push(newItem);
+        if (!firstItemId) {
+          firstItemId = newItem.item_id;
+        }
+      }
+
+      if (!firstItemId) {
+        renderAll();
+        return;
+      }
+
+      selectedItemId = firstItemId;
+      ensureListStatusFilter(STATUS.UNUSED);
+      clearUndoHistoryState();
+      pendingDeleteGroupPrefix = "";
+
+      if (createGroupNameNode) createGroupNameNode.value = "";
+      if (createGroupCountNode) createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
+      setManageTab("group-manage");
+      renderAll();
+      if (manageGroupSelectNode) {
+        manageGroupSelectNode.value = groupName;
+        renderGroupEditorState();
+      }
+    }
+
+    function updateGroup() {
+      if (!hasSelectedChest() || !manageGroupSelectNode) return;
+      const selectedName = normalizeWhitespace(manageGroupSelectNode.value);
+      const group = getGroupByName(selectedName);
+      if (!group) return;
+
+      const nextName = normalizeWhitespace(manageGroupNameNode && manageGroupNameNode.value);
+      const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value);
+      if (!nextName || !nextTheme) {
+        return;
+      }
+
+      const summaries = getGroupSummaries();
+      const nameConflict = summaries.some(function (summary) {
+        return normalizePrefixKey(summary.name) === normalizePrefixKey(nextName)
+          && normalizePrefixKey(summary.name) !== normalizePrefixKey(group.name);
+      });
+      if (nameConflict) {
+        renderAll();
+        return;
+      }
+
+      const targets = getItemsForGroup(group.name);
+      if (!targets.length) {
+        return;
+      }
+
+      const collisionToken = targets.find(function (item) {
+        const tokenParts = parseTokenParts(item.token);
+        const suffix = Number.isFinite(tokenParts.number) ? String(tokenParts.number) : "";
+        const nextToken = suffix ? (nextName + " " + suffix) : nextName;
+        return tokenExistsActive(selectedChestId, nextToken, item.item_id);
+      });
+      if (collisionToken) {
+        return;
+      }
+
+      targets.forEach(function (item) {
+        const tokenParts = parseTokenParts(item.token);
+        const suffix = Number.isFinite(tokenParts.number) ? String(tokenParts.number) : "";
+        item.token = suffix ? (nextName + " " + suffix) : nextName;
+        item.category_label = nextName;
+        item.color_theme = nextTheme;
+      });
+
+      if (manageGroupNameNode) {
+        manageGroupNameNode.dataset.userEdited = "";
+        manageGroupNameNode.dataset.groupSource = nextName;
+      }
+      if (manageGroupThemeNode) {
+        manageGroupThemeNode.dataset.userEdited = "";
+        manageGroupThemeNode.dataset.groupSource = nextName;
+      }
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      renderAll();
+      if (manageGroupSelectNode) {
+        manageGroupSelectNode.value = nextName;
+        renderGroupEditorState();
+      }
+    }
+
+    function deleteGroup() {
+      if (!hasSelectedChest() || !manageGroupSelectNode) return;
+      const selectedName = normalizeWhitespace(manageGroupSelectNode.value);
+      if (!selectedName) return;
+
+      if (!pendingDeleteGroupPrefix || normalizePrefixKey(pendingDeleteGroupPrefix) !== normalizePrefixKey(selectedName)) {
+        pendingDeleteGroupPrefix = selectedName;
+        renderGroupEditorState();
+        return;
+      }
+
+      const targets = getItemsForGroup(selectedName);
+      if (!targets.length) {
+        clearDeleteGroupConfirmState();
+        return;
+      }
+
+      const selectedTarget = targets.some(function (item) { return item.item_id === selectedItemId; });
+      targets.forEach(function (item) {
+        item.deleted = true;
+      });
+      if (selectedTarget) {
+        selectedItemId = "";
+        setDetailEditMode(false);
+      }
+
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      renderAll();
+    }
+
+    function openChestTools() {
+      setManageTab("chest");
+      if (chestSelectNode) {
+        chestSelectNode.value = chestList.length ? (selectedChestId || chestList[0].chest_id) : CREATE_CHEST_OPTION;
+      }
+      renderChestToolsState();
+    }
+
+    function createChest() {
+      const chestName = normalizeWhitespace(newChestNameNode && newChestNameNode.value);
+      if (!chestName) return;
+      const duplicateName = chestList.some(function (chest) {
+        return normalizeWhitespace(chest.chest_name).toLowerCase() === chestName.toLowerCase();
+      });
+      if (duplicateName) return;
+
+      const chestId = buildChestId(chestName);
+      const nextChest = { chest_id: chestId, chest_name: chestName };
+      chestList.push(nextChest);
+      if (!persistedItemsByChest[chestId]) persistedItemsByChest[chestId] = [];
+      if (!workingItemsByChest[chestId]) workingItemsByChest[chestId] = [];
+      selectedChestId = chestId;
+      selectedItemId = "";
+      pendingDeleteChestId = "";
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      if (newChestNameNode) newChestNameNode.value = "";
+      setManageTab("group-create");
+      renderAll();
+    }
+
+    function deleteChest() {
+      if (!deleteChestSelectNode) return;
+      const chestId = deleteChestSelectNode.value || "";
+      if (!chestId) {
+        pendingDeleteChestId = "";
+        renderChestToolsState();
+        return;
+      }
+      if (!pendingDeleteChestId || pendingDeleteChestId !== chestId) {
+        pendingDeleteChestId = chestId;
+        renderChestToolsState();
+        return;
+      }
+
+      chestList = chestList.filter(function (chest) { return chest.chest_id !== chestId; });
+      delete persistedItemsByChest[chestId];
+      delete workingItemsByChest[chestId];
+      pendingDeleteChestId = "";
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+
+      if (selectedChestId === chestId) {
+        selectedChestId = chestList.length ? chestList[0].chest_id : "";
+        selectedItemId = "";
+        setDetailEditMode(false);
+      }
+
+      if (!chestList.length) {
+        selectedChestId = "";
+        setManageTab("chest");
+        setListStatusFilters([STATUS.IN_CHEST, STATUS.AWARDED]);
+      }
+      renderAll();
+    }
+
+    function applyStatusFromDetail(nextStatus) {
+      if (isDetailEditing) return;
+      const item = getItemById(selectedItemId);
+      if (!item) return;
+      const status = String(nextStatus || "").trim();
+      if (!STATUS_LABELS[status]) return;
+      if (item.status === status) return;
+
+      const previousStatus = item.status;
+      item.status = status;
+      lastChangeState = {
+        kind: "status",
+        item_id: item.item_id,
+        token: item.token,
+        from_status: previousStatus,
+        to_status: status,
+        mode: "undo",
+        can_toggle: true
+      };
+      setHistoryState("Last: " + describeStatusMove(item.token, status), "is-info");
+      renderAll();
+    }
+
+    function toggleLastStatusChange() {
+      if (!lastChangeState || !lastChangeState.can_toggle) return;
+      const item = getItemById(lastChangeState.item_id);
+      if (!item) {
+        lastChangeState = null;
+        setHistoryState("No changes made.", "is-idle");
+        renderAll();
+        return;
+      }
+      if (lastChangeState.kind === "status") {
+        const token = lastChangeState.token || item.token;
+        if (lastChangeState.mode === "undo") {
+          item.status = lastChangeState.from_status;
+          lastChangeState.mode = "redo";
+          setHistoryState("Undid: " + describeStatusMove(token, lastChangeState.to_status), "is-info");
+        } else {
+          item.status = lastChangeState.to_status;
+          lastChangeState.mode = "undo";
+          setHistoryState("Redid: " + describeStatusMove(token, lastChangeState.to_status), "is-info");
+        }
+      } else if (lastChangeState.kind === "item-edit") {
+        if (lastChangeState.mode === "undo") {
+          applyEditableFieldSnapshot(item, lastChangeState.before);
+          lastChangeState.mode = "redo";
+          setHistoryState("Undid item edits for " + item.token + ".", "is-info");
+        } else {
+          applyEditableFieldSnapshot(item, lastChangeState.after);
+          lastChangeState.mode = "undo";
+          setHistoryState("Redid item edits for " + item.token + ".", "is-info");
+        }
+      } else {
+        return;
+      }
+      renderAll();
+    }
+
+    function saveSelectedItem() {
+      if (!isDetailEditing) return;
+      const item = getItemById(selectedItemId);
+      if (!item) return;
+      const before = snapshotEditableFields(item);
+      const after = {
+        item_name: normalizeWhitespace(editItemNameNode.value),
+        rarity: normalizeWhitespace(editRarityNode.value),
+        type: normalizeWhitespace(editTypeNode.value),
+        description: normalizeWhitespace(editDescriptionNode.value),
+        item_url: normalizeWhitespace(editItemUrlNode.value),
+        notes: normalizeWhitespace(editNotesNode.value)
+      };
+
+      applyEditableFieldSnapshot(item, after);
+      lastChangeState = {
+        kind: "item-edit",
+        item_id: item.item_id,
+        token: item.token,
+        before: before,
+        after: after,
+        mode: "undo",
+        can_toggle: true
+      };
+
+      setDetailEditMode(false);
+      setHistoryState("Saved item details for " + item.token + ".", "is-success");
+      renderAll();
+    }
+
+    function revertItemDraft() {
+      setDetailEditMode(false);
+      renderDetail();
+    }
+
+    function deleteSelectedToken() {
+      if (!hasSelectedChest()) return;
+      const item = getItemById(selectedItemId);
+      if (!item) return;
+      item.deleted = true;
+      selectedItemId = "";
+      setDetailEditMode(false);
+      if (lastChangeState && lastChangeState.item_id === item.item_id) {
+        clearUndoHistoryState();
+      }
+      renderAll();
+    }
+
+    function selectChest(nextChestId) {
+      if (!nextChestId || !workingItemsByChest[nextChestId]) return;
+      selectedChestId = nextChestId;
+      selectedItemId = "";
+      pendingDeleteChestId = "";
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      setDetailEditMode(false);
+      renderAll();
+    }
+
+    function saveWorkingChanges() {
+      if (isSyncing) return;
+      if (!chestList.length) return;
+      if (!isDirty()) return;
+
+      isSyncing = true;
+      renderAll();
+      setTimeout(function () {
+        persistedItemsByChest = deepClone(workingItemsByChest);
+        isSyncing = false;
+        renderAll();
+      }, 1100);
+    }
+
+    function revertWorkingChanges() {
+      if (isSyncing) return;
+      if (!chestList.length) return;
+      workingItemsByChest = deepClone(persistedItemsByChest);
+      selectedItemId = "";
+      clearUndoHistoryState();
+      setDetailEditMode(false);
+      renderAll();
+    }

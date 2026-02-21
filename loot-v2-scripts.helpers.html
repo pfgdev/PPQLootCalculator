@@ -1,0 +1,395 @@
+    function deepClone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function normalizeWhitespace(value) {
+      return String(value || "").trim().replace(/\s+/g, " ");
+    }
+
+    function clampNumber(value, min, max) {
+      const parsed = Number(value);
+      const safeValue = Number.isFinite(parsed) ? parsed : min;
+      return Math.max(min, Math.min(max, safeValue));
+    }
+
+    function buildItemId(chestId) {
+      const id = chestId + "_item_" + String(nextId);
+      nextId += 1;
+      return id;
+    }
+
+    function buildChestId(name) {
+      const base = normalizeWhitespace(name).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const seed = base || "loot_chest";
+      let next = seed;
+      let index = 2;
+      while (chestList.some(function (chest) { return chest.chest_id === next; })) {
+        next = seed + "_" + String(index);
+        index += 1;
+      }
+      return next;
+    }
+
+    function parseTokenParts(token) {
+      const normalized = normalizeWhitespace(token);
+      const match = normalized.match(/^(.*?)(\d+)$/);
+      if (!match) {
+        return { prefix: normalized, number: Number.POSITIVE_INFINITY, raw: normalized };
+      }
+      return {
+        prefix: normalizeWhitespace(match[1]),
+        number: Number(match[2]),
+        raw: normalized
+      };
+    }
+
+    function compareTokens(aToken, bToken) {
+      const a = parseTokenParts(aToken);
+      const b = parseTokenParts(bToken);
+      const prefixDiff = a.prefix.localeCompare(b.prefix, undefined, { sensitivity: "base" });
+      if (prefixDiff !== 0) return prefixDiff;
+      if (a.number !== b.number) return a.number - b.number;
+      return a.raw.localeCompare(b.raw, undefined, { sensitivity: "base" });
+    }
+
+    function normalizePrefixKey(prefix) {
+      return normalizeWhitespace(prefix).toLowerCase();
+    }
+
+    function toDisplayStatus(status) {
+      return STATUS_LABELS[status] || status;
+    }
+
+    function getStatusClass(status) {
+      if (status === STATUS.IN_CHEST) return "status-in-chest";
+      if (status === STATUS.AWARDED) return "status-awarded";
+      if (status === STATUS.UNUSED) return "status-unused";
+      return "";
+    }
+
+    function getStatusClassSuffix(status) {
+      if (status === STATUS.IN_CHEST) return "in-chest";
+      if (status === STATUS.AWARDED) return "awarded";
+      if (status === STATUS.UNUSED) return "unused";
+      return "unknown";
+    }
+
+    function getStatusGlyph(status) {
+      if (status === STATUS.AWARDED) return "\u2705";
+      if (status === STATUS.UNUSED) return "\u2796";
+      return "\ud83d\udce6";
+    }
+
+    function normalizeThemeKey(value) {
+      return normalizeWhitespace(value).toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    function findThemeByKey(value) {
+      const key = normalizeThemeKey(value);
+      if (!key) return null;
+      const aliasValue = THEME_ALIASES[key];
+      if (aliasValue) {
+        return COLOR_THEMES.find(function (theme) {
+          return theme.value === aliasValue;
+        }) || null;
+      }
+      return COLOR_THEMES.find(function (theme) {
+        return normalizeThemeKey(theme.value) === key || normalizeThemeKey(theme.label) === key;
+      }) || null;
+    }
+
+    function getColorLabelByValue(value) {
+      const hit = findThemeByKey(value);
+      return hit ? hit.label : "";
+    }
+
+    function inferThemeFromTokenPrefix(prefix) {
+      const hit = findThemeByKey(prefix);
+      return hit ? hit.value : "";
+    }
+
+    function parseHexColor(value) {
+      const normalized = String(value || "").trim().replace(/^#/, "");
+      if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+      return {
+        r: parseInt(normalized.slice(0, 2), 16),
+        g: parseInt(normalized.slice(2, 4), 16),
+        b: parseInt(normalized.slice(4, 6), 16)
+      };
+    }
+
+    function channelToHex(channel) {
+      const clamped = Math.max(0, Math.min(255, Math.round(channel)));
+      const hex = clamped.toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    }
+
+    function rgbToHex(rgb) {
+      return "#" + channelToHex(rgb.r) + channelToHex(rgb.g) + channelToHex(rgb.b);
+    }
+
+    function mixHexColors(baseHex, targetHex, targetWeight) {
+      const baseRgb = parseHexColor(baseHex);
+      const targetRgb = parseHexColor(targetHex);
+      if (!baseRgb || !targetRgb) return baseHex || targetHex || "#4f78bf";
+      const t = Math.max(0, Math.min(1, Number(targetWeight) || 0));
+      return rgbToHex({
+        r: baseRgb.r * (1 - t) + targetRgb.r * t,
+        g: baseRgb.g * (1 - t) + targetRgb.g * t,
+        b: baseRgb.b * (1 - t) + targetRgb.b * t
+      });
+    }
+
+    function relativeLuminance(hexColor) {
+      const rgb = parseHexColor(hexColor);
+      if (!rgb) return 0.5;
+      function toLinear(channel) {
+        const value = channel / 255;
+        return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+      }
+      return (0.2126 * toLinear(rgb.r)) + (0.7152 * toLinear(rgb.g)) + (0.0722 * toLinear(rgb.b));
+    }
+
+    function pickTextColor(backgroundHex) {
+      return relativeLuminance(backgroundHex) > 0.44 ? "#1f2f4d" : "#ffffff";
+    }
+
+    function resolveThemeValue(value) {
+      const theme = findThemeByKey(value);
+      return theme ? theme.value : "";
+    }
+
+    function getGroupPalette(themeValue) {
+      const resolvedTheme = resolveThemeValue(themeValue) || "blue";
+      const override = THEME_PALETTE_OVERRIDES[resolvedTheme];
+      if (override) {
+        return {
+          headerBg: override.headerBg,
+          headerText: override.headerText,
+          rowOddBg: override.rowOddBg,
+          rowEvenBg: override.rowEvenBg,
+          edge: override.edge,
+          labelText: override.labelText
+        };
+      }
+
+      const base = THEME_BASE_COLORS[resolvedTheme] || "#4f78bf";
+      const headerBg = mixHexColors(base, "#172640", 0.26);
+      return {
+        headerBg: headerBg,
+        headerText: pickTextColor(headerBg),
+        rowOddBg: mixHexColors(base, "#ffffff", 0.88),
+        rowEvenBg: mixHexColors(base, "#ffffff", 0.8),
+        edge: mixHexColors(base, "#d5e1f2", 0.7),
+        labelText: mixHexColors(base, "#203252", 0.55)
+      };
+    }
+
+    function createItem(chestId, fields) {
+      return {
+        item_id: buildItemId(chestId),
+        chest_id: chestId,
+        token: normalizeWhitespace(fields.token),
+        status: fields.status || STATUS.UNUSED,
+        item_name: normalizeWhitespace(fields.item_name),
+        rarity: normalizeWhitespace(fields.rarity),
+        type: normalizeWhitespace(fields.type),
+        attunement_required: !!fields.attunement_required,
+        description: normalizeWhitespace(fields.description),
+        item_url: normalizeWhitespace(fields.item_url),
+        notes: normalizeWhitespace(fields.notes),
+        color_theme: fields.color_theme || "",
+        category_label: normalizeWhitespace(fields.category_label),
+        deleted: !!fields.deleted
+      };
+    }
+
+    function buildDummySeries(chestId, theme, count, groupOffset) {
+      const items = [];
+      for (let index = 1; index <= count; index += 1) {
+        const seed = groupOffset + index;
+        const template = ITEM_LIBRARY[seed % ITEM_LIBRARY.length];
+        let status = STATUS.IN_CHEST;
+        if (seed % 9 === 0) {
+          status = STATUS.AWARDED;
+        } else if (seed % 4 === 0) {
+          status = STATUS.UNUSED;
+        }
+
+        const isUnassigned = status === STATUS.UNUSED && seed % 2 === 0;
+        items.push(createItem(chestId, {
+          token: theme.label + " " + String(index),
+          status: status,
+          item_name: isUnassigned ? "" : template.name,
+          rarity: isUnassigned ? "" : template.rarity,
+          type: isUnassigned ? "" : template.type,
+          description: isUnassigned ? "" : template.description,
+          notes: isUnassigned ? "" : (seed % 6 === 0 ? "Reserve for milestone pacing." : ""),
+          color_theme: theme.value,
+          category_label: theme.label
+        }));
+      }
+      return items;
+    }
+
+    function buildDummyState() {
+      const chests = [
+        { chest_id: "main_campaign", chest_name: "Main Campaign Chest" },
+        { chest_id: "boss_vault", chest_name: "Boss Vault" }
+      ];
+
+      const mainThemes = [
+        "blue",
+        "light-blue",
+        "orange",
+        "yellow",
+        "red",
+        "pink",
+        "green",
+        "light-green",
+        "purple",
+        "light-purple"
+      ];
+
+      const vaultThemes = [
+        "white",
+        "black",
+        "gray",
+        "blue",
+        "red",
+        "purple",
+        "green",
+        "orange"
+      ];
+
+      const byChest = {
+        main_campaign: [],
+        boss_vault: []
+      };
+
+      mainThemes.forEach(function (themeValue, index) {
+        const theme = findThemeByKey(themeValue);
+        if (!theme) return;
+        byChest.main_campaign = byChest.main_campaign.concat(
+          buildDummySeries("main_campaign", theme, 10, index * 13)
+        );
+      });
+
+      vaultThemes.forEach(function (themeValue, index) {
+        const theme = findThemeByKey(themeValue);
+        if (!theme) return;
+        byChest.boss_vault = byChest.boss_vault.concat(
+          buildDummySeries("boss_vault", theme, 8, 100 + (index * 11))
+        );
+      });
+
+      return { chests: chests, itemsByChest: byChest };
+    }
+
+    function hasSelectedChest() {
+      return !!(selectedChestId && workingItemsByChest[selectedChestId]);
+    }
+
+    function getWorkingItems(chestId) {
+      if (!chestId) return [];
+      if (!workingItemsByChest[chestId]) {
+        workingItemsByChest[chestId] = [];
+      }
+      return workingItemsByChest[chestId];
+    }
+
+    function getActiveItems(chestId) {
+      return getWorkingItems(chestId).filter(function (item) {
+        return !item.deleted;
+      });
+    }
+
+    function isDirty() {
+      return JSON.stringify(workingItemsByChest) !== JSON.stringify(persistedItemsByChest);
+    }
+
+    function updateDirtyState() {
+      const hasChest = chestList.length > 0;
+      const dirty = hasChest && isDirty();
+      if (saveWorkingButtonNode) {
+        saveWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
+        saveWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "All changes saved" : "";
+      }
+      if (revertWorkingButtonNode) {
+        revertWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
+        revertWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "No unsaved changes" : "";
+      }
+    }
+
+    function getVisibleItems() {
+      const activeItems = getActiveItems(selectedChestId);
+      const filtered = activeItems.filter(function (item) {
+        if (!activeListStatusFilters.has(item.status)) return false;
+        if (!searchTerm) return true;
+        const haystack = (item.token + " " + item.item_name).toLowerCase();
+        return haystack.indexOf(searchTerm) !== -1;
+      });
+
+      filtered.sort(function (a, b) {
+        return compareTokens(a.token, b.token);
+      });
+
+      return filtered;
+    }
+
+    function getActiveFilterList() {
+      return STATUS_ORDER.filter(function (status) {
+        return activeListStatusFilters.has(status);
+      });
+    }
+
+    function setListStatusFilters(statuses) {
+      const next = new Set();
+      (statuses || []).forEach(function (status) {
+        if (STATUS_LABELS[status]) {
+          next.add(status);
+        }
+      });
+      activeListStatusFilters = next;
+    }
+
+    function ensureListStatusFilter(status) {
+      if (!STATUS_LABELS[status]) return;
+      if (activeListStatusFilters.has(status)) return;
+      const next = new Set(activeListStatusFilters);
+      next.add(status);
+      activeListStatusFilters = next;
+    }
+
+    function toggleListStatusFilter(status) {
+      if (!STATUS_LABELS[status]) return;
+      const next = new Set(activeListStatusFilters);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      activeListStatusFilters = next;
+      renderAll();
+    }
+
+    function getItemById(itemId) {
+      if (!itemId) return null;
+      const activeItems = getActiveItems(selectedChestId);
+      return activeItems.find(function (item) {
+        return item.item_id === itemId;
+      }) || null;
+    }
+
+    function ensureSelection() {
+      if (!selectedItemId) return;
+      if (!getItemById(selectedItemId)) {
+        selectedItemId = "";
+      }
+    }
+
+    function clearNode(node) {
+      while (node.firstChild) {
+        node.removeChild(node.firstChild);
+      }
+    }

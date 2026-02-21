@@ -1,0 +1,186 @@
+    const STATUS = {
+      IN_CHEST: "IN_CHEST",
+      AWARDED: "AWARDED",
+      UNUSED: "UNUSED"
+    };
+
+    const GROUP_COUNT_LIMITS = {
+      min: 1,
+      max: 999
+    };
+    const DEFAULT_GROUP_COUNT = 10;
+
+    const GROUP_COUNT_REPEATABLE_ACTIONS = new Set([
+      "group-count-inc",
+      "group-count-dec"
+    ]);
+
+    const STATUS_ORDER = [STATUS.IN_CHEST, STATUS.AWARDED, STATUS.UNUSED];
+    const CREATE_CHEST_OPTION = "__create_new_chest__";
+
+    const STATUS_LABELS = {
+      IN_CHEST: "In Chest",
+      AWARDED: "Awarded",
+      UNUSED: "Unused"
+    };
+
+    const COLOR_THEMES = [
+      { value: "blue", label: "Blue" },
+      { value: "light-blue", label: "Lt. Blue" },
+      { value: "orange", label: "Orange" },
+      { value: "yellow", label: "Yellow" },
+      { value: "red", label: "Red" },
+      { value: "pink", label: "Pink" },
+      { value: "green", label: "Green" },
+      { value: "light-green", label: "Lt. Green" },
+      { value: "purple", label: "Purple" },
+      { value: "light-purple", label: "Lt. Purple" },
+      { value: "white", label: "White" },
+      { value: "black", label: "Black" },
+      { value: "gray", label: "Gray" }
+    ];
+
+    const THEME_ALIASES = {
+      lightblue: "light-blue",
+      ltblue: "light-blue",
+      lightgreen: "light-green",
+      ltgreen: "light-green",
+      lightpurple: "light-purple",
+      ltpurple: "light-purple"
+    };
+
+    const THEME_BASE_COLORS = {
+      blue: "#4f78bf",
+      "light-blue": "#85c6eb",
+      orange: "#de8a42",
+      yellow: "#d9bf5c",
+      red: "#cb6666",
+      pink: "#d896c9",
+      green: "#69aa72",
+      "light-green": "#9acb8d",
+      purple: "#9176c8",
+      "light-purple": "#b8a5de",
+      white: "#dfe6ef",
+      black: "#4b5568",
+      gray: "#8e98a8"
+    };
+
+    const THEME_PALETTE_OVERRIDES = {
+      yellow: {
+        headerBg: "#b88f20",
+        headerText: "#ffffff",
+        rowOddBg: "#fff9e2",
+        rowEvenBg: "#fff3cd",
+        edge: "#efdca4",
+        labelText: "#7d6524"
+      },
+      white: {
+        headerBg: "#e8edf4",
+        headerText: "#25314b",
+        rowOddBg: "#ffffff",
+        rowEvenBg: "#f5f8fe",
+        edge: "#cfdaea",
+        labelText: "#556481"
+      },
+      black: {
+        headerBg: "#374151",
+        headerText: "#ffffff",
+        rowOddBg: "#f2f4f8",
+        rowEvenBg: "#e8ecf3",
+        edge: "#bcc6d8",
+        labelText: "#4f5f7a"
+      }
+    };
+
+    const ITEM_LIBRARY = [
+      { name: "Oil of Slipperiness", rarity: "Uncommon", type: "Consumables", description: "Coats a creature and grants freedom of movement for 8 hours." },
+      { name: "Potion of Healing", rarity: "Common", type: "Consumables", description: "Regain 2d4 + 2 hit points when consumed." },
+      { name: "Potion of Climbing", rarity: "Common", type: "Consumables", description: "Gain climbing speed equal to walking speed for 1 hour." },
+      { name: "Dust of Sneezing and Choking", rarity: "Uncommon", type: "Wondrous Items", description: "Creates a choking cloud in a 30-foot radius." },
+      { name: "Necklace of Fireballs", rarity: "Rare", type: "Wondrous Items", description: "Detachable beads cast Fireball when thrown." },
+      { name: "Wand of Magic Missiles", rarity: "Uncommon", type: "Rods & Wands", description: "Expend charges to cast Magic Missile at various levels." },
+      { name: "Cloak of Protection", rarity: "Uncommon", type: "Wondrous Items", description: "Wearer gains +1 AC and +1 to all saving throws." },
+      { name: "Boots of Elvenkind", rarity: "Uncommon", type: "Wondrous Items", description: "Footsteps are silent while worn." },
+      { name: "Bag of Holding", rarity: "Uncommon", type: "Wondrous Items", description: "Portable extradimensional storage container." },
+      { name: "Pearl of Power", rarity: "Uncommon", type: "Wondrous Items", description: "Recover one expended spell slot each dawn." },
+      { name: "Immovable Rod", rarity: "Uncommon", type: "Rods & Wands", description: "Rod locks in place until button is pressed again." },
+      { name: "Gems (50 GP)", rarity: "Common", type: "Gems & Treasure", description: "Treasure bundle from the gem table." },
+      { name: "Art Objects (250 GP)", rarity: "Uncommon", type: "Gems & Treasure", description: "Assorted crafted valuables and collectibles." },
+      { name: "Potion of Invisibility", rarity: "Very Rare", type: "Consumables", description: "Become invisible for up to 1 hour or until attacking/casting." },
+      { name: "Sending Stones", rarity: "Uncommon", type: "Wondrous Items", description: "Paired stones allow short-distance communication once daily." }
+    ];
+
+    let root;
+    let chestSelectNode;
+    let searchInputNode;
+    let columnANode;
+    let columnBNode;
+    let saveWorkingButtonNode;
+    let revertWorkingButtonNode;
+    let undoLastButtonNode;
+    let historyStateNode;
+    let syncLaneNode;
+    let tableToolsCardNode;
+    let manageTabButtonNodes;
+    let managePanelNodes;
+    let detailEditButtonNode;
+    let detailHeaderTitleNode;
+    let listFilterButtonNodes;
+
+    let detailEmptyNode;
+    let detailContentNode;
+    let detailItemNameReadNode;
+    let detailRarityTagNode;
+    let detailTypeTagNode;
+    let detailStatusToggleNode;
+    let editItemNameNode;
+    let editRarityNode;
+    let editTypeNode;
+    let editDescriptionNode;
+    let editItemUrlNode;
+    let itemUrlEditFieldNode;
+    let itemUrlViewNode;
+    let itemUrlAnchorNode;
+    let editNotesNode;
+
+    let tokenRangeGroupNode;
+    let tokenRangeFromNode;
+    let tokenRangeToNode;
+    let tokenRangeAddButtonNode;
+    let tokenRangeDeleteButtonNode;
+    let createGroupNameNode;
+    let createGroupThemeNode;
+    let createGroupCountNode;
+    let addGroupButtonNode;
+    let manageGroupSelectNode;
+    let manageGroupNameNode;
+    let manageGroupThemeNode;
+    let updateGroupButtonNode;
+    let deleteGroupButtonNode;
+    let newChestNameNode;
+    let addChestButtonNode;
+    let deleteChestSelectNode;
+    let deleteChestButtonNode;
+
+    let chestList = [];
+    let persistedItemsByChest = {};
+    let workingItemsByChest = {};
+    let selectedChestId = "";
+    let selectedItemId = "";
+    let activeListStatusFilters = new Set([STATUS.IN_CHEST, STATUS.AWARDED]);
+    let searchTerm = "";
+    let isSyncing = false;
+    let isDetailEditing = false;
+    let activeManageTab = "chest";
+    let statusCounts = {
+      IN_CHEST: 0,
+      AWARDED: 0,
+      UNUSED: 0
+    };
+
+    let nextId = 1;
+    let lastChangeState = null;
+    let pendingDeleteChestId = "";
+    let pendingDeleteGroupPrefix = "";
+    let groupCountRepeatDelayTimer = null;
+    let groupCountRepeatIntervalTimer = null;

@@ -7,11 +7,6 @@
       UNUSED: "UNUSED"
     };
 
-    const MODE = {
-      PLAY: "play",
-      MANAGE: "manage"
-    };
-
     const GROUP_COUNT_LIMITS = {
       min: 1,
       max: 999
@@ -121,11 +116,8 @@
     let root;
     let chestSelectNode;
     let searchInputNode;
-    let statusScopeNode;
     let columnANode;
     let columnBNode;
-    let dirtyStateNode;
-    let manageTeaserNode;
     let saveWorkingButtonNode;
     let revertWorkingButtonNode;
     let undoLastButtonNode;
@@ -134,7 +126,6 @@
     let tableToolsCardNode;
     let manageTabButtonNodes;
     let managePanelNodes;
-    let detailPanelNode;
     let detailEditButtonNode;
     let detailHeaderTitleNode;
     let listFilterButtonNodes;
@@ -160,7 +151,6 @@
     let tokenRangeToNode;
     let tokenRangeAddButtonNode;
     let tokenRangeDeleteButtonNode;
-    let tokenRangeStatusNode;
     let createGroupNameNode;
     let createGroupThemeNode;
     let createGroupCountNode;
@@ -174,15 +164,12 @@
     let addChestButtonNode;
     let deleteChestSelectNode;
     let deleteChestButtonNode;
-    let chestToolsResultNode;
 
     let chestList = [];
     let persistedItemsByChest = {};
     let workingItemsByChest = {};
     let selectedChestId = "";
     let selectedItemId = "";
-    let currentMode = MODE.MANAGE;
-    let statusScope = STATUS.IN_CHEST;
     let activeListStatusFilters = new Set([STATUS.IN_CHEST, STATUS.AWARDED]);
     let searchTerm = "";
     let isSyncing = false;
@@ -511,15 +498,6 @@
       return JSON.stringify(workingItemsByChest) !== JSON.stringify(persistedItemsByChest);
     }
 
-    function setDirtyStateMessage(message, className) {
-      if (!dirtyStateNode) return;
-      dirtyStateNode.textContent = message;
-      dirtyStateNode.classList.remove("is-dirty");
-      if (className) {
-        dirtyStateNode.classList.add(className);
-      }
-    }
-
     function updateDirtyState() {
       const hasChest = chestList.length > 0;
       const dirty = hasChest && isDirty();
@@ -531,19 +509,6 @@
         revertWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
         revertWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "No unsaved changes" : "";
       }
-      if (!chestList.length) {
-        setDirtyStateMessage("Create a chest to begin", "is-dirty");
-        return;
-      }
-      if (isSyncing) {
-        setDirtyStateMessage("Syncing changes...", "");
-        return;
-      }
-      if (isDirty()) {
-        setDirtyStateMessage("Unsaved local changes", "is-dirty");
-        return;
-      }
-      setDirtyStateMessage("All changes saved", "");
     }
 
     function getVisibleItems() {
@@ -596,25 +561,6 @@
       }
       activeListStatusFilters = next;
       renderAll();
-    }
-
-    function applyScopePreset(scopeValue) {
-      if (scopeValue === "ALL") {
-        setListStatusFilters(STATUS_ORDER);
-        return;
-      }
-      if (STATUS_LABELS[scopeValue]) {
-        setListStatusFilters([scopeValue]);
-      }
-    }
-
-    function getScopePresetFromFilters() {
-      const active = getActiveFilterList();
-      if (active.length === 0) return "ALL";
-      if (active.length === 1) {
-        return active[0];
-      }
-      return "ALL";
     }
 
     function getItemById(itemId) {
@@ -994,24 +940,6 @@
 
     function renderDetail() {
       showDetail(getItemById(selectedItemId));
-    }
-
-    function renderModeState() {
-      const isManage = currentMode === MODE.MANAGE;
-      if (manageTeaserNode) {
-        manageTeaserNode.hidden = isManage;
-      }
-      if (!hasSelectedChest()) {
-        activeManageTab = "chest";
-      }
-      const hasDetail = !!getItemById(selectedItemId);
-      root.classList.toggle("loot-v2-manage-mode", isManage);
-      root.classList.toggle("loot-v2-has-detail", hasDetail);
-
-      if (tableToolsCardNode) {
-        tableToolsCardNode.hidden = !isManage;
-      }
-      renderManageTabState();
     }
 
     function renderManageTabState() {
@@ -1415,12 +1343,6 @@
       if (manageGroupThemeNode) manageGroupThemeNode.value = "";
     }
 
-    function renderStatusScope() {
-      statusScope = getScopePresetFromFilters();
-      if (!statusScopeNode) return;
-      statusScopeNode.value = statusScope;
-    }
-
     function renderListStatusFilters() {
       if (!listFilterButtonNodes) return;
       const noChest = !hasSelectedChest();
@@ -1440,9 +1362,17 @@
 
     function renderAll() {
       ensureSelection();
-      renderModeState();
+      if (!hasSelectedChest()) {
+        activeManageTab = "chest";
+      }
+      const hasDetail = !!getItemById(selectedItemId);
+      root.classList.add("loot-v2-manage-mode");
+      root.classList.toggle("loot-v2-has-detail", hasDetail);
+      if (tableToolsCardNode) {
+        tableToolsCardNode.hidden = false;
+      }
+      renderManageTabState();
       updateMetrics();
-      renderStatusScope();
       renderChestSelect();
       renderDeleteChestSelect();
       renderChestToolsState();
@@ -1496,23 +1426,6 @@
       item.description = snapshot.description || "";
       item.item_url = snapshot.item_url || "";
       item.notes = snapshot.notes || "";
-    }
-
-    function setResultMessage(node, message, isError) {
-      if (!node) return;
-      const hasMessage = !!normalizeWhitespace(message);
-      node.textContent = hasMessage ? message : "";
-      node.classList.toggle("is-visible", hasMessage);
-      node.classList.toggle("is-error", !!isError);
-    }
-
-    function setTokenRangeStatus(message, toneClass) {
-      if (!tokenRangeStatusNode) return;
-      tokenRangeStatusNode.textContent = normalizeWhitespace(message) || "Set group and range.";
-      tokenRangeStatusNode.classList.remove("is-info", "is-warn");
-      if (toneClass === "is-info" || toneClass === "is-warn") {
-        tokenRangeStatusNode.classList.add(toneClass);
-      }
     }
 
     function tokenExistsActive(chestId, token, excludeItemId) {
@@ -1696,35 +1609,13 @@
         tokenRangeDeleteButtonNode.textContent = "Delete (" + deleteCountLabel + ")";
       }
 
-      if (disableControls) {
-        setTokenRangeStatus("Set group and range.");
-        return;
-      }
-
-      if (addPlan.summary && deletePlan.summary) {
-        const rangeText = addPlan.summary.split("|")[0].trim();
-        const addText = addPlan.summary.split("|")[1] ? addPlan.summary.split("|")[1].trim() : "";
-        const deleteText = deletePlan.summary.split("|")[1] ? deletePlan.summary.split("|")[1].trim() : "";
-        setTokenRangeStatus(rangeText + " | " + addText + " / " + deleteText, addPlan.isError || deletePlan.isError ? "is-warn" : "is-info");
-      } else if (addPlan.summary) {
-        setTokenRangeStatus(addPlan.summary, addPlan.isError ? "is-warn" : "is-info");
-      } else if (deletePlan.summary) {
-        setTokenRangeStatus(deletePlan.summary, deletePlan.isError ? "is-warn" : "is-info");
-      } else {
-        setTokenRangeStatus("Set group and range.");
-      }
     }
 
     function applyTokenRangeChanges(action) {
       if (!hasSelectedChest()) return;
       const plan = evaluateTokenRangePlan(action);
-      if (!plan.canApply) {
-        setTokenRangeStatus(plan.reason || "No changes.", "is-warn");
-        return;
-      }
+      if (!plan.canApply) return;
 
-      let affected = 0;
-      let skipped = 0;
       const items = getWorkingItems(selectedChestId);
       let firstCreatedId = "";
 
@@ -1732,7 +1623,6 @@
         for (let number = plan.from; number <= plan.to; number += 1) {
           const token = plan.group.name + " " + String(number);
           if (plan.lookup[number]) {
-            skipped += 1;
             continue;
           }
           const newItem = createItem(selectedChestId, {
@@ -1744,31 +1634,26 @@
           });
           items.push(newItem);
           plan.lookup[number] = newItem;
-          affected += 1;
           if (!firstCreatedId) firstCreatedId = newItem.item_id;
         }
         if (firstCreatedId) {
           selectedItemId = firstCreatedId;
         }
         ensureListStatusFilter(STATUS.UNUSED);
-        setTokenRangeStatus("Added " + String(affected) + ". Skipped " + String(skipped) + ".", "is-info");
       } else {
         let selectedDeleted = false;
         for (let number = plan.from; number <= plan.to; number += 1) {
           const item = plan.lookup[number];
           if (!item) {
-            skipped += 1;
             continue;
           }
           if (item.item_id === selectedItemId) selectedDeleted = true;
           item.deleted = true;
-          affected += 1;
         }
         if (selectedDeleted) {
           selectedItemId = "";
           setDetailEditMode(false);
         }
-        setTokenRangeStatus("Deleted " + String(affected) + ". Missing " + String(skipped) + ".", "is-info");
       }
 
       clearUndoHistoryState();
@@ -1946,19 +1831,12 @@
     }
 
     function createChest() {
-      setResultMessage(chestToolsResultNode, "", false);
       const chestName = normalizeWhitespace(newChestNameNode && newChestNameNode.value);
-      if (!chestName) {
-        setResultMessage(chestToolsResultNode, "Loot chest name is required.", true);
-        return;
-      }
+      if (!chestName) return;
       const duplicateName = chestList.some(function (chest) {
         return normalizeWhitespace(chest.chest_name).toLowerCase() === chestName.toLowerCase();
       });
-      if (duplicateName) {
-        setResultMessage(chestToolsResultNode, "A chest with that name already exists.", true);
-        return;
-      }
+      if (duplicateName) return;
 
       const chestId = buildChestId(chestName);
       const nextChest = { chest_id: chestId, chest_name: chestName };
@@ -1972,28 +1850,23 @@
       clearUndoHistoryState();
       if (newChestNameNode) newChestNameNode.value = "";
       setManageTab("group-create");
-      setResultMessage(chestToolsResultNode, "Created chest " + chestName + ".", false);
       renderAll();
     }
 
     function deleteChest() {
-      setResultMessage(chestToolsResultNode, "", false);
       if (!deleteChestSelectNode) return;
       const chestId = deleteChestSelectNode.value || "";
       if (!chestId) {
-        setResultMessage(chestToolsResultNode, "Select a chest to delete.", true);
         pendingDeleteChestId = "";
         renderChestToolsState();
         return;
       }
       if (!pendingDeleteChestId || pendingDeleteChestId !== chestId) {
         pendingDeleteChestId = chestId;
-        setResultMessage(chestToolsResultNode, "Press Delete Chest again to confirm.", true);
         renderChestToolsState();
         return;
       }
 
-      const deleted = chestList.find(function (chest) { return chest.chest_id === chestId; });
       chestList = chestList.filter(function (chest) { return chest.chest_id !== chestId; });
       delete persistedItemsByChest[chestId];
       delete workingItemsByChest[chestId];
@@ -2012,9 +1885,6 @@
         setManageTab("chest");
         setListStatusFilters([STATUS.IN_CHEST, STATUS.AWARDED]);
       }
-
-      const deletedName = deleted ? deleted.chest_name : chestId;
-      setResultMessage(chestToolsResultNode, "Deleted chest " + deletedName + ".", false);
       renderAll();
     }
 
@@ -2136,23 +2006,6 @@
       renderAll();
     }
 
-    function setMode(nextMode) {
-      if (nextMode !== MODE.PLAY && nextMode !== MODE.MANAGE) return;
-      if (currentMode === nextMode) return;
-      currentMode = nextMode;
-
-      setDetailEditMode(false);
-      renderAll();
-    }
-
-    function toggleManageMode() {
-      if (currentMode === MODE.MANAGE) {
-        setMode(MODE.PLAY);
-        return;
-      }
-      setMode(MODE.MANAGE);
-    }
-
     function saveWorkingChanges() {
       if (isSyncing) return;
       if (!chestList.length) return;
@@ -2187,10 +2040,6 @@
         }
         if (action !== "delete-group") {
           clearDeleteGroupConfirmState();
-        }
-        if (action === "toggle-manage-mode") {
-          toggleManageMode();
-          return;
         }
         if (action === "group-count-inc") {
           adjustCreateGroupCount(1);
@@ -2361,11 +2210,6 @@
         selectChest(chestSelectNode.value);
         return;
       }
-      if (statusScopeNode && event.target === statusScopeNode) {
-        applyScopePreset(statusScopeNode.value);
-        renderAll();
-        return;
-      }
       if (deleteChestSelectNode && event.target === deleteChestSelectNode) {
         pendingDeleteChestId = "";
         renderChestToolsState();
@@ -2415,11 +2259,8 @@
     function bindNodes() {
       chestSelectNode = document.getElementById("lootV2ChestSelect");
       searchInputNode = document.getElementById("lootV2SearchInput");
-      statusScopeNode = document.getElementById("lootV2StatusScopeSelect");
       columnANode = document.getElementById("lootV2ColumnA");
       columnBNode = document.getElementById("lootV2ColumnB");
-      dirtyStateNode = document.getElementById("lootV2DirtyState");
-      manageTeaserNode = document.getElementById("lootV2ManageTeaser");
       saveWorkingButtonNode = root.querySelector('[data-action="save-working"]');
       revertWorkingButtonNode = root.querySelector('[data-action="revert-working"]');
       undoLastButtonNode = document.getElementById("lootV2UndoLastBtn");
@@ -2428,7 +2269,6 @@
       tableToolsCardNode = document.getElementById("lootV2TableToolsCard");
       manageTabButtonNodes = Array.from(root.querySelectorAll('[data-action="set-manage-tab"]'));
       managePanelNodes = Array.from(root.querySelectorAll("[data-manage-panel]"));
-      detailPanelNode = document.getElementById("lootV2DetailPanel");
       detailEditButtonNode = document.getElementById("lootV2ToggleEditBtn");
       detailHeaderTitleNode = document.getElementById("lootV2DetailHeaderTitle");
       listFilterButtonNodes = Array.from(root.querySelectorAll('[data-action="toggle-list-status-filter"]'));
@@ -2454,7 +2294,6 @@
       tokenRangeToNode = document.getElementById("lootV2TokenRangeTo");
       tokenRangeAddButtonNode = document.getElementById("lootV2AddTokenRangeBtn");
       tokenRangeDeleteButtonNode = document.getElementById("lootV2DeleteTokenRangeBtn");
-      tokenRangeStatusNode = document.getElementById("lootV2TokenRangeStatus");
       createGroupNameNode = document.getElementById("lootV2CreateGroupName");
       createGroupThemeNode = document.getElementById("lootV2CreateGroupTheme");
       createGroupCountNode = document.getElementById("lootV2CreateGroupCount");
@@ -2468,7 +2307,6 @@
       addChestButtonNode = document.getElementById("lootV2AddChestBtn");
       deleteChestSelectNode = document.getElementById("lootV2DeleteChestSelect");
       deleteChestButtonNode = document.getElementById("lootV2DeleteChestBtn");
-      chestToolsResultNode = document.getElementById("lootV2ChestToolsResult");
     }
 
     function initData() {
@@ -2503,6 +2341,8 @@
       document.addEventListener("pointerup", clearGroupCountRepeatTimers);
       document.addEventListener("pointercancel", clearGroupCountRepeatTimers);
     }
+
+    
 
     document.addEventListener("DOMContentLoaded", initLootV2);
   })();

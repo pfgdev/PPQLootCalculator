@@ -1,0 +1,313 @@
+    function handleRootClick(event) {
+      const actionButton = event.target.closest("button[data-action]");
+      if (actionButton && root.contains(actionButton)) {
+        event.stopPropagation();
+        const action = actionButton.getAttribute("data-action");
+        if (action !== "delete-chest") {
+          clearDeleteConfirmState();
+        }
+        if (action !== "delete-group") {
+          clearDeleteGroupConfirmState();
+        }
+        if (action === "group-count-inc") {
+          adjustCreateGroupCount(1);
+          return;
+        }
+        if (action === "group-count-dec") {
+          adjustCreateGroupCount(-1);
+          return;
+        }
+        if (action === "set-manage-tab") {
+          const nextTab = actionButton.getAttribute("data-manage-tab");
+          if (!hasSelectedChest() && nextTab !== "chest") return;
+          clearDeleteGroupConfirmState();
+          setManageTab(nextTab);
+          return;
+        }
+        if (action === "save-working") {
+          saveWorkingChanges();
+          return;
+        }
+        if (action === "revert-working") {
+          revertWorkingChanges();
+          return;
+        }
+        if (action === "undo-status-change") {
+          toggleLastStatusChange();
+          return;
+        }
+        if (action === "save-item") {
+          saveSelectedItem();
+          return;
+        }
+        if (action === "revert-item-draft") {
+          revertItemDraft();
+          return;
+        }
+        if (action === "toggle-detail-edit") {
+          if (!selectedItemId) return;
+          if (isDetailEditing) {
+            revertItemDraft();
+            return;
+          }
+          setDetailEditMode(true);
+          return;
+        }
+        if (action === "set-detail-status") {
+          if (!selectedItemId) return;
+          applyStatusFromDetail(actionButton.getAttribute("data-status"));
+          return;
+        }
+        if (action === "toggle-list-status-filter") {
+          toggleListStatusFilter(actionButton.getAttribute("data-status"));
+          return;
+        }
+        if (action === "delete-selected-token") {
+          deleteSelectedToken();
+          return;
+        }
+        if (action === "add-token-range") {
+          applyTokenRangeChanges("add");
+          return;
+        }
+        if (action === "delete-token-range") {
+          applyTokenRangeChanges("delete");
+          return;
+        }
+        if (action === "add-group") {
+          createGroup();
+          return;
+        }
+        if (action === "update-group") {
+          updateGroup();
+          return;
+        }
+        if (action === "delete-group") {
+          deleteGroup();
+          return;
+        }
+        if (action === "create-chest") {
+          createChest();
+          return;
+        }
+        if (action === "delete-chest") {
+          deleteChest();
+          return;
+        }
+      }
+
+      if (!event.target.closest("#lootV2DeleteChestSelect") && !event.target.closest("#lootV2DeleteChestBtn")) {
+        clearDeleteConfirmState();
+      }
+      if (!event.target.closest("#lootV2ManageGroupSelect") && !event.target.closest("#lootV2DeleteGroupBtn")) {
+        clearDeleteGroupConfirmState();
+      }
+
+      const clickedRow = event.target.closest("tr[data-item-id]");
+      if (clickedRow && root.contains(clickedRow)) {
+        const itemId = clickedRow.getAttribute("data-item-id");
+        if (itemId && itemId !== selectedItemId) {
+          selectedItemId = itemId;
+          setDetailEditMode(false);
+          renderAll();
+        }
+      }
+    }
+
+    function handleDocumentClick(event) {
+      if (!root || !root.classList.contains("loot-v2-has-detail")) return;
+      const path = typeof event.composedPath === "function" ? event.composedPath() : null;
+      if (path && path.indexOf(root) !== -1) return;
+      if (root.contains(event.target)) return;
+      clearSelectedItem();
+    }
+
+    function handleTabChanged(event) {
+      const nextTab = event && event.detail ? event.detail.tabName : "";
+      if (nextTab !== "LootChestsV2") {
+        clearSelectedItem();
+      }
+    }
+
+    function handleRootInput(event) {
+      if (!event.target.closest("#lootV2DeleteChestSelect")) {
+        clearDeleteConfirmState();
+      }
+      if (!event.target.closest("#lootV2ManageGroupSelect")) {
+        clearDeleteGroupConfirmState();
+      }
+      if (event.target === manageGroupNameNode) {
+        manageGroupNameNode.dataset.userEdited = "1";
+        renderGroupEditorState();
+        return;
+      }
+      if (event.target === newChestNameNode) {
+        renderChestToolsState();
+        return;
+      }
+      if (event.target === createGroupNameNode || event.target === createGroupCountNode) {
+        renderGroupEditorState();
+      }
+      if (event.target === tokenRangeFromNode) {
+        const fromValue = Number(normalizeWhitespace(tokenRangeFromNode.value));
+        const toValue = Number(normalizeWhitespace(tokenRangeToNode && tokenRangeToNode.value));
+        if (Number.isInteger(fromValue) && Number.isInteger(toValue) && fromValue > toValue && tokenRangeToNode) {
+          tokenRangeToNode.value = "";
+        }
+        renderTokenRangeState();
+      }
+      if (event.target === tokenRangeToNode) {
+        renderTokenRangeState();
+      }
+      if (event.target === searchInputNode) {
+        searchTerm = searchInputNode.value.trim().toLowerCase();
+        renderAll();
+        return;
+      }
+      if (event.target === editNotesNode) {
+        autoSizeNotesField();
+      }
+    }
+
+    function handleRootChange(event) {
+      if (event.target === chestSelectNode) {
+        if (chestSelectNode.value === CREATE_CHEST_OPTION) {
+          openChestTools();
+          return;
+        }
+        selectChest(chestSelectNode.value);
+        return;
+      }
+      if (deleteChestSelectNode && event.target === deleteChestSelectNode) {
+        pendingDeleteChestId = "";
+        renderChestToolsState();
+        return;
+      }
+      if (manageGroupSelectNode && event.target === manageGroupSelectNode) {
+        clearDeleteGroupConfirmState();
+        if (manageGroupNameNode) {
+          manageGroupNameNode.dataset.userEdited = "";
+        }
+        if (manageGroupThemeNode) {
+          manageGroupThemeNode.dataset.userEdited = "";
+        }
+        renderGroupEditorState();
+        return;
+      }
+      if (manageGroupThemeNode && event.target === manageGroupThemeNode) {
+        manageGroupThemeNode.dataset.userEdited = "1";
+        clearDeleteGroupConfirmState();
+        renderGroupEditorState();
+        return;
+      }
+      if (createGroupThemeNode && event.target === createGroupThemeNode) {
+        renderGroupEditorState();
+        return;
+      }
+      if (tokenRangeGroupNode && event.target === tokenRangeGroupNode) {
+        renderTokenRangeState();
+        return;
+      }
+      if (createGroupCountNode && event.target === createGroupCountNode) {
+        const raw = normalizeWhitespace(createGroupCountNode.value);
+        const parsed = Number(raw);
+        if (Number.isInteger(parsed)) {
+          setCreateGroupCountValue(parsed);
+        } else if (!raw) {
+          createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
+        }
+        renderGroupEditorState();
+        return;
+      }
+      if ((tokenRangeFromNode && event.target === tokenRangeFromNode) || (tokenRangeToNode && event.target === tokenRangeToNode)) {
+        renderTokenRangeState();
+      }
+    }
+
+    function bindNodes() {
+      chestSelectNode = document.getElementById("lootV2ChestSelect");
+      searchInputNode = document.getElementById("lootV2SearchInput");
+      columnANode = document.getElementById("lootV2ColumnA");
+      columnBNode = document.getElementById("lootV2ColumnB");
+      saveWorkingButtonNode = root.querySelector('[data-action="save-working"]');
+      revertWorkingButtonNode = root.querySelector('[data-action="revert-working"]');
+      undoLastButtonNode = document.getElementById("lootV2UndoLastBtn");
+      historyStateNode = document.getElementById("lootV2HistoryState");
+      syncLaneNode = document.getElementById("lootV2SyncLane");
+      tableToolsCardNode = document.getElementById("lootV2TableToolsCard");
+      manageTabButtonNodes = Array.from(root.querySelectorAll('[data-action="set-manage-tab"]'));
+      managePanelNodes = Array.from(root.querySelectorAll("[data-manage-panel]"));
+      detailEditButtonNode = document.getElementById("lootV2ToggleEditBtn");
+      detailHeaderTitleNode = document.getElementById("lootV2DetailHeaderTitle");
+      listFilterButtonNodes = Array.from(root.querySelectorAll('[data-action="toggle-list-status-filter"]'));
+
+      detailEmptyNode = document.getElementById("lootV2DetailEmpty");
+      detailContentNode = document.getElementById("lootV2DetailContent");
+      detailItemNameReadNode = document.getElementById("lootV2DetailItemNameRead");
+      detailRarityTagNode = document.getElementById("lootV2DetailRarityTag");
+      detailTypeTagNode = document.getElementById("lootV2DetailTypeTag");
+      detailStatusToggleNode = document.getElementById("lootV2DetailStatusToggle");
+      editItemNameNode = document.getElementById("lootV2EditItemName");
+      editRarityNode = document.getElementById("lootV2EditRarity");
+      editTypeNode = document.getElementById("lootV2EditType");
+      editDescriptionNode = document.getElementById("lootV2EditDescription");
+      editItemUrlNode = document.getElementById("lootV2EditItemUrl");
+      itemUrlEditFieldNode = root.querySelector(".loot-v2-item-url-edit");
+      itemUrlViewNode = document.getElementById("lootV2ItemUrlView");
+      itemUrlAnchorNode = document.getElementById("lootV2ItemUrlAnchor");
+      editNotesNode = document.getElementById("lootV2EditNotes");
+
+      tokenRangeGroupNode = document.getElementById("lootV2TokenRangeGroup");
+      tokenRangeFromNode = document.getElementById("lootV2TokenRangeFrom");
+      tokenRangeToNode = document.getElementById("lootV2TokenRangeTo");
+      tokenRangeAddButtonNode = document.getElementById("lootV2AddTokenRangeBtn");
+      tokenRangeDeleteButtonNode = document.getElementById("lootV2DeleteTokenRangeBtn");
+      createGroupNameNode = document.getElementById("lootV2CreateGroupName");
+      createGroupThemeNode = document.getElementById("lootV2CreateGroupTheme");
+      createGroupCountNode = document.getElementById("lootV2CreateGroupCount");
+      addGroupButtonNode = document.getElementById("lootV2AddGroupBtn");
+      manageGroupSelectNode = document.getElementById("lootV2ManageGroupSelect");
+      manageGroupNameNode = document.getElementById("lootV2ManageGroupName");
+      manageGroupThemeNode = document.getElementById("lootV2ManageGroupTheme");
+      updateGroupButtonNode = document.getElementById("lootV2UpdateGroupBtn");
+      deleteGroupButtonNode = document.getElementById("lootV2DeleteGroupBtn");
+      newChestNameNode = document.getElementById("lootV2NewChestName");
+      addChestButtonNode = document.getElementById("lootV2AddChestBtn");
+      deleteChestSelectNode = document.getElementById("lootV2DeleteChestSelect");
+      deleteChestButtonNode = document.getElementById("lootV2DeleteChestBtn");
+    }
+
+    function initData() {
+      const dummy = buildDummyState();
+      chestList = dummy.chests;
+      persistedItemsByChest = deepClone(dummy.itemsByChest);
+      workingItemsByChest = deepClone(dummy.itemsByChest);
+      selectedChestId = chestList.length ? chestList[0].chest_id : "";
+    }
+
+    function initLootV2() {
+      root = document.getElementById("lootV2Root");
+      if (!root) return;
+
+      initData();
+      bindNodes();
+      renderChestSelect();
+      renderColorOptions();
+      setDetailEditMode(false);
+      setHistoryState("No changes made.", "is-idle");
+      renderAll();
+
+      root.addEventListener("click", handleRootClick);
+      document.addEventListener("click", handleDocumentClick);
+      document.addEventListener("app:tab-changed", handleTabChanged);
+      root.addEventListener("input", handleRootInput);
+      root.addEventListener("change", handleRootChange);
+      root.addEventListener("pointerdown", handleGroupCountPointerDown);
+      root.addEventListener("pointerup", clearGroupCountRepeatTimers);
+      root.addEventListener("pointercancel", clearGroupCountRepeatTimers);
+      root.addEventListener("pointerleave", clearGroupCountRepeatTimers);
+      document.addEventListener("pointerup", clearGroupCountRepeatTimers);
+      document.addEventListener("pointercancel", clearGroupCountRepeatTimers);
+    }
+
+    

@@ -229,14 +229,17 @@
               </select>
             </label>
 
-            <label class="loot-v2-field loot-v2-field-span-2">
+            <label class="loot-v2-field loot-v2-field-span-2 loot-v2-description-field">
               <span>Description</span>
+              <div id="lootV2DescriptionRead" class="loot-v2-description-read">Short item summary for table play</div>
               <textarea id="lootV2EditDescription" rows="3" placeholder="Short item summary for table play" disabled></textarea>
             </label>
 
-            <div id="lootV2ItemUrlView" class="loot-v2-item-url-view loot-v2-field-span-2" hidden>
+            <div id="lootV2ItemUrlView" class="loot-v2-field loot-v2-field-span-2 loot-v2-item-url-view" hidden>
               <span>Item Link</span>
-              <a id="lootV2ItemUrlAnchor" href="#" target="_blank" rel="noopener noreferrer">Open item reference</a>
+              <div class="loot-v2-item-url-read">
+                <a id="lootV2ItemUrlAnchor" href="#" target="_blank" rel="noopener noreferrer">Open item reference</a>
+              </div>
             </div>
 
             <label class="loot-v2-field loot-v2-field-span-2 loot-v2-item-url-edit">
@@ -246,6 +249,7 @@
 
             <label class="loot-v2-field loot-v2-field-span-2 loot-v2-notes-field">
               <span>Notes</span>
+              <div id="lootV2NotesRead" class="loot-v2-notes-read">Optional DM notes</div>
               <textarea id="lootV2EditNotes" rows="1" placeholder="Optional DM notes" disabled></textarea>
             </label>
           </div>

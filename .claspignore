@@ -1,0 +1,6 @@
+# Local tooling and docs (do not deploy to Apps Script)
+scripts/**
+docs/**
+readme.md
+CODEX_CONTEXT.md
+AGENTS.md

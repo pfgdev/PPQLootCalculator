@@ -6,6 +6,17 @@
       return String(value || "").trim().replace(/\s+/g, " ");
     }
 
+    function normalizeMultilineText(value) {
+      return String(value || "")
+        .replace(/\r\n?/g, "\n")
+        .split("\n")
+        .map(function (line) {
+          return line.replace(/[ \t]+/g, " ").trimEnd();
+        })
+        .join("\n")
+        .trim();
+    }
+
     function clampNumber(value, min, max) {
       const parsed = Number(value);
       const safeValue = Number.isFinite(parsed) ? parsed : min;
@@ -195,9 +206,9 @@
         rarity: normalizeWhitespace(fields.rarity),
         type: normalizeWhitespace(fields.type),
         attunement_required: !!fields.attunement_required,
-        description: normalizeWhitespace(fields.description),
+        description: normalizeMultilineText(fields.description),
         item_url: normalizeWhitespace(fields.item_url),
-        notes: normalizeWhitespace(fields.notes),
+        notes: normalizeMultilineText(fields.notes),
         color_theme: fields.color_theme || "",
         category_label: normalizeWhitespace(fields.category_label),
         deleted: !!fields.deleted

@@ -1146,32 +1146,30 @@
   }
 
   .loot-v2-item-url-view {
-    border: 1px solid #d4deef;
-    border-radius: 8px;
-    background: #f8fbff;
-    padding: 7px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
     text-align: left;
-    align-items: flex-start;
   }
 
-  .loot-v2-item-url-view span {
-    color: var(--loot-v2-muted);
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .loot-v2-item-url-read {
+    border: 1px solid #c3cee5;
+    border-radius: 8px;
+    background: #f6f9ff;
+    min-height: 36px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    line-height: 16.4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
   }
 
   .loot-v2-item-url-view a {
     color: #1f4f98;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     text-decoration: underline;
     text-underline-offset: 2px;
-    align-self: flex-start;
+    line-height: 16.4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1179,6 +1177,11 @@
 
   .loot-v2-item-url-edit {
     display: none;
+  }
+
+  .loot-v2-item-url-edit input {
+    font-size: 13px;
+    line-height: 16.4px;
   }
 
   .loot-v2-item-url-view[hidden],
@@ -1190,6 +1193,65 @@
     min-height: 36px;
     height: 36px;
     overflow-y: hidden;
+    font-size: 13px;
+    line-height: 16.4px;
+  }
+
+  .loot-v2-description-read {
+    border: 1px solid #c3cee5;
+    border-radius: 8px;
+    background: #f6f9ff;
+    color: #344a6e;
+    min-height: 72px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    line-height: 16.4px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .loot-v2-description-read.is-empty {
+    color: #697c9f;
+  }
+
+  .loot-v2-notes-read {
+    border: 1px solid #c3cee5;
+    border-radius: 8px;
+    background: #f6f9ff;
+    color: #344a6e;
+    min-height: 36px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    line-height: 16.4px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .loot-v2-notes-read.is-empty {
+    color: #697c9f;
+  }
+
+  .loot-v2:not(.loot-v2-detail-editing) .loot-v2-notes-field textarea {
+    display: none;
+  }
+
+  .loot-v2:not(.loot-v2-detail-editing) .loot-v2-description-field textarea {
+    display: none;
+  }
+
+  .loot-v2.loot-v2-detail-editing .loot-v2-description-read {
+    display: none;
+  }
+
+  .loot-v2.loot-v2-detail-editing .loot-v2-notes-read {
+    display: none;
+  }
+
+  .loot-v2-description-field textarea {
+    overflow-y: hidden;
+    font-size: 13px;
     line-height: 16.4px;
   }
 

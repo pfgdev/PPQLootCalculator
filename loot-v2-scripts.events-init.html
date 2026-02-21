@@ -116,10 +116,18 @@
 
     function handleDocumentClick(event) {
       if (!root || !root.classList.contains("loot-v2-has-detail")) return;
-      const path = typeof event.composedPath === "function" ? event.composedPath() : null;
-      if (path && path.indexOf(root) !== -1) return;
-      if (root.contains(event.target)) return;
+      const target = event.target;
+      if (isDetailPersistentClickTarget(target)) return;
       clearSelectedItem();
+    }
+
+    function isDetailPersistentClickTarget(target) {
+      if (!target || !(target instanceof Element)) return false;
+      if (target.closest("#lootV2DetailPanel")) return true;
+      if (target.closest("tr[data-item-id]")) return true;
+      if (target.closest(".loot-v2-top-card :is(button, input, select, textarea, a, label, [data-action])")) return true;
+      if (target.closest(".loot-v2-filter-row :is(button, input, select, textarea, a, label, [data-action])")) return true;
+      return false;
     }
 
     function handleTabChanged(event) {
@@ -163,6 +171,9 @@
         searchTerm = searchInputNode.value.trim().toLowerCase();
         renderAll();
         return;
+      }
+      if (event.target === editDescriptionNode) {
+        autoSizeDescriptionField();
       }
       if (event.target === editNotesNode) {
         autoSizeNotesField();
@@ -250,11 +261,13 @@
       editItemNameNode = document.getElementById("lootV2EditItemName");
       editRarityNode = document.getElementById("lootV2EditRarity");
       editTypeNode = document.getElementById("lootV2EditType");
+      descriptionReadNode = document.getElementById("lootV2DescriptionRead");
       editDescriptionNode = document.getElementById("lootV2EditDescription");
       editItemUrlNode = document.getElementById("lootV2EditItemUrl");
       itemUrlEditFieldNode = root.querySelector(".loot-v2-item-url-edit");
       itemUrlViewNode = document.getElementById("lootV2ItemUrlView");
       itemUrlAnchorNode = document.getElementById("lootV2ItemUrlAnchor");
+      notesReadNode = document.getElementById("lootV2NotesRead");
       editNotesNode = document.getElementById("lootV2EditNotes");
 
       tokenRangeGroupNode = document.getElementById("lootV2TokenRangeGroup");

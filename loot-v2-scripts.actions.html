@@ -563,9 +563,9 @@
         item_name: normalizeWhitespace(editItemNameNode.value),
         rarity: normalizeWhitespace(editRarityNode.value),
         type: normalizeWhitespace(editTypeNode.value),
-        description: normalizeWhitespace(editDescriptionNode.value),
+        description: normalizeMultilineText(editDescriptionNode.value),
         item_url: normalizeWhitespace(editItemUrlNode.value),
-        notes: normalizeWhitespace(editNotesNode.value)
+        notes: normalizeMultilineText(editNotesNode.value)
       };
 
       applyEditableFieldSnapshot(item, after);

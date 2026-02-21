@@ -21,16 +21,7 @@
   <?!= include('tab-scripts.html') ?>
   <?!= include('gold-v2-scripts.html') ?>
   <?!= include('spell-v2-scripts.html') ?>
-  <script>
-    (function () {
-<?!= include('loot-v2-scripts.state.html') ?>
-<?!= include('loot-v2-scripts.helpers.html') ?>
-<?!= include('loot-v2-scripts.render.html') ?>
-<?!= include('loot-v2-scripts.actions.html') ?>
-<?!= include('loot-v2-scripts.events-init.html') ?>
-      document.addEventListener("DOMContentLoaded", initLootV2);
-    })();
-  </script>
+  <?!= include('loot-v2-scripts.html') ?>
 
 </head>
 <body onload="onPageLoad()">

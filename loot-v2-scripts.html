@@ -1,0 +1,2439 @@
+﻿<!-- loot-v2-scripts.html -->
+<script>
+  (function () {
+    const STATUS = {
+      IN_CHEST: "IN_CHEST",
+      AWARDED: "AWARDED",
+      UNUSED: "UNUSED"
+    };
+
+    const GROUP_COUNT_LIMITS = {
+      min: 1,
+      max: 999
+    };
+    const DEFAULT_GROUP_COUNT = 10;
+
+    const GROUP_COUNT_REPEATABLE_ACTIONS = new Set([
+      "group-count-inc",
+      "group-count-dec"
+    ]);
+
+    const STATUS_ORDER = [STATUS.IN_CHEST, STATUS.AWARDED, STATUS.UNUSED];
+    const CREATE_CHEST_OPTION = "__create_new_chest__";
+
+    const STATUS_LABELS = {
+      IN_CHEST: "In Chest",
+      AWARDED: "Awarded",
+      UNUSED: "Unused"
+    };
+
+    const COLOR_THEMES = [
+      { value: "blue", label: "Blue" },
+      { value: "light-blue", label: "Lt. Blue" },
+      { value: "orange", label: "Orange" },
+      { value: "yellow", label: "Yellow" },
+      { value: "red", label: "Red" },
+      { value: "pink", label: "Pink" },
+      { value: "green", label: "Green" },
+      { value: "light-green", label: "Lt. Green" },
+      { value: "purple", label: "Purple" },
+      { value: "light-purple", label: "Lt. Purple" },
+      { value: "white", label: "White" },
+      { value: "black", label: "Black" },
+      { value: "gray", label: "Gray" }
+    ];
+
+    const THEME_ALIASES = {
+      lightblue: "light-blue",
+      ltblue: "light-blue",
+      lightgreen: "light-green",
+      ltgreen: "light-green",
+      lightpurple: "light-purple",
+      ltpurple: "light-purple"
+    };
+
+    const THEME_BASE_COLORS = {
+      blue: "#4f78bf",
+      "light-blue": "#85c6eb",
+      orange: "#de8a42",
+      yellow: "#d9bf5c",
+      red: "#cb6666",
+      pink: "#d896c9",
+      green: "#69aa72",
+      "light-green": "#9acb8d",
+      purple: "#9176c8",
+      "light-purple": "#b8a5de",
+      white: "#dfe6ef",
+      black: "#4b5568",
+      gray: "#8e98a8"
+    };
+
+    const THEME_PALETTE_OVERRIDES = {
+      yellow: {
+        headerBg: "#b88f20",
+        headerText: "#ffffff",
+        rowOddBg: "#fff9e2",
+        rowEvenBg: "#fff3cd",
+        edge: "#efdca4",
+        labelText: "#7d6524"
+      },
+      white: {
+        headerBg: "#e8edf4",
+        headerText: "#25314b",
+        rowOddBg: "#ffffff",
+        rowEvenBg: "#f5f8fe",
+        edge: "#cfdaea",
+        labelText: "#556481"
+      },
+      black: {
+        headerBg: "#374151",
+        headerText: "#ffffff",
+        rowOddBg: "#f2f4f8",
+        rowEvenBg: "#e8ecf3",
+        edge: "#bcc6d8",
+        labelText: "#4f5f7a"
+      }
+    };
+
+    const ITEM_LIBRARY = [
+      { name: "Oil of Slipperiness", rarity: "Uncommon", type: "Consumables", description: "Coats a creature and grants freedom of movement for 8 hours." },
+      { name: "Potion of Healing", rarity: "Common", type: "Consumables", description: "Regain 2d4 + 2 hit points when consumed." },
+      { name: "Potion of Climbing", rarity: "Common", type: "Consumables", description: "Gain climbing speed equal to walking speed for 1 hour." },
+      { name: "Dust of Sneezing and Choking", rarity: "Uncommon", type: "Wondrous Items", description: "Creates a choking cloud in a 30-foot radius." },
+      { name: "Necklace of Fireballs", rarity: "Rare", type: "Wondrous Items", description: "Detachable beads cast Fireball when thrown." },
+      { name: "Wand of Magic Missiles", rarity: "Uncommon", type: "Rods & Wands", description: "Expend charges to cast Magic Missile at various levels." },
+      { name: "Cloak of Protection", rarity: "Uncommon", type: "Wondrous Items", description: "Wearer gains +1 AC and +1 to all saving throws." },
+      { name: "Boots of Elvenkind", rarity: "Uncommon", type: "Wondrous Items", description: "Footsteps are silent while worn." },
+      { name: "Bag of Holding", rarity: "Uncommon", type: "Wondrous Items", description: "Portable extradimensional storage container." },
+      { name: "Pearl of Power", rarity: "Uncommon", type: "Wondrous Items", description: "Recover one expended spell slot each dawn." },
+      { name: "Immovable Rod", rarity: "Uncommon", type: "Rods & Wands", description: "Rod locks in place until button is pressed again." },
+      { name: "Gems (50 GP)", rarity: "Common", type: "Gems & Treasure", description: "Treasure bundle from the gem table." },
+      { name: "Art Objects (250 GP)", rarity: "Uncommon", type: "Gems & Treasure", description: "Assorted crafted valuables and collectibles." },
+      { name: "Potion of Invisibility", rarity: "Very Rare", type: "Consumables", description: "Become invisible for up to 1 hour or until attacking/casting." },
+      { name: "Sending Stones", rarity: "Uncommon", type: "Wondrous Items", description: "Paired stones allow short-distance communication once daily." }
+    ];
+
+    let root;
+    let chestSelectNode;
+    let searchInputNode;
+    let columnANode;
+    let columnBNode;
+    let saveWorkingButtonNode;
+    let revertWorkingButtonNode;
+    let undoLastButtonNode;
+    let historyStateNode;
+    let syncLaneNode;
+    let tableToolsCardNode;
+    let manageTabButtonNodes;
+    let managePanelNodes;
+    let detailEditButtonNode;
+    let detailHeaderTitleNode;
+    let listFilterButtonNodes;
+
+    let detailEmptyNode;
+    let detailContentNode;
+    let detailItemNameReadNode;
+    let detailRarityTagNode;
+    let detailTypeTagNode;
+    let detailStatusToggleNode;
+    let editItemNameNode;
+    let editRarityNode;
+    let editTypeNode;
+    let descriptionReadNode;
+    let editDescriptionNode;
+    let editItemUrlNode;
+    let itemUrlEditFieldNode;
+    let itemUrlViewNode;
+    let itemUrlAnchorNode;
+    let notesReadNode;
+    let editNotesNode;
+
+    let tokenRangeGroupNode;
+    let tokenRangeFromNode;
+    let tokenRangeToNode;
+    let tokenRangeAddButtonNode;
+    let tokenRangeDeleteButtonNode;
+    let createGroupNameNode;
+    let createGroupThemeNode;
+    let createGroupCountNode;
+    let addGroupButtonNode;
+    let manageGroupSelectNode;
+    let manageGroupNameNode;
+    let manageGroupThemeNode;
+    let updateGroupButtonNode;
+    let deleteGroupButtonNode;
+    let newChestNameNode;
+    let addChestButtonNode;
+    let deleteChestSelectNode;
+    let deleteChestButtonNode;
+
+    let chestList = [];
+    let persistedItemsByChest = {};
+    let workingItemsByChest = {};
+    let selectedChestId = "";
+    let selectedItemId = "";
+    let activeListStatusFilters = new Set([STATUS.IN_CHEST, STATUS.AWARDED]);
+    let searchTerm = "";
+    let isSyncing = false;
+    let isDetailEditing = false;
+    let activeManageTab = "chest";
+    let statusCounts = {
+      IN_CHEST: 0,
+      AWARDED: 0,
+      UNUSED: 0
+    };
+
+    let nextId = 1;
+    let lastChangeState = null;
+    let pendingDeleteChestId = "";
+    let pendingDeleteGroupPrefix = "";
+    let groupCountRepeatDelayTimer = null;
+    let groupCountRepeatIntervalTimer = null;
+
+    function deepClone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function normalizeWhitespace(value) {
+      return String(value || "").trim().replace(/\s+/g, " ");
+    }
+
+    function normalizeMultilineText(value) {
+      return String(value || "")
+        .replace(/\r\n?/g, "\n")
+        .split("\n")
+        .map(function (line) {
+          return line.replace(/[ \t]+/g, " ").trimEnd();
+        })
+        .join("\n")
+        .trim();
+    }
+
+    function clampNumber(value, min, max) {
+      const parsed = Number(value);
+      const safeValue = Number.isFinite(parsed) ? parsed : min;
+      return Math.max(min, Math.min(max, safeValue));
+    }
+
+    function buildItemId(chestId) {
+      const id = chestId + "_item_" + String(nextId);
+      nextId += 1;
+      return id;
+    }
+
+    function buildChestId(name) {
+      const base = normalizeWhitespace(name).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const seed = base || "loot_chest";
+      let next = seed;
+      let index = 2;
+      while (chestList.some(function (chest) { return chest.chest_id === next; })) {
+        next = seed + "_" + String(index);
+        index += 1;
+      }
+      return next;
+    }
+
+    function parseTokenParts(token) {
+      const normalized = normalizeWhitespace(token);
+      const match = normalized.match(/^(.*?)(\d+)$/);
+      if (!match) {
+        return { prefix: normalized, number: Number.POSITIVE_INFINITY, raw: normalized };
+      }
+      return {
+        prefix: normalizeWhitespace(match[1]),
+        number: Number(match[2]),
+        raw: normalized
+      };
+    }
+
+    function compareTokens(aToken, bToken) {
+      const a = parseTokenParts(aToken);
+      const b = parseTokenParts(bToken);
+      const prefixDiff = a.prefix.localeCompare(b.prefix, undefined, { sensitivity: "base" });
+      if (prefixDiff !== 0) return prefixDiff;
+      if (a.number !== b.number) return a.number - b.number;
+      return a.raw.localeCompare(b.raw, undefined, { sensitivity: "base" });
+    }
+
+    function normalizePrefixKey(prefix) {
+      return normalizeWhitespace(prefix).toLowerCase();
+    }
+
+    function toDisplayStatus(status) {
+      return STATUS_LABELS[status] || status;
+    }
+
+    function getStatusClass(status) {
+      if (status === STATUS.IN_CHEST) return "status-in-chest";
+      if (status === STATUS.AWARDED) return "status-awarded";
+      if (status === STATUS.UNUSED) return "status-unused";
+      return "";
+    }
+
+    function getStatusClassSuffix(status) {
+      if (status === STATUS.IN_CHEST) return "in-chest";
+      if (status === STATUS.AWARDED) return "awarded";
+      if (status === STATUS.UNUSED) return "unused";
+      return "unknown";
+    }
+
+    function getStatusGlyph(status) {
+      if (status === STATUS.AWARDED) return "\u2705";
+      if (status === STATUS.UNUSED) return "\u2796";
+      return "\ud83d\udce6";
+    }
+
+    function normalizeThemeKey(value) {
+      return normalizeWhitespace(value).toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    function findThemeByKey(value) {
+      const key = normalizeThemeKey(value);
+      if (!key) return null;
+      const aliasValue = THEME_ALIASES[key];
+      if (aliasValue) {
+        return COLOR_THEMES.find(function (theme) {
+          return theme.value === aliasValue;
+        }) || null;
+      }
+      return COLOR_THEMES.find(function (theme) {
+        return normalizeThemeKey(theme.value) === key || normalizeThemeKey(theme.label) === key;
+      }) || null;
+    }
+
+    function getColorLabelByValue(value) {
+      const hit = findThemeByKey(value);
+      return hit ? hit.label : "";
+    }
+
+    function inferThemeFromTokenPrefix(prefix) {
+      const hit = findThemeByKey(prefix);
+      return hit ? hit.value : "";
+    }
+
+    function parseHexColor(value) {
+      const normalized = String(value || "").trim().replace(/^#/, "");
+      if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+      return {
+        r: parseInt(normalized.slice(0, 2), 16),
+        g: parseInt(normalized.slice(2, 4), 16),
+        b: parseInt(normalized.slice(4, 6), 16)
+      };
+    }
+
+    function channelToHex(channel) {
+      const clamped = Math.max(0, Math.min(255, Math.round(channel)));
+      const hex = clamped.toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    }
+
+    function rgbToHex(rgb) {
+      return "#" + channelToHex(rgb.r) + channelToHex(rgb.g) + channelToHex(rgb.b);
+    }
+
+    function mixHexColors(baseHex, targetHex, targetWeight) {
+      const baseRgb = parseHexColor(baseHex);
+      const targetRgb = parseHexColor(targetHex);
+      if (!baseRgb || !targetRgb) return baseHex || targetHex || "#4f78bf";
+      const t = Math.max(0, Math.min(1, Number(targetWeight) || 0));
+      return rgbToHex({
+        r: baseRgb.r * (1 - t) + targetRgb.r * t,
+        g: baseRgb.g * (1 - t) + targetRgb.g * t,
+        b: baseRgb.b * (1 - t) + targetRgb.b * t
+      });
+    }
+
+    function relativeLuminance(hexColor) {
+      const rgb = parseHexColor(hexColor);
+      if (!rgb) return 0.5;
+      function toLinear(channel) {
+        const value = channel / 255;
+        return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+      }
+      return (0.2126 * toLinear(rgb.r)) + (0.7152 * toLinear(rgb.g)) + (0.0722 * toLinear(rgb.b));
+    }
+
+    function pickTextColor(backgroundHex) {
+      return relativeLuminance(backgroundHex) > 0.44 ? "#1f2f4d" : "#ffffff";
+    }
+
+    function resolveThemeValue(value) {
+      const theme = findThemeByKey(value);
+      return theme ? theme.value : "";
+    }
+
+    function getGroupPalette(themeValue) {
+      const resolvedTheme = resolveThemeValue(themeValue) || "blue";
+      const override = THEME_PALETTE_OVERRIDES[resolvedTheme];
+      if (override) {
+        return {
+          headerBg: override.headerBg,
+          headerText: override.headerText,
+          rowOddBg: override.rowOddBg,
+          rowEvenBg: override.rowEvenBg,
+          edge: override.edge,
+          labelText: override.labelText
+        };
+      }
+
+      const base = THEME_BASE_COLORS[resolvedTheme] || "#4f78bf";
+      const headerBg = mixHexColors(base, "#172640", 0.26);
+      return {
+        headerBg: headerBg,
+        headerText: pickTextColor(headerBg),
+        rowOddBg: mixHexColors(base, "#ffffff", 0.88),
+        rowEvenBg: mixHexColors(base, "#ffffff", 0.8),
+        edge: mixHexColors(base, "#d5e1f2", 0.7),
+        labelText: mixHexColors(base, "#203252", 0.55)
+      };
+    }
+
+    function createItem(chestId, fields) {
+      return {
+        item_id: buildItemId(chestId),
+        chest_id: chestId,
+        token: normalizeWhitespace(fields.token),
+        status: fields.status || STATUS.UNUSED,
+        item_name: normalizeWhitespace(fields.item_name),
+        rarity: normalizeWhitespace(fields.rarity),
+        type: normalizeWhitespace(fields.type),
+        attunement_required: !!fields.attunement_required,
+        description: normalizeMultilineText(fields.description),
+        item_url: normalizeWhitespace(fields.item_url),
+        notes: normalizeMultilineText(fields.notes),
+        color_theme: fields.color_theme || "",
+        category_label: normalizeWhitespace(fields.category_label),
+        deleted: !!fields.deleted
+      };
+    }
+
+    function buildDummySeries(chestId, theme, count, groupOffset) {
+      const items = [];
+      for (let index = 1; index <= count; index += 1) {
+        const seed = groupOffset + index;
+        const template = ITEM_LIBRARY[seed % ITEM_LIBRARY.length];
+        let status = STATUS.IN_CHEST;
+        if (seed % 9 === 0) {
+          status = STATUS.AWARDED;
+        } else if (seed % 4 === 0) {
+          status = STATUS.UNUSED;
+        }
+
+        const isUnassigned = status === STATUS.UNUSED && seed % 2 === 0;
+        items.push(createItem(chestId, {
+          token: theme.label + " " + String(index),
+          status: status,
+          item_name: isUnassigned ? "" : template.name,
+          rarity: isUnassigned ? "" : template.rarity,
+          type: isUnassigned ? "" : template.type,
+          description: isUnassigned ? "" : template.description,
+          notes: isUnassigned ? "" : (seed % 6 === 0 ? "Reserve for milestone pacing." : ""),
+          color_theme: theme.value,
+          category_label: theme.label
+        }));
+      }
+      return items;
+    }
+
+    function buildDummyState() {
+      const chests = [
+        { chest_id: "main_campaign", chest_name: "Main Campaign Chest" },
+        { chest_id: "boss_vault", chest_name: "Boss Vault" }
+      ];
+
+      const mainThemes = [
+        "blue",
+        "light-blue",
+        "orange",
+        "yellow",
+        "red",
+        "pink",
+        "green",
+        "light-green",
+        "purple",
+        "light-purple"
+      ];
+
+      const vaultThemes = [
+        "white",
+        "black",
+        "gray",
+        "blue",
+        "red",
+        "purple",
+        "green",
+        "orange"
+      ];
+
+      const byChest = {
+        main_campaign: [],
+        boss_vault: []
+      };
+
+      mainThemes.forEach(function (themeValue, index) {
+        const theme = findThemeByKey(themeValue);
+        if (!theme) return;
+        byChest.main_campaign = byChest.main_campaign.concat(
+          buildDummySeries("main_campaign", theme, 10, index * 13)
+        );
+      });
+
+      vaultThemes.forEach(function (themeValue, index) {
+        const theme = findThemeByKey(themeValue);
+        if (!theme) return;
+        byChest.boss_vault = byChest.boss_vault.concat(
+          buildDummySeries("boss_vault", theme, 8, 100 + (index * 11))
+        );
+      });
+
+      return { chests: chests, itemsByChest: byChest };
+    }
+
+    function hasSelectedChest() {
+      return !!(selectedChestId && workingItemsByChest[selectedChestId]);
+    }
+
+    function getWorkingItems(chestId) {
+      if (!chestId) return [];
+      if (!workingItemsByChest[chestId]) {
+        workingItemsByChest[chestId] = [];
+      }
+      return workingItemsByChest[chestId];
+    }
+
+    function getActiveItems(chestId) {
+      return getWorkingItems(chestId).filter(function (item) {
+        return !item.deleted;
+      });
+    }
+
+    function isDirty() {
+      return JSON.stringify(workingItemsByChest) !== JSON.stringify(persistedItemsByChest);
+    }
+
+    function updateDirtyState() {
+      const hasChest = chestList.length > 0;
+      const dirty = hasChest && isDirty();
+      if (saveWorkingButtonNode) {
+        saveWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
+        saveWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "All changes saved" : "";
+      }
+      if (revertWorkingButtonNode) {
+        revertWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
+        revertWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "No unsaved changes" : "";
+      }
+    }
+
+    function getVisibleItems() {
+      const activeItems = getActiveItems(selectedChestId);
+      const filtered = activeItems.filter(function (item) {
+        if (!activeListStatusFilters.has(item.status)) return false;
+        if (!searchTerm) return true;
+        const haystack = (item.token + " " + item.item_name).toLowerCase();
+        return haystack.indexOf(searchTerm) !== -1;
+      });
+
+      filtered.sort(function (a, b) {
+        return compareTokens(a.token, b.token);
+      });
+
+      return filtered;
+    }
+
+    function getActiveFilterList() {
+      return STATUS_ORDER.filter(function (status) {
+        return activeListStatusFilters.has(status);
+      });
+    }
+
+    function setListStatusFilters(statuses) {
+      const next = new Set();
+      (statuses || []).forEach(function (status) {
+        if (STATUS_LABELS[status]) {
+          next.add(status);
+        }
+      });
+      activeListStatusFilters = next;
+    }
+
+    function ensureListStatusFilter(status) {
+      if (!STATUS_LABELS[status]) return;
+      if (activeListStatusFilters.has(status)) return;
+      const next = new Set(activeListStatusFilters);
+      next.add(status);
+      activeListStatusFilters = next;
+    }
+
+    function toggleListStatusFilter(status) {
+      if (!STATUS_LABELS[status]) return;
+      const next = new Set(activeListStatusFilters);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      activeListStatusFilters = next;
+      renderAll();
+    }
+
+    function getItemById(itemId) {
+      if (!itemId) return null;
+      const activeItems = getActiveItems(selectedChestId);
+      return activeItems.find(function (item) {
+        return item.item_id === itemId;
+      }) || null;
+    }
+
+    function ensureSelection() {
+      if (!selectedItemId) return;
+      if (!getItemById(selectedItemId)) {
+        selectedItemId = "";
+      }
+    }
+
+    function clearNode(node) {
+      while (node.firstChild) {
+        node.removeChild(node.firstChild);
+      }
+    }
+
+    function updateMetrics() {
+      const activeItems = getActiveItems(selectedChestId);
+      const counts = {
+        IN_CHEST: 0,
+        AWARDED: 0,
+        UNUSED: 0
+      };
+      activeItems.forEach(function (item) {
+        if (counts[item.status] !== undefined) {
+          counts[item.status] += 1;
+        }
+      });
+      statusCounts = counts;
+    }
+
+    function buildTableRow(item) {
+      const tr = document.createElement("tr");
+      tr.className = "loot-v2-row " + getStatusClass(item.status);
+      if (item.item_id === selectedItemId) {
+        tr.classList.add("is-selected");
+      }
+      tr.setAttribute("data-item-id", item.item_id);
+
+      const tokenCell = document.createElement("td");
+      const tokenNode = document.createElement("div");
+      tokenNode.className = "loot-v2-token";
+      tokenNode.textContent = item.token;
+      tokenCell.appendChild(tokenNode);
+
+      const nameCell = document.createElement("td");
+      const nameNode = document.createElement("div");
+      nameNode.className = "loot-v2-item-name loot-v2-item-name-" + getStatusClassSuffix(item.status);
+      if (!normalizeWhitespace(item.item_name)) {
+        nameNode.classList.add("is-unassigned");
+      }
+      const markerNode = document.createElement("span");
+      markerNode.className = "loot-v2-item-status-marker loot-v2-item-status-" + getStatusClassSuffix(item.status);
+      markerNode.setAttribute("aria-hidden", "true");
+      markerNode.textContent = getStatusGlyph(item.status);
+      const textNode = document.createElement("span");
+      textNode.className = "loot-v2-item-name-text";
+      textNode.textContent = item.item_name || "(Unassigned)";
+      nameNode.appendChild(markerNode);
+      nameNode.appendChild(textNode);
+      nameCell.appendChild(nameNode);
+
+      tr.appendChild(tokenCell);
+      tr.appendChild(nameCell);
+      return tr;
+    }
+
+    function getGroupLabel(item) {
+      const categoryLabel = normalizeWhitespace(item && item.category_label ? item.category_label : "");
+      if (categoryLabel) return categoryLabel;
+      const parts = parseTokenParts(item && item.token ? item.token : "");
+      return parts.prefix || "Misc";
+    }
+
+    function getGroupThemeValue(item, label) {
+      const fromItem = resolveThemeValue(item && item.color_theme ? item.color_theme : "");
+      if (fromItem) return fromItem;
+      return resolveThemeValue(label);
+    }
+
+    function buildVisibleGroups(items) {
+      const groups = [];
+      let current = null;
+      items.forEach(function (item) {
+        const label = getGroupLabel(item);
+        if (!current || current.label !== label) {
+          current = {
+            label: label,
+            themeValue: getGroupThemeValue(item, label),
+            items: []
+          };
+          groups.push(current);
+        }
+        if (!current.themeValue) {
+          current.themeValue = getGroupThemeValue(item, label);
+        }
+        current.items.push(item);
+      });
+      return groups;
+    }
+
+    function splitGroupsAcrossColumns(groups) {
+      const midpoint = Math.ceil(groups.length / 2);
+      const columnA = groups.slice(0, midpoint);
+      const columnB = groups.slice(midpoint);
+      return [columnA, columnB];
+    }
+
+    function buildGroupCard(group) {
+      const palette = getGroupPalette(group.themeValue || group.label);
+      const card = document.createElement("section");
+      card.className = "loot-v2-group-card";
+      card.style.setProperty("--loot-group-header-bg", palette.headerBg);
+      card.style.setProperty("--loot-group-header-text", palette.headerText);
+      card.style.setProperty("--loot-group-row-odd", palette.rowOddBg);
+      card.style.setProperty("--loot-group-row-even", palette.rowEvenBg);
+      card.style.setProperty("--loot-group-edge", palette.edge);
+      card.style.setProperty("--loot-group-label-text", palette.labelText);
+
+      const title = document.createElement("div");
+      title.className = "loot-v2-group-title";
+      title.textContent = group.label;
+      card.appendChild(title);
+
+      const wrap = document.createElement("div");
+      wrap.className = "loot-v2-list-wrap";
+      const table = document.createElement("table");
+      table.className = "loot-v2-table loot-v2-group-table";
+
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      const tokenHeader = document.createElement("th");
+      tokenHeader.textContent = "Token";
+      const itemHeader = document.createElement("th");
+      itemHeader.className = "loot-v2-item-col-heading";
+      itemHeader.textContent = "Item";
+      headerRow.appendChild(tokenHeader);
+      headerRow.appendChild(itemHeader);
+      thead.appendChild(headerRow);
+
+      const tbody = document.createElement("tbody");
+      group.items.forEach(function (item) {
+        tbody.appendChild(buildTableRow(item));
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      card.appendChild(wrap);
+      return card;
+    }
+
+    function getNotesFieldMinHeight() {
+      if (!editNotesNode) return 36;
+      const styles = window.getComputedStyle(editNotesNode);
+      const lineHeight = parseFloat(styles.lineHeight) || 16.4;
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const borderTop = parseFloat(styles.borderTopWidth) || 0;
+      const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+      return Math.ceil(lineHeight + paddingTop + paddingBottom + borderTop + borderBottom);
+    }
+
+    function getDescriptionFieldMinHeight() {
+      if (!editDescriptionNode) return 72;
+      const styles = window.getComputedStyle(editDescriptionNode);
+      const lineHeight = parseFloat(styles.lineHeight) || 16.4;
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const borderTop = parseFloat(styles.borderTopWidth) || 0;
+      const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+      return Math.ceil(lineHeight + paddingTop + paddingBottom + borderTop + borderBottom);
+    }
+
+    function setDescriptionFieldToMinHeight() {
+      if (!editDescriptionNode) return;
+      editDescriptionNode.style.height = getDescriptionFieldMinHeight() + "px";
+    }
+
+    function autoSizeDescriptionField() {
+      if (!editDescriptionNode) return;
+      const minHeight = getDescriptionFieldMinHeight();
+      editDescriptionNode.style.height = minHeight + "px";
+      const measured = editDescriptionNode.scrollHeight || 0;
+      const nextHeight = Math.max(minHeight, Math.ceil(measured));
+      editDescriptionNode.style.height = nextHeight + "px";
+    }
+
+    function setNotesFieldToMinHeight() {
+      if (!editNotesNode) return;
+      editNotesNode.style.height = getNotesFieldMinHeight() + "px";
+    }
+
+    function autoSizeNotesField() {
+      if (!editNotesNode) return;
+      const minHeight = getNotesFieldMinHeight();
+      editNotesNode.style.height = minHeight + "px";
+      if (!normalizeWhitespace(editNotesNode.value)) {
+        return;
+      }
+      const measured = editNotesNode.scrollHeight || 0;
+      const nextHeight = Math.max(minHeight, Math.ceil(measured));
+      editNotesNode.style.height = nextHeight + "px";
+    }
+
+    function renderEmptyColumn(columnNode, message) {
+      clearNode(columnNode);
+      if (!message) return;
+      const wrap = document.createElement("div");
+      wrap.className = "loot-v2-list-wrap";
+      const table = document.createElement("table");
+      table.className = "loot-v2-table";
+      const tbody = document.createElement("tbody");
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.className = "loot-v2-empty";
+      td.colSpan = 2;
+      td.textContent = message;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      columnNode.appendChild(wrap);
+    }
+
+    function setTableColumnsSplit(split) {
+      if (!columnANode || !columnBNode) return;
+      columnANode.classList.toggle("is-spanning", !split);
+      columnBNode.hidden = !split;
+    }
+
+    function renderColumn(columnNode, groups, emptyMessage) {
+      clearNode(columnNode);
+      if (!groups.length) {
+        renderEmptyColumn(columnNode, emptyMessage);
+        return;
+      }
+      groups.forEach(function (group) {
+        columnNode.appendChild(buildGroupCard(group));
+      });
+    }
+
+    function renderTable() {
+      if (!hasSelectedChest()) {
+        setTableColumnsSplit(false);
+        renderEmptyColumn(columnANode, "Create a loot chest to begin.");
+        return;
+      }
+      const activeItems = getActiveItems(selectedChestId);
+      if (!activeItems.length) {
+        setTableColumnsSplit(false);
+        renderEmptyColumn(columnANode, "No tokens created. Create a Token Group to get started.");
+        return;
+      }
+      if (activeListStatusFilters.size === 0) {
+        setTableColumnsSplit(false);
+        renderEmptyColumn(columnANode, "No filter selected.");
+        return;
+      }
+      const visibleItems = getVisibleItems();
+      if (!visibleItems.length) {
+        setTableColumnsSplit(false);
+        renderEmptyColumn(columnANode, "No tokens match this view.");
+        return;
+      }
+
+      setTableColumnsSplit(true);
+      const groups = buildVisibleGroups(visibleItems);
+      const columns = splitGroupsAcrossColumns(groups);
+      renderColumn(columnANode, columns[0], "No tokens.");
+      renderColumn(columnBNode, columns[1], "");
+    }
+
+    function toSafeExternalHref(rawUrl) {
+      const value = normalizeWhitespace(rawUrl);
+      if (!value) return "";
+      if (/^https?:\/\//i.test(value)) return value;
+      if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return "";
+      return "https://" + value;
+    }
+
+    function renderItemUrlView(item) {
+      if (!itemUrlViewNode || !itemUrlAnchorNode) return;
+      if (itemUrlEditFieldNode) {
+        itemUrlEditFieldNode.hidden = !isDetailEditing;
+      }
+      if (isDetailEditing || !item) {
+        itemUrlViewNode.hidden = true;
+        itemUrlAnchorNode.removeAttribute("href");
+        itemUrlAnchorNode.textContent = "";
+        return;
+      }
+      const safeHref = toSafeExternalHref(item.item_url || "");
+      if (!safeHref) {
+        itemUrlViewNode.hidden = true;
+        itemUrlAnchorNode.removeAttribute("href");
+        itemUrlAnchorNode.textContent = "";
+        return;
+      }
+      itemUrlViewNode.hidden = false;
+      itemUrlAnchorNode.href = safeHref;
+      itemUrlAnchorNode.textContent = item.item_url;
+    }
+
+    function showDetail(item) {
+      if (!item) {
+        detailEmptyNode.hidden = false;
+        detailContentNode.hidden = true;
+        setDetailEditMode(false);
+        if (detailHeaderTitleNode) {
+          detailHeaderTitleNode.textContent = "";
+        }
+        if (detailEditButtonNode) {
+          detailEditButtonNode.disabled = true;
+        }
+        if (detailItemNameReadNode) {
+          detailItemNameReadNode.textContent = "";
+          detailItemNameReadNode.classList.remove("is-empty");
+        }
+        if (detailRarityTagNode) {
+          detailRarityTagNode.textContent = "";
+          detailRarityTagNode.hidden = true;
+        }
+        if (detailTypeTagNode) {
+          detailTypeTagNode.textContent = "";
+          detailTypeTagNode.hidden = true;
+        }
+        renderItemUrlView(null);
+        if (descriptionReadNode) {
+          descriptionReadNode.textContent = "Short item summary for table play";
+          descriptionReadNode.classList.add("is-empty");
+        }
+        if (notesReadNode) {
+          notesReadNode.textContent = "Optional DM notes";
+          notesReadNode.classList.add("is-empty");
+        }
+        return;
+      }
+
+      detailEmptyNode.hidden = true;
+      detailContentNode.hidden = false;
+      if (detailHeaderTitleNode) {
+        detailHeaderTitleNode.textContent = item.token;
+      }
+      if (detailEditButtonNode) {
+        detailEditButtonNode.disabled = false;
+      }
+      if (detailItemNameReadNode) {
+        const itemName = normalizeWhitespace(item.item_name);
+        detailItemNameReadNode.textContent = itemName || "(Unassigned item)";
+        detailItemNameReadNode.classList.toggle("is-empty", !itemName);
+      }
+      if (detailRarityTagNode) {
+        const rarityLabel = normalizeWhitespace(item.rarity);
+        detailRarityTagNode.textContent = rarityLabel;
+        detailRarityTagNode.hidden = !rarityLabel;
+      }
+      if (detailTypeTagNode) {
+        const typeLabel = normalizeWhitespace(item.type);
+        detailTypeTagNode.textContent = typeLabel;
+        detailTypeTagNode.hidden = !typeLabel;
+      }
+      root.querySelectorAll('[data-action="set-detail-status"]').forEach(function (button) {
+        const isSelected = button.getAttribute("data-status") === item.status;
+        button.classList.toggle("is-selected", isSelected);
+      });
+      editItemNameNode.value = item.item_name || "";
+      editRarityNode.value = item.rarity || "";
+      editTypeNode.value = item.type || "";
+      editDescriptionNode.value = item.description || "";
+      editItemUrlNode.value = item.item_url || "";
+      editNotesNode.value = item.notes || "";
+      if (descriptionReadNode) {
+        const descriptionText = item.description || "";
+        descriptionReadNode.textContent = descriptionText || "Short item summary for table play";
+        descriptionReadNode.classList.toggle("is-empty", !normalizeWhitespace(descriptionText));
+      }
+      if (isDetailEditing) {
+        autoSizeDescriptionField();
+        autoSizeNotesField();
+      } else {
+        setDescriptionFieldToMinHeight();
+        setNotesFieldToMinHeight();
+      }
+      if (notesReadNode) {
+        const notesText = item.notes || "";
+        notesReadNode.textContent = notesText || "Optional DM notes";
+        notesReadNode.classList.toggle("is-empty", !normalizeWhitespace(notesText));
+      }
+      renderItemUrlView(item);
+    }
+
+    function setDetailFieldDisabled(disabled) {
+      [editItemNameNode, editRarityNode, editTypeNode, editDescriptionNode, editItemUrlNode, editNotesNode]
+        .forEach(function (field) {
+          field.disabled = !!disabled;
+        });
+    }
+
+    function setDetailStatusDisabled(disabled) {
+      const isDisabled = !!disabled;
+      if (!detailStatusToggleNode) return;
+      detailStatusToggleNode.classList.toggle("is-locked", isDisabled);
+      detailStatusToggleNode.querySelectorAll('button[data-action="set-detail-status"]').forEach(function (button) {
+        button.disabled = isDisabled;
+        button.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+      });
+    }
+
+    function setDetailEditMode(editing) {
+      isDetailEditing = !!editing;
+      root.classList.toggle("loot-v2-detail-editing", isDetailEditing);
+      setDetailFieldDisabled(!isDetailEditing);
+      setDetailStatusDisabled(isDetailEditing);
+      if (detailEditButtonNode) {
+        detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit";
+      }
+      if (isDetailEditing) {
+        autoSizeDescriptionField();
+        autoSizeNotesField();
+      } else {
+        setDescriptionFieldToMinHeight();
+        setNotesFieldToMinHeight();
+      }
+      renderItemUrlView(getItemById(selectedItemId));
+    }
+
+    function clearSelectedItem() {
+      if (!selectedItemId) return;
+      selectedItemId = "";
+      setDetailEditMode(false);
+      renderAll();
+    }
+
+    function renderDetail() {
+      showDetail(getItemById(selectedItemId));
+    }
+
+    function renderManageTabState() {
+      if (!manageTabButtonNodes || !managePanelNodes) return;
+      const noChest = !hasSelectedChest();
+      const hasGroups = getGroupSummaries().length > 0;
+      if (!noChest && activeManageTab === "group-manage" && !hasGroups) {
+        activeManageTab = "group-create";
+      }
+      manageTabButtonNodes.forEach(function (button) {
+        const tab = button.getAttribute("data-manage-tab");
+        const disabled = (noChest && tab !== "chest") || (!noChest && tab === "group-manage" && !hasGroups);
+        button.disabled = disabled;
+        button.classList.toggle("is-active", tab === activeManageTab);
+      });
+      managePanelNodes.forEach(function (panel) {
+        const tab = panel.getAttribute("data-manage-panel");
+        const isActive = tab === activeManageTab;
+        panel.hidden = !isActive;
+        panel.classList.toggle("is-active", isActive);
+      });
+    }
+
+    function setManageTab(nextTab) {
+      const tab = normalizeWhitespace(nextTab).toLowerCase();
+      const valid = ["chest", "group-create", "group-manage", "tokens"];
+      if (valid.indexOf(tab) === -1) return;
+      activeManageTab = tab;
+      renderManageTabState();
+    }
+
+    function renderUndoActionState() {
+      if (!undoLastButtonNode) return;
+      if (!hasSelectedChest()) {
+        undoLastButtonNode.textContent = "Undo Last";
+        undoLastButtonNode.disabled = true;
+        return;
+      }
+      if (!lastChangeState || !lastChangeState.can_toggle) {
+        undoLastButtonNode.textContent = "Undo Last";
+        undoLastButtonNode.disabled = true;
+        return;
+      }
+      undoLastButtonNode.disabled = false;
+      undoLastButtonNode.textContent = lastChangeState.mode === "redo" ? "Redo Last" : "Undo Last";
+    }
+
+    function renderChestSelect() {
+      const current = selectedChestId || chestSelectNode.value || CREATE_CHEST_OPTION;
+      clearNode(chestSelectNode);
+      chestList.forEach(function (chest) {
+        const option = document.createElement("option");
+        option.value = chest.chest_id;
+        option.textContent = chest.chest_name;
+        option.style.fontWeight = "700";
+        chestSelectNode.appendChild(option);
+      });
+      const createOption = document.createElement("option");
+      createOption.value = CREATE_CHEST_OPTION;
+      createOption.textContent = "Create New Chest...";
+      createOption.style.fontWeight = "700";
+      chestSelectNode.appendChild(createOption);
+
+      const hasCurrentChest = chestList.some(function (chest) {
+        return chest.chest_id === current;
+      });
+      if (hasCurrentChest) {
+        chestSelectNode.value = current;
+        return;
+      }
+      if (selectedChestId) {
+        chestSelectNode.value = selectedChestId;
+        return;
+      }
+      chestSelectNode.value = CREATE_CHEST_OPTION;
+    }
+
+    function renderDeleteChestSelect() {
+      if (!deleteChestSelectNode) return;
+      const previous = deleteChestSelectNode.value;
+      clearNode(deleteChestSelectNode);
+
+      if (!chestList.length) {
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = "No chest available";
+        deleteChestSelectNode.appendChild(empty);
+        deleteChestSelectNode.value = "";
+        deleteChestSelectNode.disabled = true;
+        if (deleteChestButtonNode) {
+          deleteChestButtonNode.disabled = true;
+          deleteChestButtonNode.textContent = "Delete Chest";
+          deleteChestButtonNode.title = "Select chest";
+        }
+        pendingDeleteChestId = "";
+        return;
+      }
+
+      const prompt = document.createElement("option");
+      prompt.value = "";
+      prompt.textContent = "Select Chest to delete";
+      deleteChestSelectNode.appendChild(prompt);
+
+      chestList.forEach(function (chest) {
+        const option = document.createElement("option");
+        option.value = chest.chest_id;
+        option.textContent = chest.chest_name;
+        deleteChestSelectNode.appendChild(option);
+      });
+
+      if (previous && chestList.some(function (chest) { return chest.chest_id === previous; })) {
+        deleteChestSelectNode.value = previous;
+      } else {
+        deleteChestSelectNode.value = "";
+      }
+      deleteChestSelectNode.disabled = false;
+      if (deleteChestButtonNode) {
+        deleteChestButtonNode.disabled = false;
+      }
+    }
+
+    function renderChestToolsState() {
+      if (!deleteChestButtonNode || !deleteChestSelectNode) return;
+      const nextChestName = normalizeWhitespace(newChestNameNode && newChestNameNode.value);
+      if (addChestButtonNode) {
+        addChestButtonNode.disabled = !nextChestName;
+        addChestButtonNode.title = nextChestName ? "" : "Name required";
+      }
+      const selectedDeleteId = deleteChestSelectNode.value || "";
+      const armed = !!pendingDeleteChestId && pendingDeleteChestId === selectedDeleteId;
+      deleteChestButtonNode.disabled = !selectedDeleteId && !armed;
+      deleteChestButtonNode.title = selectedDeleteId ? "" : "Select Chest to delete";
+      deleteChestButtonNode.textContent = armed ? "Confirm" : "Delete Chest";
+    }
+
+    function clearDeleteConfirmState() {
+      if (!pendingDeleteChestId) return;
+      pendingDeleteChestId = "";
+      renderChestToolsState();
+    }
+
+    function getGroupSummaries() {
+      if (!hasSelectedChest()) return [];
+      const map = {};
+      getActiveItems(selectedChestId).forEach(function (item) {
+        const parts = parseTokenParts(item.token);
+        const name = normalizeWhitespace(parts.prefix);
+        if (!name) return;
+        const key = normalizePrefixKey(name);
+        if (!map[key]) {
+          map[key] = {
+            key: key,
+            name: name,
+            theme: resolveThemeValue(item.color_theme) || inferThemeFromTokenPrefix(name) || COLOR_THEMES[0].value,
+            count: 0
+          };
+        }
+        map[key].count += 1;
+        const nextTheme = resolveThemeValue(item.color_theme);
+        if (nextTheme) {
+          map[key].theme = nextTheme;
+        }
+      });
+      return Object.keys(map).map(function (key) { return map[key]; }).sort(function (a, b) {
+        return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+      });
+    }
+
+    function getGroupByName(name) {
+      const key = normalizePrefixKey(name);
+      return getGroupSummaries().find(function (summary) {
+        return normalizePrefixKey(summary.name) === key;
+      }) || null;
+    }
+
+    function getCreateGroupCountValue() {
+      const raw = normalizeWhitespace(createGroupCountNode && createGroupCountNode.value);
+      const parsed = Number(raw);
+      if (!Number.isInteger(parsed)) return GROUP_COUNT_LIMITS.min;
+      return clampNumber(parsed, GROUP_COUNT_LIMITS.min, GROUP_COUNT_LIMITS.max);
+    }
+
+    function setCreateGroupCountValue(value) {
+      if (!createGroupCountNode) return;
+      createGroupCountNode.value = String(clampNumber(value, GROUP_COUNT_LIMITS.min, GROUP_COUNT_LIMITS.max));
+    }
+
+    function adjustCreateGroupCount(delta) {
+      if (!createGroupCountNode || createGroupCountNode.disabled) return;
+      const next = getCreateGroupCountValue() + delta;
+      setCreateGroupCountValue(next);
+      renderGroupEditorState();
+    }
+
+    function clearGroupCountRepeatTimers() {
+      if (groupCountRepeatDelayTimer) {
+        clearTimeout(groupCountRepeatDelayTimer);
+        groupCountRepeatDelayTimer = null;
+      }
+      if (groupCountRepeatIntervalTimer) {
+        clearInterval(groupCountRepeatIntervalTimer);
+        groupCountRepeatIntervalTimer = null;
+      }
+    }
+
+    function handleGroupCountPointerDown(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button || !root.contains(button)) return;
+      const action = button.getAttribute("data-action");
+      if (!GROUP_COUNT_REPEATABLE_ACTIONS.has(action)) return;
+
+      clearGroupCountRepeatTimers();
+      groupCountRepeatDelayTimer = setTimeout(function () {
+        groupCountRepeatIntervalTimer = setInterval(function () {
+          adjustCreateGroupCount(action === "group-count-inc" ? 1 : -1);
+        }, 75);
+      }, 280);
+    }
+
+    function renderGroupEditorState() {
+      const noChest = !hasSelectedChest();
+      const summaries = getGroupSummaries();
+      const hasGroups = summaries.length > 0;
+      if (!hasGroups && activeManageTab === "group-manage") {
+        activeManageTab = "group-create";
+        renderManageTabState();
+      }
+
+      if (createGroupThemeNode) {
+        createGroupThemeNode.disabled = noChest;
+      }
+      if (createGroupNameNode) {
+        createGroupNameNode.disabled = noChest;
+      }
+      if (createGroupCountNode) {
+        createGroupCountNode.disabled = noChest;
+      }
+      root.querySelectorAll('[data-action="group-count-dec"], [data-action="group-count-inc"]').forEach(function (button) {
+        button.disabled = noChest;
+      });
+
+      const createName = normalizeWhitespace(createGroupNameNode && createGroupNameNode.value);
+      const createCount = Number(normalizeWhitespace(createGroupCountNode && createGroupCountNode.value));
+      const hasValidCreateCount = Number.isInteger(createCount)
+        && createCount >= GROUP_COUNT_LIMITS.min
+        && createCount <= GROUP_COUNT_LIMITS.max;
+      const createTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value);
+      const hasGroupNameConflict = summaries.some(function (summary) {
+        return normalizePrefixKey(summary.name) === normalizePrefixKey(createName);
+      });
+      let addGroupDisableReason = "";
+      if (noChest) {
+        addGroupDisableReason = "Create a chest first";
+      } else if (!createName) {
+        addGroupDisableReason = "Name required";
+      } else if (!createTheme) {
+        addGroupDisableReason = "Theme required";
+      } else if (hasGroupNameConflict) {
+        addGroupDisableReason = "Name already exists";
+      } else if (!Number.isInteger(createCount)) {
+        addGroupDisableReason = "Tokens must be a whole number";
+      } else if (createCount < GROUP_COUNT_LIMITS.min || createCount > GROUP_COUNT_LIMITS.max) {
+        addGroupDisableReason = "Tokens must be 1-999";
+      }
+
+      if (addGroupButtonNode) {
+        addGroupButtonNode.disabled = !hasValidCreateCount || !!addGroupDisableReason;
+        addGroupButtonNode.title = addGroupDisableReason;
+      }
+
+      if (manageGroupSelectNode) {
+        const previous = manageGroupSelectNode.value;
+        clearNode(manageGroupSelectNode);
+        if (!hasGroups) {
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "No groups available";
+          manageGroupSelectNode.appendChild(empty);
+          manageGroupSelectNode.value = "";
+          manageGroupSelectNode.disabled = true;
+        } else {
+          const prompt = document.createElement("option");
+          prompt.value = "";
+          prompt.textContent = "Select group...";
+          manageGroupSelectNode.appendChild(prompt);
+          summaries.forEach(function (summary) {
+            const option = document.createElement("option");
+            option.value = summary.name;
+            option.textContent = summary.name;
+            manageGroupSelectNode.appendChild(option);
+          });
+          const hasPrevious = summaries.some(function (summary) { return summary.name === previous; });
+          manageGroupSelectNode.value = hasPrevious ? previous : "";
+          manageGroupSelectNode.disabled = noChest;
+        }
+      }
+
+      const selected = manageGroupSelectNode ? getGroupByName(manageGroupSelectNode.value) : null;
+      if (manageGroupNameNode) {
+        const selectedSource = selected ? selected.name : "";
+        const sourceChanged = manageGroupNameNode.dataset.groupSource !== selectedSource;
+        if (selected && sourceChanged) {
+          manageGroupNameNode.value = "";
+          manageGroupNameNode.dataset.groupSource = selectedSource;
+          manageGroupNameNode.dataset.userEdited = "";
+        } else if (!selected) {
+          manageGroupNameNode.value = "";
+          delete manageGroupNameNode.dataset.groupSource;
+          manageGroupNameNode.dataset.userEdited = "";
+        }
+        manageGroupNameNode.disabled = noChest || !selected;
+      }
+
+      if (manageGroupThemeNode) {
+        const selectedSource = selected ? selected.name : "";
+        const sourceChanged = manageGroupThemeNode.dataset.groupSource !== selectedSource;
+        if (selected && sourceChanged) {
+          manageGroupThemeNode.value = "";
+          manageGroupThemeNode.dataset.groupSource = selectedSource;
+          manageGroupThemeNode.dataset.userEdited = "";
+        } else if (!selected) {
+          manageGroupThemeNode.value = "";
+          delete manageGroupThemeNode.dataset.groupSource;
+          manageGroupThemeNode.dataset.userEdited = "";
+        }
+        manageGroupThemeNode.disabled = noChest || !selected;
+      }
+
+      const nextName = normalizeWhitespace(manageGroupNameNode && manageGroupNameNode.value);
+      const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value);
+      const hasRenameConflict = !!selected && summaries.some(function (summary) {
+        return normalizePrefixKey(summary.name) === normalizePrefixKey(nextName)
+          && normalizePrefixKey(summary.name) !== normalizePrefixKey(selected.name);
+      });
+      const isThemeChanged = !!selected && !!nextTheme && resolveThemeValue(selected.theme) !== nextTheme;
+      const isNameChanged = !!selected && normalizePrefixKey(selected.name) !== normalizePrefixKey(nextName);
+      const canUpdate = !!selected && !!nextName && !!nextTheme && !hasRenameConflict && (isNameChanged || isThemeChanged);
+      let updateDisableReason = "";
+      if (noChest) {
+        updateDisableReason = "Create a chest first";
+      } else if (!selected) {
+        updateDisableReason = "Select group";
+      } else if (!nextName) {
+        updateDisableReason = "Name required";
+      } else if (!nextTheme) {
+        updateDisableReason = "Select new theme";
+      } else if (hasRenameConflict) {
+        updateDisableReason = "Name already exists";
+      } else if (!canUpdate) {
+        updateDisableReason = "No changes to update";
+      }
+
+      if (updateGroupButtonNode) {
+        updateGroupButtonNode.disabled = noChest || !canUpdate;
+        updateGroupButtonNode.title = updateGroupButtonNode.disabled ? updateDisableReason : "";
+      }
+
+      const armedDelete = !!selected
+        && !!pendingDeleteGroupPrefix
+        && normalizePrefixKey(pendingDeleteGroupPrefix) === normalizePrefixKey(selected.name);
+      if (deleteGroupButtonNode) {
+        deleteGroupButtonNode.textContent = armedDelete ? "Confirm" : "Delete";
+        deleteGroupButtonNode.disabled = noChest || !selected;
+        deleteGroupButtonNode.title = (noChest || !selected) ? "Select group" : "";
+      }
+    }
+
+    function clearDeleteGroupConfirmState() {
+      if (!pendingDeleteGroupPrefix) return;
+      pendingDeleteGroupPrefix = "";
+      renderGroupEditorState();
+    }
+
+    function renderColorOptions() {
+      if (createGroupThemeNode) clearNode(createGroupThemeNode);
+      if (manageGroupThemeNode) clearNode(manageGroupThemeNode);
+      if (createGroupThemeNode) {
+        const createPrompt = document.createElement("option");
+        createPrompt.value = "";
+        createPrompt.textContent = "Select theme...";
+        createGroupThemeNode.appendChild(createPrompt);
+      }
+      if (manageGroupThemeNode) {
+        const managePrompt = document.createElement("option");
+        managePrompt.value = "";
+        managePrompt.textContent = "Select new theme...";
+        manageGroupThemeNode.appendChild(managePrompt);
+      }
+      COLOR_THEMES.forEach(function (theme) {
+        const option = document.createElement("option");
+        option.value = theme.value;
+        option.textContent = theme.label;
+        if (createGroupThemeNode) {
+          createGroupThemeNode.appendChild(option.cloneNode(true));
+        }
+        if (manageGroupThemeNode) {
+          manageGroupThemeNode.appendChild(option.cloneNode(true));
+        }
+      });
+      if (createGroupThemeNode) createGroupThemeNode.value = "";
+      if (manageGroupThemeNode) manageGroupThemeNode.value = "";
+    }
+
+    function renderListStatusFilters() {
+      if (!listFilterButtonNodes) return;
+      const noChest = !hasSelectedChest();
+      listFilterButtonNodes.forEach(function (button) {
+        const status = button.getAttribute("data-status");
+        const isActive = activeListStatusFilters.has(status);
+        const count = statusCounts[status] || 0;
+        button.disabled = noChest;
+        clearNode(button);
+        const labelNode = document.createElement("span");
+        labelNode.className = "loot-v2-list-filter-label";
+        labelNode.textContent = toDisplayStatus(status) + " (" + String(count) + ")";
+        button.appendChild(labelNode);
+        button.classList.toggle("is-active", isActive);
+      });
+    }
+
+    function renderAll() {
+      ensureSelection();
+      if (!hasSelectedChest()) {
+        activeManageTab = "chest";
+      }
+      const hasDetail = !!getItemById(selectedItemId);
+      root.classList.add("loot-v2-manage-mode");
+      root.classList.toggle("loot-v2-has-detail", hasDetail);
+      if (tableToolsCardNode) {
+        tableToolsCardNode.hidden = false;
+      }
+      renderManageTabState();
+      updateMetrics();
+      renderChestSelect();
+      renderDeleteChestSelect();
+      renderChestToolsState();
+      renderGroupEditorState();
+      renderTokenRangeState();
+      const noChest = !hasSelectedChest();
+      if (searchInputNode) searchInputNode.disabled = noChest;
+      renderListStatusFilters();
+      renderUndoActionState();
+      renderTable();
+      renderDetail();
+      updateDirtyState();
+      root.classList.toggle("is-syncing", isSyncing);
+      if (syncLaneNode) {
+        syncLaneNode.hidden = true;
+      }
+    }
+
+    function setHistoryState(message, toneClass) {
+      if (!historyStateNode) return;
+      historyStateNode.textContent = message || "No changes made.";
+      historyStateNode.classList.remove("is-idle", "is-info", "is-success", "is-warn");
+      historyStateNode.classList.add(toneClass || "is-idle");
+    }
+
+    function clearUndoHistoryState() {
+      lastChangeState = null;
+      setHistoryState("No changes made.", "is-idle");
+    }
+
+    function describeStatusMove(token, toStatus) {
+      return token + " -> " + toDisplayStatus(toStatus);
+    }
+
+    function snapshotEditableFields(item) {
+      return {
+        item_name: item.item_name || "",
+        rarity: item.rarity || "",
+        type: item.type || "",
+        description: item.description || "",
+        item_url: item.item_url || "",
+        notes: item.notes || ""
+      };
+    }
+
+    function applyEditableFieldSnapshot(item, snapshot) {
+      if (!item || !snapshot) return;
+      item.item_name = snapshot.item_name || "";
+      item.rarity = snapshot.rarity || "";
+      item.type = snapshot.type || "";
+      item.description = snapshot.description || "";
+      item.item_url = snapshot.item_url || "";
+      item.notes = snapshot.notes || "";
+    }
+
+    function tokenExistsActive(chestId, token, excludeItemId) {
+      const normalizedToken = normalizeWhitespace(token).toLowerCase();
+      return getActiveItems(chestId).some(function (item) {
+        if (excludeItemId && item.item_id === excludeItemId) return false;
+        return normalizeWhitespace(item.token).toLowerCase() === normalizedToken;
+      });
+    }
+
+    function buildGroupNumberLookup(groupName) {
+      const lookup = {};
+      const groupKey = normalizePrefixKey(groupName);
+      getActiveItems(selectedChestId).forEach(function (item) {
+        const parts = parseTokenParts(item.token);
+        if (normalizePrefixKey(parts.prefix) !== groupKey) return;
+        if (!Number.isFinite(parts.number)) return;
+        lookup[parts.number] = item;
+      });
+      return lookup;
+    }
+
+    function parseTokenRangeSpan() {
+      const fromRaw = normalizeWhitespace(tokenRangeFromNode && tokenRangeFromNode.value);
+      const toRaw = normalizeWhitespace(tokenRangeToNode && tokenRangeToNode.value);
+      if (!fromRaw && !toRaw) {
+        return { empty: true };
+      }
+
+      const baseRaw = fromRaw || toRaw;
+      const fromParsed = Number(baseRaw);
+      if (!Number.isInteger(fromParsed) || fromParsed < 1 || fromParsed > 999) {
+        return { error: "Use 1-999" };
+      }
+
+      let toParsed = fromParsed;
+      if (toRaw) {
+        toParsed = Number(toRaw);
+        if (!Number.isInteger(toParsed) || toParsed < 1 || toParsed > 999) {
+          return { error: "Use 1-999" };
+        }
+      }
+
+      const start = Math.min(fromParsed, toParsed);
+      const end = Math.max(fromParsed, toParsed);
+      return {
+        from: start,
+        to: end,
+        count: (end - start) + 1
+      };
+    }
+
+    function formatTokenRangeLabel(from, to) {
+      return from === to ? String(from) : (String(from) + "-" + String(to));
+    }
+
+    function evaluateTokenRangePlan(action) {
+      if (!hasSelectedChest()) {
+        return { canApply: false, summary: "", reason: "Create chest first", isError: false };
+      }
+
+      const summaries = getGroupSummaries();
+      if (!summaries.length) {
+        return { canApply: false, summary: "", reason: "No groups available", isError: false };
+      }
+
+      const groupName = normalizeWhitespace(tokenRangeGroupNode && tokenRangeGroupNode.value);
+      const group = getGroupByName(groupName);
+      if (!group) {
+        return { canApply: false, summary: "", reason: "Group required", isError: false };
+      }
+
+      const span = parseTokenRangeSpan();
+      if (span.empty) {
+        return { canApply: false, summary: "", reason: "Set range", isError: false, group: group };
+      }
+      if (span.error) {
+        return { canApply: false, summary: span.error, reason: span.error, isError: true, group: group };
+      }
+
+      const lookup = buildGroupNumberLookup(group.name);
+      let existing = 0;
+      for (let number = span.from; number <= span.to; number += 1) {
+        if (lookup[number]) existing += 1;
+      }
+      const missing = span.count - existing;
+      const willAdd = missing;
+      const willDelete = existing;
+      const rangeLabel = formatTokenRangeLabel(span.from, span.to);
+      let summary = "";
+      let reason = "";
+      let canApply = false;
+
+      if (action === "add") {
+        if (willAdd > 0) {
+          canApply = true;
+          summary = "R " + rangeLabel + " | +" + String(willAdd);
+        } else {
+          summary = "R " + rangeLabel + " | no change";
+          reason = "All tokens already exist";
+        }
+      } else {
+        if (willDelete > 0) {
+          canApply = true;
+          summary = "R " + rangeLabel + " | -" + String(willDelete);
+        } else {
+          summary = "R " + rangeLabel + " | no change";
+          reason = "No tokens found in range";
+        }
+      }
+
+      return {
+        canApply: canApply,
+        summary: summary,
+        reason: reason,
+        isError: false,
+        action: action,
+        group: group,
+        from: span.from,
+        to: span.to,
+        count: span.count,
+        existing: existing,
+        missing: missing,
+        willAdd: willAdd,
+        willDelete: willDelete,
+        lookup: lookup
+      };
+    }
+
+    function renderTokenRangeState() {
+      if (!tokenRangeGroupNode) return;
+      const noChest = !hasSelectedChest();
+      const summaries = getGroupSummaries();
+      const previous = tokenRangeGroupNode.value;
+
+      clearNode(tokenRangeGroupNode);
+      if (!summaries.length) {
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = "No groups available";
+        tokenRangeGroupNode.appendChild(empty);
+      } else {
+        const prompt = document.createElement("option");
+        prompt.value = "";
+        prompt.textContent = "Select group...";
+        tokenRangeGroupNode.appendChild(prompt);
+        summaries.forEach(function (summary) {
+          const option = document.createElement("option");
+          option.value = summary.name;
+          option.textContent = summary.name;
+          tokenRangeGroupNode.appendChild(option);
+        });
+      }
+
+      if (summaries.length && summaries.some(function (summary) { return summary.name === previous; })) {
+        tokenRangeGroupNode.value = previous;
+      } else {
+        tokenRangeGroupNode.value = "";
+      }
+
+      const disableControls = noChest || !summaries.length;
+      tokenRangeGroupNode.disabled = disableControls;
+      if (tokenRangeFromNode) tokenRangeFromNode.disabled = disableControls;
+      if (tokenRangeToNode) tokenRangeToNode.disabled = disableControls;
+      if (tokenRangeAddButtonNode) tokenRangeAddButtonNode.disabled = disableControls;
+      if (tokenRangeDeleteButtonNode) tokenRangeDeleteButtonNode.disabled = disableControls;
+
+      const addPlan = evaluateTokenRangePlan("add");
+      const deletePlan = evaluateTokenRangePlan("delete");
+      const addCountLabel = addPlan && Number.isInteger(addPlan.willAdd) ? String(addPlan.willAdd) : "--";
+      const deleteCountLabel = deletePlan && Number.isInteger(deletePlan.willDelete) ? String(deletePlan.willDelete) : "--";
+
+      if (tokenRangeAddButtonNode) {
+        tokenRangeAddButtonNode.disabled = disableControls || !addPlan.canApply;
+        tokenRangeAddButtonNode.title = addPlan.canApply ? "" : (addPlan.reason || "");
+        tokenRangeAddButtonNode.textContent = "Add (" + addCountLabel + ")";
+      }
+      if (tokenRangeDeleteButtonNode) {
+        tokenRangeDeleteButtonNode.disabled = disableControls || !deletePlan.canApply;
+        tokenRangeDeleteButtonNode.title = deletePlan.canApply ? "" : (deletePlan.reason || "");
+        tokenRangeDeleteButtonNode.textContent = "Delete (" + deleteCountLabel + ")";
+      }
+
+    }
+
+    function applyTokenRangeChanges(action) {
+      if (!hasSelectedChest()) return;
+      const plan = evaluateTokenRangePlan(action);
+      if (!plan.canApply) return;
+
+      const items = getWorkingItems(selectedChestId);
+      let firstCreatedId = "";
+
+      if (plan.action === "add") {
+        for (let number = plan.from; number <= plan.to; number += 1) {
+          const token = plan.group.name + " " + String(number);
+          if (plan.lookup[number]) {
+            continue;
+          }
+          const newItem = createItem(selectedChestId, {
+            token: token,
+            item_name: "",
+            status: STATUS.UNUSED,
+            color_theme: plan.group.theme,
+            category_label: plan.group.name
+          });
+          items.push(newItem);
+          plan.lookup[number] = newItem;
+          if (!firstCreatedId) firstCreatedId = newItem.item_id;
+        }
+        if (firstCreatedId) {
+          selectedItemId = firstCreatedId;
+        }
+        ensureListStatusFilter(STATUS.UNUSED);
+      } else {
+        let selectedDeleted = false;
+        for (let number = plan.from; number <= plan.to; number += 1) {
+          const item = plan.lookup[number];
+          if (!item) {
+            continue;
+          }
+          if (item.item_id === selectedItemId) selectedDeleted = true;
+          item.deleted = true;
+        }
+        if (selectedDeleted) {
+          selectedItemId = "";
+          setDetailEditMode(false);
+        }
+      }
+
+      clearUndoHistoryState();
+      renderAll();
+    }
+
+    function getItemsForGroup(groupName) {
+      const groupKey = normalizePrefixKey(groupName);
+      return getActiveItems(selectedChestId).filter(function (item) {
+        const parts = parseTokenParts(item.token);
+        return normalizePrefixKey(parts.prefix) === groupKey;
+      });
+    }
+
+    function createGroup() {
+      if (!hasSelectedChest()) return;
+      const groupName = normalizeWhitespace(createGroupNameNode && createGroupNameNode.value);
+      const groupTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value);
+      const tokenCountRaw = Number(normalizeWhitespace(createGroupCountNode && createGroupCountNode.value));
+
+      if (!groupName || !groupTheme) {
+        return;
+      }
+      if (!Number.isInteger(tokenCountRaw) || tokenCountRaw < GROUP_COUNT_LIMITS.min || tokenCountRaw > GROUP_COUNT_LIMITS.max) {
+        return;
+      }
+      const tokenCount = clampNumber(tokenCountRaw, GROUP_COUNT_LIMITS.min, GROUP_COUNT_LIMITS.max);
+
+      const summaries = getGroupSummaries();
+      const exists = summaries.some(function (summary) {
+        return normalizePrefixKey(summary.name) === normalizePrefixKey(groupName);
+      });
+      if (exists) {
+        renderAll();
+        return;
+      }
+
+      const items = getWorkingItems(selectedChestId);
+      let firstItemId = "";
+      for (let idx = 1; idx <= tokenCount; idx += 1) {
+        const token = groupName + " " + String(idx);
+        if (tokenExistsActive(selectedChestId, token, "")) continue;
+        const newItem = createItem(selectedChestId, {
+          token: token,
+          item_name: "",
+          status: STATUS.UNUSED,
+          color_theme: groupTheme,
+          category_label: groupName
+        });
+        items.push(newItem);
+        if (!firstItemId) {
+          firstItemId = newItem.item_id;
+        }
+      }
+
+      if (!firstItemId) {
+        renderAll();
+        return;
+      }
+
+      selectedItemId = firstItemId;
+      ensureListStatusFilter(STATUS.UNUSED);
+      clearUndoHistoryState();
+      pendingDeleteGroupPrefix = "";
+
+      if (createGroupNameNode) createGroupNameNode.value = "";
+      if (createGroupCountNode) createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
+      setManageTab("group-manage");
+      renderAll();
+      if (manageGroupSelectNode) {
+        manageGroupSelectNode.value = groupName;
+        renderGroupEditorState();
+      }
+    }
+
+    function updateGroup() {
+      if (!hasSelectedChest() || !manageGroupSelectNode) return;
+      const selectedName = normalizeWhitespace(manageGroupSelectNode.value);
+      const group = getGroupByName(selectedName);
+      if (!group) return;
+
+      const nextName = normalizeWhitespace(manageGroupNameNode && manageGroupNameNode.value);
+      const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value);
+      if (!nextName || !nextTheme) {
+        return;
+      }
+
+      const summaries = getGroupSummaries();
+      const nameConflict = summaries.some(function (summary) {
+        return normalizePrefixKey(summary.name) === normalizePrefixKey(nextName)
+          && normalizePrefixKey(summary.name) !== normalizePrefixKey(group.name);
+      });
+      if (nameConflict) {
+        renderAll();
+        return;
+      }
+
+      const targets = getItemsForGroup(group.name);
+      if (!targets.length) {
+        return;
+      }
+
+      const collisionToken = targets.find(function (item) {
+        const tokenParts = parseTokenParts(item.token);
+        const suffix = Number.isFinite(tokenParts.number) ? String(tokenParts.number) : "";
+        const nextToken = suffix ? (nextName + " " + suffix) : nextName;
+        return tokenExistsActive(selectedChestId, nextToken, item.item_id);
+      });
+      if (collisionToken) {
+        return;
+      }
+
+      targets.forEach(function (item) {
+        const tokenParts = parseTokenParts(item.token);
+        const suffix = Number.isFinite(tokenParts.number) ? String(tokenParts.number) : "";
+        item.token = suffix ? (nextName + " " + suffix) : nextName;
+        item.category_label = nextName;
+        item.color_theme = nextTheme;
+      });
+
+      if (manageGroupNameNode) {
+        manageGroupNameNode.dataset.userEdited = "";
+        manageGroupNameNode.dataset.groupSource = nextName;
+      }
+      if (manageGroupThemeNode) {
+        manageGroupThemeNode.dataset.userEdited = "";
+        manageGroupThemeNode.dataset.groupSource = nextName;
+      }
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      renderAll();
+      if (manageGroupSelectNode) {
+        manageGroupSelectNode.value = nextName;
+        renderGroupEditorState();
+      }
+    }
+
+    function deleteGroup() {
+      if (!hasSelectedChest() || !manageGroupSelectNode) return;
+      const selectedName = normalizeWhitespace(manageGroupSelectNode.value);
+      if (!selectedName) return;
+
+      if (!pendingDeleteGroupPrefix || normalizePrefixKey(pendingDeleteGroupPrefix) !== normalizePrefixKey(selectedName)) {
+        pendingDeleteGroupPrefix = selectedName;
+        renderGroupEditorState();
+        return;
+      }
+
+      const targets = getItemsForGroup(selectedName);
+      if (!targets.length) {
+        clearDeleteGroupConfirmState();
+        return;
+      }
+
+      const selectedTarget = targets.some(function (item) { return item.item_id === selectedItemId; });
+      targets.forEach(function (item) {
+        item.deleted = true;
+      });
+      if (selectedTarget) {
+        selectedItemId = "";
+        setDetailEditMode(false);
+      }
+
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      renderAll();
+    }
+
+    function openChestTools() {
+      setManageTab("chest");
+      if (chestSelectNode) {
+        chestSelectNode.value = chestList.length ? (selectedChestId || chestList[0].chest_id) : CREATE_CHEST_OPTION;
+      }
+      renderChestToolsState();
+    }
+
+    function createChest() {
+      const chestName = normalizeWhitespace(newChestNameNode && newChestNameNode.value);
+      if (!chestName) return;
+      const duplicateName = chestList.some(function (chest) {
+        return normalizeWhitespace(chest.chest_name).toLowerCase() === chestName.toLowerCase();
+      });
+      if (duplicateName) return;
+
+      const chestId = buildChestId(chestName);
+      const nextChest = { chest_id: chestId, chest_name: chestName };
+      chestList.push(nextChest);
+      if (!persistedItemsByChest[chestId]) persistedItemsByChest[chestId] = [];
+      if (!workingItemsByChest[chestId]) workingItemsByChest[chestId] = [];
+      selectedChestId = chestId;
+      selectedItemId = "";
+      pendingDeleteChestId = "";
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      if (newChestNameNode) newChestNameNode.value = "";
+      setManageTab("group-create");
+      renderAll();
+    }
+
+    function deleteChest() {
+      if (!deleteChestSelectNode) return;
+      const chestId = deleteChestSelectNode.value || "";
+      if (!chestId) {
+        pendingDeleteChestId = "";
+        renderChestToolsState();
+        return;
+      }
+      if (!pendingDeleteChestId || pendingDeleteChestId !== chestId) {
+        pendingDeleteChestId = chestId;
+        renderChestToolsState();
+        return;
+      }
+
+      chestList = chestList.filter(function (chest) { return chest.chest_id !== chestId; });
+      delete persistedItemsByChest[chestId];
+      delete workingItemsByChest[chestId];
+      pendingDeleteChestId = "";
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+
+      if (selectedChestId === chestId) {
+        selectedChestId = chestList.length ? chestList[0].chest_id : "";
+        selectedItemId = "";
+        setDetailEditMode(false);
+      }
+
+      if (!chestList.length) {
+        selectedChestId = "";
+        setManageTab("chest");
+        setListStatusFilters([STATUS.IN_CHEST, STATUS.AWARDED]);
+      }
+      renderAll();
+    }
+
+    function applyStatusFromDetail(nextStatus) {
+      if (isDetailEditing) return;
+      const item = getItemById(selectedItemId);
+      if (!item) return;
+      const status = String(nextStatus || "").trim();
+      if (!STATUS_LABELS[status]) return;
+      if (item.status === status) return;
+
+      const previousStatus = item.status;
+      item.status = status;
+      lastChangeState = {
+        kind: "status",
+        item_id: item.item_id,
+        token: item.token,
+        from_status: previousStatus,
+        to_status: status,
+        mode: "undo",
+        can_toggle: true
+      };
+      setHistoryState("Last: " + describeStatusMove(item.token, status), "is-info");
+      renderAll();
+    }
+
+    function toggleLastStatusChange() {
+      if (!lastChangeState || !lastChangeState.can_toggle) return;
+      const item = getItemById(lastChangeState.item_id);
+      if (!item) {
+        lastChangeState = null;
+        setHistoryState("No changes made.", "is-idle");
+        renderAll();
+        return;
+      }
+      if (lastChangeState.kind === "status") {
+        const token = lastChangeState.token || item.token;
+        if (lastChangeState.mode === "undo") {
+          item.status = lastChangeState.from_status;
+          lastChangeState.mode = "redo";
+          setHistoryState("Undid: " + describeStatusMove(token, lastChangeState.to_status), "is-info");
+        } else {
+          item.status = lastChangeState.to_status;
+          lastChangeState.mode = "undo";
+          setHistoryState("Redid: " + describeStatusMove(token, lastChangeState.to_status), "is-info");
+        }
+      } else if (lastChangeState.kind === "item-edit") {
+        if (lastChangeState.mode === "undo") {
+          applyEditableFieldSnapshot(item, lastChangeState.before);
+          lastChangeState.mode = "redo";
+          setHistoryState("Undid item edits for " + item.token + ".", "is-info");
+        } else {
+          applyEditableFieldSnapshot(item, lastChangeState.after);
+          lastChangeState.mode = "undo";
+          setHistoryState("Redid item edits for " + item.token + ".", "is-info");
+        }
+      } else {
+        return;
+      }
+      renderAll();
+    }
+
+    function saveSelectedItem() {
+      if (!isDetailEditing) return;
+      const item = getItemById(selectedItemId);
+      if (!item) return;
+      const before = snapshotEditableFields(item);
+      const after = {
+        item_name: normalizeWhitespace(editItemNameNode.value),
+        rarity: normalizeWhitespace(editRarityNode.value),
+        type: normalizeWhitespace(editTypeNode.value),
+        description: normalizeMultilineText(editDescriptionNode.value),
+        item_url: normalizeWhitespace(editItemUrlNode.value),
+        notes: normalizeMultilineText(editNotesNode.value)
+      };
+
+      applyEditableFieldSnapshot(item, after);
+      lastChangeState = {
+        kind: "item-edit",
+        item_id: item.item_id,
+        token: item.token,
+        before: before,
+        after: after,
+        mode: "undo",
+        can_toggle: true
+      };
+
+      setDetailEditMode(false);
+      setHistoryState("Saved item details for " + item.token + ".", "is-success");
+      renderAll();
+    }
+
+    function revertItemDraft() {
+      setDetailEditMode(false);
+      renderDetail();
+    }
+
+    function deleteSelectedToken() {
+      if (!hasSelectedChest()) return;
+      const item = getItemById(selectedItemId);
+      if (!item) return;
+      item.deleted = true;
+      selectedItemId = "";
+      setDetailEditMode(false);
+      if (lastChangeState && lastChangeState.item_id === item.item_id) {
+        clearUndoHistoryState();
+      }
+      renderAll();
+    }
+
+    function selectChest(nextChestId) {
+      if (!nextChestId || !workingItemsByChest[nextChestId]) return;
+      selectedChestId = nextChestId;
+      selectedItemId = "";
+      pendingDeleteChestId = "";
+      pendingDeleteGroupPrefix = "";
+      clearUndoHistoryState();
+      setDetailEditMode(false);
+      renderAll();
+    }
+
+    function saveWorkingChanges() {
+      if (isSyncing) return;
+      if (!chestList.length) return;
+      if (!isDirty()) return;
+
+      isSyncing = true;
+      renderAll();
+      setTimeout(function () {
+        persistedItemsByChest = deepClone(workingItemsByChest);
+        isSyncing = false;
+        renderAll();
+      }, 1100);
+    }
+
+    function revertWorkingChanges() {
+      if (isSyncing) return;
+      if (!chestList.length) return;
+      workingItemsByChest = deepClone(persistedItemsByChest);
+      selectedItemId = "";
+      clearUndoHistoryState();
+      setDetailEditMode(false);
+      renderAll();
+    }
+
+    function handleRootClick(event) {
+      const actionButton = event.target.closest("button[data-action]");
+      if (actionButton && root.contains(actionButton)) {
+        event.stopPropagation();
+        const action = actionButton.getAttribute("data-action");
+        if (action !== "delete-chest") {
+          clearDeleteConfirmState();
+        }
+        if (action !== "delete-group") {
+          clearDeleteGroupConfirmState();
+        }
+        if (action === "group-count-inc") {
+          adjustCreateGroupCount(1);
+          return;
+        }
+        if (action === "group-count-dec") {
+          adjustCreateGroupCount(-1);
+          return;
+        }
+        if (action === "set-manage-tab") {
+          const nextTab = actionButton.getAttribute("data-manage-tab");
+          if (!hasSelectedChest() && nextTab !== "chest") return;
+          clearDeleteGroupConfirmState();
+          setManageTab(nextTab);
+          return;
+        }
+        if (action === "save-working") {
+          saveWorkingChanges();
+          return;
+        }
+        if (action === "revert-working") {
+          revertWorkingChanges();
+          return;
+        }
+        if (action === "undo-status-change") {
+          toggleLastStatusChange();
+          return;
+        }
+        if (action === "save-item") {
+          saveSelectedItem();
+          return;
+        }
+        if (action === "revert-item-draft") {
+          revertItemDraft();
+          return;
+        }
+        if (action === "toggle-detail-edit") {
+          if (!selectedItemId) return;
+          if (isDetailEditing) {
+            revertItemDraft();
+            return;
+          }
+          setDetailEditMode(true);
+          return;
+        }
+        if (action === "set-detail-status") {
+          if (!selectedItemId) return;
+          applyStatusFromDetail(actionButton.getAttribute("data-status"));
+          return;
+        }
+        if (action === "toggle-list-status-filter") {
+          toggleListStatusFilter(actionButton.getAttribute("data-status"));
+          return;
+        }
+        if (action === "delete-selected-token") {
+          deleteSelectedToken();
+          return;
+        }
+        if (action === "add-token-range") {
+          applyTokenRangeChanges("add");
+          return;
+        }
+        if (action === "delete-token-range") {
+          applyTokenRangeChanges("delete");
+          return;
+        }
+        if (action === "add-group") {
+          createGroup();
+          return;
+        }
+        if (action === "update-group") {
+          updateGroup();
+          return;
+        }
+        if (action === "delete-group") {
+          deleteGroup();
+          return;
+        }
+        if (action === "create-chest") {
+          createChest();
+          return;
+        }
+        if (action === "delete-chest") {
+          deleteChest();
+          return;
+        }
+      }
+
+      if (!event.target.closest("#lootV2DeleteChestSelect") && !event.target.closest("#lootV2DeleteChestBtn")) {
+        clearDeleteConfirmState();
+      }
+      if (!event.target.closest("#lootV2ManageGroupSelect") && !event.target.closest("#lootV2DeleteGroupBtn")) {
+        clearDeleteGroupConfirmState();
+      }
+
+      const clickedRow = event.target.closest("tr[data-item-id]");
+      if (clickedRow && root.contains(clickedRow)) {
+        const itemId = clickedRow.getAttribute("data-item-id");
+        if (itemId && itemId !== selectedItemId) {
+          selectedItemId = itemId;
+          setDetailEditMode(false);
+          renderAll();
+        }
+      }
+    }
+
+    function handleDocumentClick(event) {
+      if (!root || !root.classList.contains("loot-v2-has-detail")) return;
+      const target = event.target;
+      if (isDetailPersistentClickTarget(target)) return;
+      clearSelectedItem();
+    }
+
+    function isDetailPersistentClickTarget(target) {
+      if (!target || !(target instanceof Element)) return false;
+      if (target.closest("#lootV2DetailPanel")) return true;
+      if (target.closest("tr[data-item-id]")) return true;
+      if (target.closest(".loot-v2-top-card :is(button, input, select, textarea, a, label, [data-action])")) return true;
+      if (target.closest(".loot-v2-filter-row :is(button, input, select, textarea, a, label, [data-action])")) return true;
+      return false;
+    }
+
+    function handleTabChanged(event) {
+      const nextTab = event && event.detail ? event.detail.tabName : "";
+      if (nextTab !== "LootChestsV2") {
+        clearSelectedItem();
+      }
+    }
+
+    function handleRootInput(event) {
+      if (!event.target.closest("#lootV2DeleteChestSelect")) {
+        clearDeleteConfirmState();
+      }
+      if (!event.target.closest("#lootV2ManageGroupSelect")) {
+        clearDeleteGroupConfirmState();
+      }
+      if (event.target === manageGroupNameNode) {
+        manageGroupNameNode.dataset.userEdited = "1";
+        renderGroupEditorState();
+        return;
+      }
+      if (event.target === newChestNameNode) {
+        renderChestToolsState();
+        return;
+      }
+      if (event.target === createGroupNameNode || event.target === createGroupCountNode) {
+        renderGroupEditorState();
+      }
+      if (event.target === tokenRangeFromNode) {
+        const fromValue = Number(normalizeWhitespace(tokenRangeFromNode.value));
+        const toValue = Number(normalizeWhitespace(tokenRangeToNode && tokenRangeToNode.value));
+        if (Number.isInteger(fromValue) && Number.isInteger(toValue) && fromValue > toValue && tokenRangeToNode) {
+          tokenRangeToNode.value = "";
+        }
+        renderTokenRangeState();
+      }
+      if (event.target === tokenRangeToNode) {
+        renderTokenRangeState();
+      }
+      if (event.target === searchInputNode) {
+        searchTerm = searchInputNode.value.trim().toLowerCase();
+        renderAll();
+        return;
+      }
+      if (event.target === editDescriptionNode) {
+        autoSizeDescriptionField();
+      }
+      if (event.target === editNotesNode) {
+        autoSizeNotesField();
+      }
+    }
+
+    function handleRootChange(event) {
+      if (event.target === chestSelectNode) {
+        if (chestSelectNode.value === CREATE_CHEST_OPTION) {
+          openChestTools();
+          return;
+        }
+        selectChest(chestSelectNode.value);
+        return;
+      }
+      if (deleteChestSelectNode && event.target === deleteChestSelectNode) {
+        pendingDeleteChestId = "";
+        renderChestToolsState();
+        return;
+      }
+      if (manageGroupSelectNode && event.target === manageGroupSelectNode) {
+        clearDeleteGroupConfirmState();
+        if (manageGroupNameNode) {
+          manageGroupNameNode.dataset.userEdited = "";
+        }
+        if (manageGroupThemeNode) {
+          manageGroupThemeNode.dataset.userEdited = "";
+        }
+        renderGroupEditorState();
+        return;
+      }
+      if (manageGroupThemeNode && event.target === manageGroupThemeNode) {
+        manageGroupThemeNode.dataset.userEdited = "1";
+        clearDeleteGroupConfirmState();
+        renderGroupEditorState();
+        return;
+      }
+      if (createGroupThemeNode && event.target === createGroupThemeNode) {
+        renderGroupEditorState();
+        return;
+      }
+      if (tokenRangeGroupNode && event.target === tokenRangeGroupNode) {
+        renderTokenRangeState();
+        return;
+      }
+      if (createGroupCountNode && event.target === createGroupCountNode) {
+        const raw = normalizeWhitespace(createGroupCountNode.value);
+        const parsed = Number(raw);
+        if (Number.isInteger(parsed)) {
+          setCreateGroupCountValue(parsed);
+        } else if (!raw) {
+          createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
+        }
+        renderGroupEditorState();
+        return;
+      }
+      if ((tokenRangeFromNode && event.target === tokenRangeFromNode) || (tokenRangeToNode && event.target === tokenRangeToNode)) {
+        renderTokenRangeState();
+      }
+    }
+
+    function bindNodes() {
+      chestSelectNode = document.getElementById("lootV2ChestSelect");
+      searchInputNode = document.getElementById("lootV2SearchInput");
+      columnANode = document.getElementById("lootV2ColumnA");
+      columnBNode = document.getElementById("lootV2ColumnB");
+      saveWorkingButtonNode = root.querySelector('[data-action="save-working"]');
+      revertWorkingButtonNode = root.querySelector('[data-action="revert-working"]');
+      undoLastButtonNode = document.getElementById("lootV2UndoLastBtn");
+      historyStateNode = document.getElementById("lootV2HistoryState");
+      syncLaneNode = document.getElementById("lootV2SyncLane");
+      tableToolsCardNode = document.getElementById("lootV2TableToolsCard");
+      manageTabButtonNodes = Array.from(root.querySelectorAll('[data-action="set-manage-tab"]'));
+      managePanelNodes = Array.from(root.querySelectorAll("[data-manage-panel]"));
+      detailEditButtonNode = document.getElementById("lootV2ToggleEditBtn");
+      detailHeaderTitleNode = document.getElementById("lootV2DetailHeaderTitle");
+      listFilterButtonNodes = Array.from(root.querySelectorAll('[data-action="toggle-list-status-filter"]'));
+
+      detailEmptyNode = document.getElementById("lootV2DetailEmpty");
+      detailContentNode = document.getElementById("lootV2DetailContent");
+      detailItemNameReadNode = document.getElementById("lootV2DetailItemNameRead");
+      detailRarityTagNode = document.getElementById("lootV2DetailRarityTag");
+      detailTypeTagNode = document.getElementById("lootV2DetailTypeTag");
+      detailStatusToggleNode = document.getElementById("lootV2DetailStatusToggle");
+      editItemNameNode = document.getElementById("lootV2EditItemName");
+      editRarityNode = document.getElementById("lootV2EditRarity");
+      editTypeNode = document.getElementById("lootV2EditType");
+      descriptionReadNode = document.getElementById("lootV2DescriptionRead");
+      editDescriptionNode = document.getElementById("lootV2EditDescription");
+      editItemUrlNode = document.getElementById("lootV2EditItemUrl");
+      itemUrlEditFieldNode = root.querySelector(".loot-v2-item-url-edit");
+      itemUrlViewNode = document.getElementById("lootV2ItemUrlView");
+      itemUrlAnchorNode = document.getElementById("lootV2ItemUrlAnchor");
+      notesReadNode = document.getElementById("lootV2NotesRead");
+      editNotesNode = document.getElementById("lootV2EditNotes");
+
+      tokenRangeGroupNode = document.getElementById("lootV2TokenRangeGroup");
+      tokenRangeFromNode = document.getElementById("lootV2TokenRangeFrom");
+      tokenRangeToNode = document.getElementById("lootV2TokenRangeTo");
+      tokenRangeAddButtonNode = document.getElementById("lootV2AddTokenRangeBtn");
+      tokenRangeDeleteButtonNode = document.getElementById("lootV2DeleteTokenRangeBtn");
+      createGroupNameNode = document.getElementById("lootV2CreateGroupName");
+      createGroupThemeNode = document.getElementById("lootV2CreateGroupTheme");
+      createGroupCountNode = document.getElementById("lootV2CreateGroupCount");
+      addGroupButtonNode = document.getElementById("lootV2AddGroupBtn");
+      manageGroupSelectNode = document.getElementById("lootV2ManageGroupSelect");
+      manageGroupNameNode = document.getElementById("lootV2ManageGroupName");
+      manageGroupThemeNode = document.getElementById("lootV2ManageGroupTheme");
+      updateGroupButtonNode = document.getElementById("lootV2UpdateGroupBtn");
+      deleteGroupButtonNode = document.getElementById("lootV2DeleteGroupBtn");
+      newChestNameNode = document.getElementById("lootV2NewChestName");
+      addChestButtonNode = document.getElementById("lootV2AddChestBtn");
+      deleteChestSelectNode = document.getElementById("lootV2DeleteChestSelect");
+      deleteChestButtonNode = document.getElementById("lootV2DeleteChestBtn");
+    }
+
+    function initData() {
+      const dummy = buildDummyState();
+      chestList = dummy.chests;
+      persistedItemsByChest = deepClone(dummy.itemsByChest);
+      workingItemsByChest = deepClone(dummy.itemsByChest);
+      selectedChestId = chestList.length ? chestList[0].chest_id : "";
+    }
+
+    function initLootV2() {
+      root = document.getElementById("lootV2Root");
+      if (!root) return;
+
+      initData();
+      bindNodes();
+      renderChestSelect();
+      renderColorOptions();
+      setDetailEditMode(false);
+      setHistoryState("No changes made.", "is-idle");
+      renderAll();
+
+      root.addEventListener("click", handleRootClick);
+      document.addEventListener("click", handleDocumentClick);
+      document.addEventListener("app:tab-changed", handleTabChanged);
+      root.addEventListener("input", handleRootInput);
+      root.addEventListener("change", handleRootChange);
+      root.addEventListener("pointerdown", handleGroupCountPointerDown);
+      root.addEventListener("pointerup", clearGroupCountRepeatTimers);
+      root.addEventListener("pointercancel", clearGroupCountRepeatTimers);
+      root.addEventListener("pointerleave", clearGroupCountRepeatTimers);
+      document.addEventListener("pointerup", clearGroupCountRepeatTimers);
+      document.addEventListener("pointercancel", clearGroupCountRepeatTimers);
+    }
+
+    
+
+    document.addEventListener("DOMContentLoaded", initLootV2);
+  })();
+</script>

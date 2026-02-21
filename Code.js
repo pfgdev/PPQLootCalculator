@@ -72,7 +72,6 @@ function doGet() {
  * @returns {string} The content of the included file.
  */
 function include(filename) {
-  // Evaluate included templates so scriptlet tags in partials are resolved.
   return HtmlService.createTemplateFromFile(filename).evaluate().getContent();
 }
 

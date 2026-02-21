@@ -134,22 +134,56 @@
       return card;
     }
 
-    function autoSizeNotesField() {
-      if (!editNotesNode) return;
+    function getNotesFieldMinHeight() {
+      if (!editNotesNode) return 36;
       const styles = window.getComputedStyle(editNotesNode);
       const lineHeight = parseFloat(styles.lineHeight) || 16.4;
       const paddingTop = parseFloat(styles.paddingTop) || 0;
       const paddingBottom = parseFloat(styles.paddingBottom) || 0;
       const borderTop = parseFloat(styles.borderTopWidth) || 0;
       const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
-      const minHeight = Math.ceil(lineHeight + paddingTop + paddingBottom + borderTop + borderBottom);
+      return Math.ceil(lineHeight + paddingTop + paddingBottom + borderTop + borderBottom);
+    }
+
+    function getDescriptionFieldMinHeight() {
+      if (!editDescriptionNode) return 72;
+      const styles = window.getComputedStyle(editDescriptionNode);
+      const lineHeight = parseFloat(styles.lineHeight) || 16.4;
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const borderTop = parseFloat(styles.borderTopWidth) || 0;
+      const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+      return Math.ceil(lineHeight + paddingTop + paddingBottom + borderTop + borderBottom);
+    }
+
+    function setDescriptionFieldToMinHeight() {
+      if (!editDescriptionNode) return;
+      editDescriptionNode.style.height = getDescriptionFieldMinHeight() + "px";
+    }
+
+    function autoSizeDescriptionField() {
+      if (!editDescriptionNode) return;
+      const minHeight = getDescriptionFieldMinHeight();
+      editDescriptionNode.style.height = minHeight + "px";
+      const measured = editDescriptionNode.scrollHeight || 0;
+      const nextHeight = Math.max(minHeight, Math.ceil(measured));
+      editDescriptionNode.style.height = nextHeight + "px";
+    }
+
+    function setNotesFieldToMinHeight() {
+      if (!editNotesNode) return;
+      editNotesNode.style.height = getNotesFieldMinHeight() + "px";
+    }
+
+    function autoSizeNotesField() {
+      if (!editNotesNode) return;
+      const minHeight = getNotesFieldMinHeight();
+      editNotesNode.style.height = minHeight + "px";
       if (!normalizeWhitespace(editNotesNode.value)) {
-        editNotesNode.style.height = minHeight + "px";
         return;
       }
-      editNotesNode.style.height = "auto";
       const measured = editNotesNode.scrollHeight || 0;
-      const nextHeight = Math.max(minHeight, Math.ceil(measured + borderTop + borderBottom));
+      const nextHeight = Math.max(minHeight, Math.ceil(measured));
       editNotesNode.style.height = nextHeight + "px";
     }
 
@@ -276,6 +310,14 @@
           detailTypeTagNode.hidden = true;
         }
         renderItemUrlView(null);
+        if (descriptionReadNode) {
+          descriptionReadNode.textContent = "Short item summary for table play";
+          descriptionReadNode.classList.add("is-empty");
+        }
+        if (notesReadNode) {
+          notesReadNode.textContent = "Optional DM notes";
+          notesReadNode.classList.add("is-empty");
+        }
         return;
       }
 
@@ -312,7 +354,23 @@
       editDescriptionNode.value = item.description || "";
       editItemUrlNode.value = item.item_url || "";
       editNotesNode.value = item.notes || "";
-      autoSizeNotesField();
+      if (descriptionReadNode) {
+        const descriptionText = item.description || "";
+        descriptionReadNode.textContent = descriptionText || "Short item summary for table play";
+        descriptionReadNode.classList.toggle("is-empty", !normalizeWhitespace(descriptionText));
+      }
+      if (isDetailEditing) {
+        autoSizeDescriptionField();
+        autoSizeNotesField();
+      } else {
+        setDescriptionFieldToMinHeight();
+        setNotesFieldToMinHeight();
+      }
+      if (notesReadNode) {
+        const notesText = item.notes || "";
+        notesReadNode.textContent = notesText || "Optional DM notes";
+        notesReadNode.classList.toggle("is-empty", !normalizeWhitespace(notesText));
+      }
       renderItemUrlView(item);
     }
 
@@ -341,7 +399,13 @@
       if (detailEditButtonNode) {
         detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit";
       }
-      autoSizeNotesField();
+      if (isDetailEditing) {
+        autoSizeDescriptionField();
+        autoSizeNotesField();
+      } else {
+        setDescriptionFieldToMinHeight();
+        setNotesFieldToMinHeight();
+      }
       renderItemUrlView(getItemById(selectedItemId));
     }
 

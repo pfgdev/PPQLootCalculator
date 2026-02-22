@@ -7,9 +7,29 @@
     --spell-v2-edge: #d5deef;
     --spell-v2-panel: linear-gradient(180deg, var(--v2-color-panel-top) 0%, #f7fbff 100%);
     --spell-v2-selected: #fef7e2;
-    max-width: 1120px;
+    /* Shared + per-surface height controls (desktop tuning) */
+    --spell-v2-scroll-base: clamp(440px, 54vh, 540px);
+    --spell-v2-scroll-list-offset: 0px;
+    --spell-v2-scroll-detail-offset: -1px;
+    --spell-v2-scroll-loading-offset: 0px;
+    --spell-v2-scroll-list-max: calc(var(--spell-v2-scroll-base) + var(--spell-v2-scroll-list-offset));
+    --spell-v2-scroll-detail-max: calc(var(--spell-v2-scroll-base) + var(--spell-v2-scroll-detail-offset));
+    --spell-v2-scroll-loading-max: calc(var(--spell-v2-scroll-base) + var(--spell-v2-scroll-loading-offset));
+    max-width: var(--ppq-shell-max-width);
     margin: 0 auto;
-    padding: 0 12px 20px;
+    padding: 0 var(--ppq-shell-side-pad) 20px;
+  }
+
+  @media (min-width: 980px) and (max-width: 1366px) {
+    .spell-v2 {
+      --spell-v2-scroll-detail-offset: -1px;
+    }
+  }
+
+  @media (min-width: 1367px) {
+    .spell-v2 {
+      --spell-v2-scroll-detail-offset: 3px;
+    }
   }
 
   .spell-v2 .v2-card {
@@ -19,19 +39,25 @@
   }
 
   .spell-v2 .v2-card-header {
-    color: var(--spell-v2-ink);
-    background: linear-gradient(90deg, #e9f8f8 0%, #f7fdfe 72%);
+    color: var(--ppq-section-header-color);
+    background: var(--ppq-section-header-bg);
+    font-size: var(--ppq-section-header-size);
+    padding: var(--ppq-section-header-padding);
   }
 
-  .spell-v2-list-header {
+  .spell-v2 .v2-card-body {
+    padding: 10px 16px 12px;
+  }
+
+  .spell-v2 .spell-v2-list-header {
     display: flex;
     align-items: center;
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 10px;
-    padding-top: 13px;
-    padding-bottom: 13px;
-    min-height: 62px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -175,7 +201,7 @@
     display: grid;
     gap: var(--spell-v2-gap);
     align-items: start;
-    min-height: 760px;
+    min-height: 0;
   }
 
   .spell-v2-list-panel {
@@ -187,34 +213,37 @@
   }
 
   .spell-v2-detail-title {
-    min-height: 62px;
-    display: flex;
-    align-items: center;
+    min-height: 0;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .spell-v2-filter-label {
-    display: block;
-    text-align: left;
-    color: var(--spell-v2-muted);
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
+  .spell-v2-token-search {
     margin-bottom: 8px;
+    min-width: 0;
+    /* Match loot filter bar lane alignment against scrollable table content. */
+    padding-right: 8px;
   }
 
   .spell-v2-filter-input {
     width: 100%;
-    border: 1px solid #c2cde4;
+    min-height: 32px;
+    height: 32px;
+    border: 1px solid #c3cee5;
     border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 16px;
-    margin-bottom: 12px;
+    background: #fff;
+    color: #24314a;
+    padding: 6px 10px;
+    line-height: 1.2;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
   }
 
   .spell-v2-filter-input:focus {
-    outline: 2px solid rgba(31, 111, 235, 0.25);
-    border-color: #5e89cf;
+    outline: 2px solid rgba(31, 111, 235, 0.24);
+    border-color: #6f90ca;
   }
 
   .spell-v2-list-columns {
@@ -226,23 +255,43 @@
   .spell-v2-list-scroll {
     border: none;
     border-radius: 0;
-    overflow-y: scroll;
-    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: var(--spell-v2-scroll-list-max);
     background: transparent;
-    padding-right: 2px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    scrollbar-gutter: stable;
+    padding-right: 12px;
+    margin-right: -12px;
+    scrollbar-width: thin;
+    scrollbar-color: #9eb2d4 transparent;
   }
 
   .spell-v2-list-scroll::-webkit-scrollbar {
-    width: 0;
-    height: 0;
+    width: 10px;
+    height: 10px;
+  }
+
+  .spell-v2-list-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .spell-v2-list-scroll::-webkit-scrollbar-thumb {
+    background: #9eb2d4;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .spell-v2-list-scroll::-webkit-scrollbar-thumb:hover {
+    background: #7f97c2;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 
   .spell-v2-list-wrap {
     border: 1px solid #d6dff1;
     border-radius: 10px;
-    overflow: visible;
+    overflow: hidden;
     max-height: none;
     background: var(--v2-color-white);
   }
@@ -256,7 +305,14 @@
   .spell-v2-list-table th,
   .spell-v2-list-table td {
     border-bottom: 1px solid #e2e9f5;
-    padding: 7px 6px;
+    padding: 6px 7px;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .spell-v2-list-table tbody td {
+    font-size: 14px;
+    line-height: 1.2;
   }
 
   .spell-v2-list-table th {
@@ -272,9 +328,23 @@
 
   .spell-v2-list-table th:first-child,
   .spell-v2-list-table td:first-child {
-    width: 74px;
+    width: 92px;
     text-align: center;
     font-weight: 700;
+  }
+
+  .spell-v2-list-table th:nth-child(2),
+  .spell-v2-list-table td:nth-child(2) {
+    text-align: left;
+    padding-left: 10px;
+  }
+
+  .spell-v2-list-table tbody tr:nth-child(odd) td {
+    background: #f8fbff;
+  }
+
+  .spell-v2-list-table tbody tr:nth-child(even) td {
+    background: #eef4ff;
   }
 
   .spell-v2-spell-btn {
@@ -291,8 +361,8 @@
     text-overflow: ellipsis;
   }
 
-  .spell-v2-row:hover td {
-    background: #eef8ff;
+  .spell-v2-list-table tbody tr.spell-v2-row:hover td {
+    background: #e5efff;
   }
 
   .spell-v2-row {
@@ -303,16 +373,16 @@
     cursor: default;
   }
 
-  .spell-v2-row-reroll td {
+  .spell-v2-list-table tbody tr.spell-v2-row-reroll td {
     background: #f6f8fc;
   }
 
-  .spell-v2-row-reroll:hover td {
+  .spell-v2-list-table tbody tr.spell-v2-row-reroll:hover td {
     background: #f6f8fc;
   }
 
-  .spell-v2-row.is-selected td {
-    background: #fff8e5;
+  .spell-v2-list-table tbody tr.spell-v2-row.is-selected td {
+    background: #fff3cf;
     border-bottom-color: #ecd8a4;
   }
 
@@ -351,15 +421,40 @@
   }
 
   .spell-v2-detail-panel .v2-card-body {
-    max-height: 670px;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    overflow: hidden;
   }
 
-  .spell-v2-detail-panel .v2-card-body::-webkit-scrollbar {
-    width: 0;
-    height: 0;
+  .spell-v2-detail-scroll {
+    max-height: var(--spell-v2-scroll-detail-max);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    padding-right: 12px;
+    margin-right: -12px;
+    scrollbar-width: thin;
+    scrollbar-color: #9eb2d4 transparent;
+  }
+
+  .spell-v2-detail-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .spell-v2-detail-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .spell-v2-detail-scroll::-webkit-scrollbar-thumb {
+    background: #9eb2d4;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .spell-v2-detail-scroll::-webkit-scrollbar-thumb:hover {
+    background: #7f97c2;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 
   .spell-v2-facts-grid {
@@ -399,6 +494,9 @@
     font-weight: 700;
     color: #223049;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .spell-v2-facts-mid .spell-v2-fact-value,
@@ -462,7 +560,7 @@
     font-style: italic;
     min-height: 20px;
     line-height: 1.32;
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .spell-v2-description-wrap {
@@ -480,7 +578,7 @@
     white-space: pre-wrap;
     min-height: 190px;
     text-align: left;
-    font-size: 15px;
+    font-size: 13px;
   }
 
   .spell-v2-facts-bottom {
@@ -494,7 +592,15 @@
     color: #485a77;
     font-style: italic;
     text-align: center;
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  .spell-v2-meta-row > div {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
   }
 
   .spell-v2-detail-panel .v2-card-footer {
@@ -516,8 +622,10 @@
   }
 
   .spell-v2-loading-inline {
-    margin-top: 10px;
+    margin-top: 0;
     margin-bottom: 0;
+    justify-content: flex-start;
+    padding-top: 10px;
   }
 
   .spell-v2-loading-overlay {
@@ -604,6 +712,30 @@
   }
 
   @media (min-width: 980px) {
+    .spell-v2-list-scroll {
+      min-height: var(--spell-v2-scroll-list-max);
+    }
+
+    .spell-v2-loading-inline {
+      min-height: var(--spell-v2-scroll-loading-max);
+      height: var(--spell-v2-scroll-loading-max);
+      box-sizing: border-box;
+    }
+
+    .spell-v2.spell-v2-has-detail .spell-v2-list-scroll {
+      height: var(--spell-v2-scroll-list-max);
+      min-height: var(--spell-v2-scroll-list-max);
+      max-height: var(--spell-v2-scroll-list-max);
+      overflow-y: scroll;
+    }
+
+    .spell-v2.spell-v2-has-detail .spell-v2-detail-scroll {
+      height: var(--spell-v2-scroll-detail-max);
+      min-height: var(--spell-v2-scroll-detail-max);
+      max-height: var(--spell-v2-scroll-detail-max);
+      overflow-y: scroll;
+    }
+
     .spell-v2-workspace {
       grid-template-columns: minmax(0, 1fr) 0fr;
       gap: 0;
@@ -616,6 +748,8 @@
       pointer-events: none;
       transition: opacity 240ms ease, transform 240ms ease;
       overflow: hidden;
+      max-height: 0;
+      min-height: 0;
     }
 
     .spell-v2.spell-v2-has-detail .spell-v2-workspace {
@@ -627,6 +761,7 @@
       opacity: 1;
       transform: translateX(0);
       pointer-events: auto;
+      max-height: none;
     }
   }
 
@@ -644,9 +779,11 @@
       display: block;
     }
 
-    .spell-v2-detail-panel .v2-card-body {
+    .spell-v2-detail-scroll {
       max-height: none;
       overflow: visible;
+      padding-right: 0;
+      margin-right: 0;
     }
   }
 

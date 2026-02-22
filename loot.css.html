@@ -18,9 +18,9 @@
     --loot-v2-secondary-dark: #dfe8ff;
     --loot-v2-danger: #d25a5a;
     --loot-v2-danger-dark: #b64747;
-    max-width: 1160px;
+    max-width: var(--ppq-shell-max-width);
     margin: 0 auto;
-    padding: 0 10px 20px;
+    padding: 0 var(--ppq-shell-side-pad) 20px;
     color: var(--loot-v2-ink);
   }
 
@@ -31,10 +31,10 @@
   }
 
   .loot-v2 .v2-card-header {
-    color: var(--loot-v2-ink);
-    background: linear-gradient(90deg, #ebf8f5 0%, #f8fdff 76%);
-    font-size: 22px;
-    padding: 11px 16px;
+    color: var(--ppq-section-header-color);
+    background: var(--ppq-section-header-bg);
+    font-size: var(--ppq-section-header-size);
+    padding: var(--ppq-section-header-padding);
   }
 
   .loot-v2-top-card .v2-card-body {
@@ -135,6 +135,8 @@
   .loot-v2-token-search {
     margin-bottom: 0;
     min-width: 0;
+    /* Tuned visual alignment: match filter input right edge to token table content lane. */
+    padding-right: 8px;
   }
 
   .loot-v2-token-search input {
@@ -865,35 +867,40 @@
   }
 
   .loot-v2-detail-card .v2-card-body {
+    padding-top: 10px;
+    padding-left: 18px;
+    padding-right: 18px;
+    overflow: hidden;
+  }
+
+  .loot-v2-detail-scroll {
     max-height: 720px;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: stable;
-    padding-top: 10px;
-    padding-left: 18px;
-    padding-right: 18px;
+    padding-right: 12px;
     margin-right: -12px;
     scrollbar-width: thin;
     scrollbar-color: #9eb2d4 transparent;
   }
 
-  .loot-v2-detail-card .v2-card-body::-webkit-scrollbar {
+  .loot-v2-detail-scroll::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
 
-  .loot-v2-detail-card .v2-card-body::-webkit-scrollbar-track {
+  .loot-v2-detail-scroll::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .loot-v2-detail-card .v2-card-body::-webkit-scrollbar-thumb {
+  .loot-v2-detail-scroll::-webkit-scrollbar-thumb {
     background: #9eb2d4;
     border-radius: 999px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
 
-  .loot-v2-detail-card .v2-card-body::-webkit-scrollbar-thumb:hover {
+  .loot-v2-detail-scroll::-webkit-scrollbar-thumb:hover {
     background: #7f97c2;
     border: 2px solid transparent;
     background-clip: content-box;
@@ -1363,6 +1370,18 @@
       transform: translateX(0);
       pointer-events: auto;
     }
+
+    /* Prevent transient row wrap during slide-in width interpolation. */
+    .loot-v2-status-toggle {
+      flex-wrap: nowrap;
+    }
+
+    .loot-v2-status-toggle button {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
   @media (max-width: 979px) {
@@ -1374,7 +1393,7 @@
       display: block;
     }
 
-    .loot-v2-detail-card .v2-card-body {
+    .loot-v2-detail-scroll {
       max-height: none;
     }
 
@@ -1448,7 +1467,6 @@
     .loot-v2-detail-card .v2-card-body {
       padding-left: 14px;
       padding-right: 14px;
-      margin-right: -10px;
     }
 
     .loot-v2-table-scroll {

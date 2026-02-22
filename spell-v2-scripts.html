@@ -14,6 +14,7 @@
     let rollValueNode;
     let listLoadingNode;
     let detailLoadingNode;
+    let listScrollNode;
 
     let detailTitle;
     let castTimeNode;
@@ -111,6 +112,9 @@
       if (listLoadingNode) {
         listLoadingNode.hidden = !isLoading;
       }
+      if (listScrollNode) {
+        listScrollNode.hidden = !!isLoading;
+      }
     }
 
     function setDetailLoading(isLoading) {
@@ -133,6 +137,27 @@
 
     function clearTBody(tbody) {
       while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    }
+
+    function preserveListScroll(callback) {
+      const host = listScrollNode || document.getElementById("spellV2ListScroll");
+      const previousTop = host ? host.scrollTop : 0;
+      callback();
+      if (host) {
+        host.scrollTop = previousTop;
+      }
+    }
+
+    function pinListScrollThroughTransition(previousTop) {
+      const host = listScrollNode || document.getElementById("spellV2ListScroll");
+      if (!host) return;
+      host.scrollTop = previousTop;
+      requestAnimationFrame(function () {
+        host.scrollTop = previousTop;
+      });
+      setTimeout(function () {
+        host.scrollTop = previousTop;
+      }, 300);
     }
 
     function addEmptyRow(tbody, message) {
@@ -388,7 +413,10 @@
     }
 
     function setDetailPlaceholders(message, title) {
-      detailTitle.textContent = title !== undefined ? title : "Select a Spell";
+      const rawTitle = title !== undefined ? title : "Select a Spell";
+      const safeTitle = String(rawTitle || "").trim();
+      detailTitle.textContent = safeTitle ? safeTitle : "\u00A0";
+      detailTitle.title = safeTitle || "";
       castTimeNode.textContent = "--";
       rangeNode.textContent = "--";
       durationNode.textContent = "--";
@@ -411,7 +439,9 @@
     }
 
     function renderDetail(detailData, fallbackName) {
-      detailTitle.textContent = fallbackName || detailData.name || "Select a Spell";
+      const resolvedTitle = fallbackName || detailData.name || "Select a Spell";
+      detailTitle.textContent = resolvedTitle;
+      detailTitle.title = resolvedTitle;
       castTimeNode.textContent = detailData.castingTime || "--";
       rangeNode.textContent = detailData.rangeOrArea || "--";
       durationNode.textContent = detailData.duration || "--";
@@ -439,9 +469,11 @@
       if (!Number.isInteger(detailIndex) || detailIndex < 0) return;
 
       const fallbackName = selectedSpell.name ? selectedSpell.name : "Spell Details";
+      const priorListTop = listScrollNode ? listScrollNode.scrollTop : 0;
       selectedSpellIndex = index;
-      renderSpellList();
+      preserveListScroll(renderSpellList);
       toggleDetailPanel(true);
+      pinListScrollThroughTransition(priorListTop);
       setDetailPlaceholders("", fallbackName);
       setDetailLoading(true);
 
@@ -465,11 +497,15 @@
     function clearSelectedSpell() {
       cancelRollSequence(false);
       detailRequestToken += 1;
+      const priorListTop = listScrollNode ? listScrollNode.scrollTop : 0;
+      const priorTitle = detailTitle ? detailTitle.textContent : "";
       selectedSpellIndex = null;
-      renderSpellList();
+      preserveListScroll(renderSpellList);
       toggleDetailPanel(false);
+      pinListScrollThroughTransition(priorListTop);
       setDetailLoading(false);
-      setDetailPlaceholders("Pick a spell to view details.", " ");
+      // Keep the current spell title during close animation to avoid text hitch.
+      setDetailPlaceholders("Pick a spell to view details.", priorTitle || " ");
     }
 
     function loadLevel(level) {
@@ -559,6 +595,7 @@
       rollValueNode = document.getElementById("spellV2RollValue");
       listLoadingNode = document.getElementById("spellV2ListLoading");
       detailLoadingNode = document.getElementById("spellV2DetailLoading");
+      listScrollNode = document.getElementById("spellV2ListScroll");
 
       detailTitle = document.getElementById("spellV2DetailTitle");
       castTimeNode = document.getElementById("spellV2CastTime");

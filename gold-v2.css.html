@@ -12,9 +12,9 @@
     --gold-v2-secondary-dark: #b93f3f;
     --gold-v2-floof-width: 64px;
     --gold-v2-floof-height: 52px;
-    max-width: 1100px;
+    max-width: var(--ppq-shell-max-width);
     margin: 0 auto;
-    padding: 0 12px 20px;
+    padding: 0 var(--ppq-shell-side-pad) 20px;
   }
 
   .gold-v2-layout {
@@ -34,6 +34,13 @@
     --v2-card-shadow: 0 8px 20px rgba(31, 62, 120, 0.08);
     --v2-card-header-color: var(--gold-v2-ink);
     --v2-card-header-bg: linear-gradient(90deg, #eef4ff 0%, #f9fbff 70%);
+  }
+
+  .gold-v2 .v2-card-header {
+    color: var(--ppq-section-header-color);
+    background: var(--ppq-section-header-bg);
+    font-size: var(--ppq-section-header-size);
+    padding: var(--ppq-section-header-padding);
   }
 
   .v2-enemies-card .v2-card-body {

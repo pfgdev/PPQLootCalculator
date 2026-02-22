@@ -2,10 +2,15 @@
 <style>
   :root {
     --page-width: 1280px;
-    --page-min-height: 800px;
     --page-background-color: #fff;
     --border-color: #ddd;
     --text-color: #333;
+    --ppq-shell-max-width: 1160px;
+    --ppq-shell-side-pad: 10px;
+    --ppq-section-header-color: #23314b;
+    --ppq-section-header-bg: linear-gradient(90deg, #ebf8f5 0%, #f8fdff 76%);
+    --ppq-section-header-size: 22px;
+    --ppq-section-header-padding: 11px 16px;
   }
 
   * {
@@ -18,14 +23,13 @@
     font-family: Arial, sans-serif;
     font-size: 16px;
     background-color: #f4f4f9;
-    padding: 14px;
+    padding: 0 14px 14px;
     text-align: center;
     overflow-y: scroll;
   }
 
   .main-container {
     max-width: var(--page-width);
-    min-height: var(--page-min-height);
     margin: 0 auto;
     background-color: var(--page-background-color);
     border: 1px solid var(--border-color);

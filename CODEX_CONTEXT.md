@@ -1,120 +1,87 @@
 # Codex Context Handoff
 
-Purpose: fast onboarding for the next coding session with code-accurate state.
-Last updated: 2026-02-20
+Purpose: accurate technical snapshot for the next implementation session.
+Last updated: 2026-02-21
 
-## 1) Current Runtime Snapshot
+## 1) Runtime Snapshot
 
-### Active UI Exposure
-Header currently exposes only:
-1. `GoldCalculatorV2` (`Gold v2`)
-2. `SpellScrollsV2` (`Spell Scrolls v2`)
-3. `LootChestsV2` (`PPQ Loot Chests`)
+### Active tabs (header labels)
+1. `PPQ Cash Loot`
+2. `PPQ Spell Scrolls`
+3. `PPQ Loot Chests`
 
-### Deprecated Runtime
-- Legacy `GoldCalculator`, `SpellScrolls`, and `BetaVersion` sections were removed from `Index.html`.
-- Legacy tab assets/scripts were deleted from repo during cleanup.
-- Recovery path is git history if any legacy fragment is needed again.
+### Runtime status
+- App is v2-only in `Index.html`.
+- No legacy tab sections are included in active runtime.
 
-## 2) Composition and Boot Flow
+## 2) Composition and Boot
 
-### HTML Composition Root
-- `Index.html`
-  - Includes all CSS/script partials.
-  - Defines each tab section.
+### Entry and include model
+- `Index.html` composes all tab shells/styles/scripts via `<?!= include('...') ?>`.
+- `Code.js` provides `include(filename)` via:
+  - `HtmlService.createTemplateFromFile(filename).evaluate().getContent()`
 
-### Page Boot
-- `body onload="onPageLoad()"` in `Index.html`
-- `onPageLoad()` in `main-scripts.html` calls server `initializeData()`.
-- `tab-scripts.html` clicks first tab on `DOMContentLoaded` and emits `app:tab-changed` on tab switch.
+### Boot flow
+- `body onload="onPageLoad()"` calls server `initializeData()` from `main-scripts.html`.
+- Tab activation handled in `tab-scripts.html`.
+- Tab switch emits `app:tab-changed` event.
 
-## 3) Server-Side Function Map
+## 3) Server Files
 
 ### `Code.js`
-- `doGet()`
-  - initializes via cache gate + `LockService` and serves `Index` template.
-- `include(filename)`
-- Logging helpers (`addToLog`, `isLoggingEnabled`)
+- `doGet()` with cached initialization gate + lock.
+- `include(filename)` helper.
 - Gold APIs:
+  - `getGoldV2PreviewData()`
   - `calculateGoldAndLog(inputs)`
-  - `getGoldV2PreviewData()` (returns `{ byCr, modifiers, diceTable }`)
-- Gold helpers:
-  - `getInvestigationResultFromData`
-  - `getGoldTarget`
-  - `getModifier`
-  - `convertGoldToDice`
 
 ### `initialization.js`
-- `initializeData()` loads named ranges and script properties.
-- Initialization path uses `LockService` to avoid concurrent first-load writes.
-- Initializes:
-  - investigation table
-  - gold table
-  - modifiers
-  - gold-to-dice table
-  - spell scroll export data
-- `cacheProperties()` hydrates globals from Script Properties.
+- Reads named ranges and stores processed payloads to Script Properties.
+- Uses lock to prevent concurrent first-run writes.
 
-### Spell Scroll server files
+### Spell server
 - `spell-scroll-initialization.js`
-  - `initializeSpellScrollData()` reads `SpellScroll_Export` and writes `combinedSpellScrollData`.
 - `spell-scroll.js`
   - `fetchSpellScrollData(level)`
   - `getSpellScrollDetail(level, index)`
-  - returns native objects/arrays (not JSON strings).
 
-## 4) Gold v2 Behavior (Current)
+## 4) Tab Details
 
+### PPQ Cash Loot
 Files:
 - `goldcalculatorv2-shell.html`
 - `gold-v2.css.html`
 - `gold-v2-scripts.html`
 
 Behavior:
-- Step 1 table rows contain CR and Killed steppers plus derived preview columns (`Base Gold`, `DC (L/M/H)`).
-- Remove-row button is in a left gutter attached to CR cell.
-- Add row seeds CR from current bottom row CR.
-- Step 2 controls check value and calculate/reset actions.
-- Step 2 footer lane:
-  - Starts with hint `Calculate to let Floof out`.
-  - On first calculate, Floof lane unlocks and remains visible until reset.
-  - Reset re-locks Floof lane and returns hint state.
-- Calculation path:
-  - Prefers client-side result using preview payload.
-  - Falls back to server call if preview payload unavailable.
+- Enemy rows with CR/killed steppers and removable rows.
+- Add row seeds CR from last row.
+- Live derived row data using preview payload.
+- Check stepper.
+- Calculate/reset with Floof lane behavior.
+- Client-side compute when preview payload exists; server fallback otherwise.
 
-Important implementation details:
-- Hold-to-repeat is implemented for CR/Killed/Check increment and decrement.
-- Query time was intentionally removed from v2 UI.
-
-## 5) Spell Scrolls v2 Behavior (Current)
-
+### PPQ Spell Scrolls
 Files:
 - `spellscrollsv2-shell.html`
 - `spell-v2.css.html`
 - `spell-v2-scripts.html`
 
 Behavior:
-- Level buttons load rows from server by level.
-- Client normalizes list into d100 buckets (`1-100`) and appends a non-clickable `Re-Roll` row if needed.
-- Two side-by-side tables share a single scroll container.
-- Row click opens detail panel and fetches server detail by `detailIndex`.
-- Desktop: animated slide-out panel via CSS grid column transition.
-- Narrow viewports: detail panel appears below list panel.
-- Click-off collapse closes detail panel.
-- d100 roll button:
-  - animated roll ticks
-  - interaction lock during roll
-  - auto-reroll on `Re-Roll`
-  - auto-scroll to final selected row
-- Switching away from Spell Scrolls v2 tab cancels active roll and resets displayed roll value.
+- Level picker and two-column list.
+- Live filter.
+- d100 roll control with interaction lock and reroll handling.
+- Desktop slide-out detail card.
+- Click-off detail close logic.
+- Shared list scroll container.
 
-## 5.1) Loot Chests v1 Behavior (Prototype)
-
+### PPQ Loot Chests (local prototype)
 Files:
-- `lootchestsheader.html`
 - `lootchests-shell.html`
 - `loot.css.html`
+- `loot-v2-scripts.html` (runtime bundle)
+
+Authored split files:
 - `loot-v2-scripts.state.html`
 - `loot-v2-scripts.helpers.html`
 - `loot-v2-scripts.render.html`
@@ -122,32 +89,52 @@ Files:
 - `loot-v2-scripts.events-init.html`
 
 Behavior:
-- Play and Manage modes.
-- Local dummy chest data (no spreadsheet IO yet).
-- One-tap status transitions:
-  - `IN_CHEST -> AWARDED`
-  - `AWARDED -> IN_CHEST`
-  - `UNUSED -> IN_CHEST`
-- `All Statuses` view groups rows as In Chest, Awarded, Unused.
-- Detail panel supports item editing plus soft-delete in local working state.
-- Quick generation supports numeric range input and collision skip.
-- Save/Revert is local snapshot only with simulated sync lane.
+- Local in-memory chest/item model (no sheet persistence yet).
+- Manage tabs:
+  - `Manage Chests`
+  - `Create Group`
+  - `Manage Groups`
+  - `Manage Tokens`
+- Token list grouped by prefix with color themes.
+- Status filters with counts.
+- Detail panel with read/edit modes.
+- Multiline description and notes support.
+- Optional item link hidden in read mode when empty.
+- Save/revert snapshot model.
+- Undo/redo supports:
+  - status toggle
+  - item detail save
+- Non-undoable actions do not populate undo log:
+  - chest create/delete
+  - group create/update/delete
+  - token range add/delete
+
+## 5) Styling Standardization State
+
+Baseline now anchored on Loot Chests style tokens:
+- Shared shell width token.
+- Shared section header sizing/padding/gradient tokens.
+- Consistent card header appearance across tabs.
+
+Recent cross-tab alignment:
+- Spell and Gold shell widths moved to shared max width token.
+- Spell list table moved toward Loot table rhythm:
+  - compact row sizing
+  - alternating rows
+  - rounded header clipping
+  - left-aligned second column header
 
 ## 6) Data Contracts
 
-Loot Chests note:
-- Current Loot Chests runtime is prototype-local only.
-- Save/Revert currently operate on local in-memory snapshot state.
-- Spreadsheet integration is intentionally deferred.
-
-### Named ranges
+### Spreadsheet-backed contracts
+Named ranges:
 - `Investigation_DCs`
 - `Gold_Tables`
 - `InvestigationCheck_GoldValueMods`
 - `GoldtoDice_Translation`
 - `SpellScroll_Export`
 
-### Script properties used
+Script properties:
 - `cleanedInvestigationData`
 - `cleanedGoldData`
 - `goldToDiceData`
@@ -158,86 +145,54 @@ Loot Chests note:
 - `combinedSpellScrollData`
 - `initializationComplete`
 
-### Transport Contract
-- Server-to-client RPC payloads are native objects/arrays.
-- Do not introduce JSON-string RPC payloads for new work unless there is a strong reason.
+### Loot Chests data contract (current)
+- Local only, dummy-generated chest/items.
+- Working state and persisted snapshot both in client memory.
 
-## 7) Icon System (Explicitly Retained)
+## 7) Tooling and Validation
 
-File:
-- `icon-styles.css.html`
+### Deployment
+- `clasp push`
 
-Capabilities retained:
-- 5 predefined sizes:
-  - `.icon-extrasmall`
-  - `.icon-small`
-  - `.icon-medium`
-  - `.icon-large`
-  - `.icon-extralarge`
-- Border controls:
-  - `.icon-border` + size-derived border widths
-  - explicit override classes (`.icon-border-small`, etc.)
-- Indicator overlays:
-  - `.icon-indicator .icon-number`
-  - positions (`.top-left`, `.top-right`, `.bottom-left`, `.bottom-right`)
-  - shapes (`.rounded`, `.square`, `.circle`)
-- Color systems:
-  - generic `color-pair-*`
-  - rarity `rarity-color-*`
+### Pre-push validation
+- `node scripts/validate-index.js`
+  - expands includes
+  - checks unresolved template tags
+  - parses extracted script blocks for syntax errors
 
-## 8) Known Issues and Technical Debt
+### Deploy exclusions
+`.claspignore` excludes:
+- `scripts/**`
+- `docs/**`
+- `readme.md`
+- `CODEX_CONTEXT.md`
+- `AGENTS.md`
 
-1. Server payloads are now native objects; keep new endpoints consistent with this pattern.
-2. Initialization and cache logic is stable but still spread across `doGet()` and `initializeData()` paths.
+## 8) Known Constraints
 
-## 9) Manual Smoke Test Checklist
+1. Loot bundle synchronization
+- Runtime executes `loot-v2-scripts.html`.
+- If split files are edited, bundle must be regenerated before push.
 
-After any nontrivial change:
-1. Load app and confirm first visible tab is Gold v2.
-2. Gold v2:
-- Add/remove rows.
-- Verify remove button hidden when single row remains.
-- Verify derived row values update when CR/Killed changes.
-- Calculate then Reset and verify Floof lane lock/unlock behavior.
-3. Spell Scrolls v2:
-- Load several levels.
-- Filter list.
-- Open detail, click-off collapse.
-- Trigger d100 roll, verify lock and final selection.
-- Switch tabs during roll and ensure cancellation/reset.
-4. Loot Chests v1 (prototype):
-- Toggle Play/Manage modes.
-- Toggle status and Undo.
-- Generate missing token range and confirm collision skips.
-- Edit selected item and save item details.
-- Save/Revert local snapshot and confirm sync lane behavior.
-5. Tablet/mobile:
-- Check header heights and no layout hitching.
-- Check panel behavior and scroll interactions.
+2. Loot persistence
+- Not yet integrated with spreadsheet tabs.
+- Current save/revert is local snapshot behavior only.
 
-## 10) Next Workstream
+3. Include parsing sensitivity
+- GAS HTML parsing can fail on escaped operators/entities in script output.
+- Keep script bundle plain JS-safe text and validate before push.
 
-Primary planned pivot is Loot Chest implementation.
-Authoritative planning file:
-- `docs/LOOT_CHEST_HANDOFF.md`
-- `docs/SMOKE_TEST.md`
+## 9) Smoke Focus Areas
 
-## 11) Start Prompt for New Session
+1. Tab switching and event continuity.
+2. Cash Loot compute path and floof states.
+3. Spell roll lock/cancel behavior and detail transitions.
+4. Loot manage tab workflows and per-action enable/disable logic.
+5. Loot detail panel close behavior (precise click zones).
+6. Undo/redo semantics for supported actions only.
 
-"Read `CODEX_CONTEXT.md` and `docs/LOOT_CHEST_HANDOFF.md`. Start Phase 1 Loot Chest implementation only. Keep Gold v2 and Spell Scrolls v2 behavior unchanged. Propose migration steps first, then implement API + UI in small testable increments."
+## 10) Recommended Next Workstreams
 
-## 12) Dev Diagnostics
-
-Useful quick checks while editing:
-
-1. Verify all includes in `Index.html` resolve:
-`$includes = Select-String -Path Index.html -Pattern \"include\\('([^']+)'\\)\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique; $missing = @(); foreach ($f in $includes) { if (-not (Test-Path $f)) { $missing += $f } }; if ($missing.Count -eq 0) { 'All Index includes resolve.' } else { 'Missing includes:'; $missing }`
-
-2. Check for stale references to removed/legacy files:
-`rg -n \"betaversionheader|price-is-right|table-scripts|spell-scroll-scripts|goldcalculatorheader|spellscrollsheader\" -g \"*.html\" -g \"*.js\" -g \"*.md\"`
-
-3. Check for old JSON string transport patterns:
-`rg -n \"JSON\\.parse\\(rawData\\)|return JSON\\.stringify\\(\" -g \"*.html\" -g \"*.js\"`
-
-4. List changed files before push:
-`git status --short`
+1. Implement real Loot Chest sheet IO with dedicated data tabs.
+2. Keep current UI contract and swap local state layer for API-backed state.
+3. Continue extracting shared style primitives once behavior stabilizes.

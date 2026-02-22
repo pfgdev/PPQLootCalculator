@@ -1,160 +1,144 @@
 # PPQ Loot Calculator (Google Apps Script)
 
-This repo is a personal DM tool for DnD sessions. It currently ships only the v2 experience in runtime.
-Last updated: 2026-02-20
+Last updated: 2026-02-21
 
-## Current App State
+## Overview
+PPQ Loot Calculator is a single Google Apps Script web app with three active tabs:
 
-### Visible Tabs (Header)
-1. Gold v2
-2. Spell Scrolls v2
-3. PPQ Loot Chests
+1. `PPQ Cash Loot`
+2. `PPQ Spell Scrolls`
+3. `PPQ Loot Chests`
 
-### Deprecated Tabs
-- Legacy Gold Calculator, Spell Scrolls, and Beta runtime code has been removed from `Index.html`.
-- Old files were deleted from the repo during cleanup and can be recovered from git history if needed.
+The runtime is v2-only. Legacy tab shells and legacy include chains are no longer part of `Index.html`.
 
-## Feature Summary
+## Current Product State
 
-### Gold v2
-- Enemy row editor with:
-  - CR stepper
-  - Number killed stepper
-  - Remove-row gutter button (hidden when only one row exists)
-- Add Enemy seeds new row CR from current bottom row CR.
-- Investigation check stepper.
-- Derived row preview fields:
-  - Base gold (CR gold target x killed)
-  - DC pill (low / medium / high)
-- Calculation behavior:
-  - Uses client-side calculation when preview data is loaded.
-  - Falls back to server `calculateGoldAndLog(inputs)` if preview data is unavailable.
-- Results:
-  - Expected Gold
-  - Dice Notation
-- Floof lane:
-  - Hidden until first Calculate.
-  - Reset hides Floof and restores hint text.
+### PPQ Cash Loot
+- Enemy list with CR and killed steppers.
+- Live row-derived values (`Base Gold`, `DC (L/M/H)`).
+- Investigation check controls.
+- Calculate + reset actions.
+- Floof lane unlock/react behavior.
+- Client-side preview compute with server fallback.
 
-### Spell Scrolls v2
-- Step 1 level icon grid (0-9).
-- Step 2 two-column spell tables with shared vertical scroll container.
-- Live filter on current level.
-- Slide-out detail panel on desktop; stacked behavior on narrow viewports.
-- d100 interaction in Step 2 header (`or` + dice circle):
-  - Animated roll sequence.
-  - Locks interactions during roll.
-  - Auto-rerolls internally if result lands on `Re-Roll` row.
-  - Scrolls list to final selected spell if needed.
-- Floof loaders:
-  - list fetch loader
-  - detail fetch overlay loader
-- Click-off behavior collapses detail panel (except rows, filter controls, and roll button).
+### PPQ Spell Scrolls
+- Level icon picker (0-9).
+- Two-column spell list with shared vertical scroll container.
+- Live text filter.
+- d100 roll interaction (`or ??`) with roll lock + reroll handling.
+- Slide-out detail card on desktop.
+- Detail card stacks on narrow screens.
 
-### Loot Chests (prototype v1)
-- Play and Manage modes.
-- Chest selector with local dummy data.
-- One-tap status transitions:
-  - `IN_CHEST -> AWARDED`
-  - `AWARDED -> IN_CHEST`
-  - `UNUSED -> IN_CHEST`
-- Grouped status list support (`In Chest`, `Awarded`, `Unused`) via `All Statuses` view.
-- Right-side detail panel for item data:
-  - token
-  - status
-  - item name
-  - rarity
-  - type
-  - attunement
-  - description
-  - notes
-- Quick token generation:
-  - color theme + optional label override + numeric range (`1-10,12,15-18`)
-  - skips active token collisions
-- Add single token.
-- Local-only Save/Revert snapshot model for fast iteration.
-- Floof sync lane shown during simulated save delay.
+### PPQ Loot Chests
+- Local prototype runtime (dummy/local state, no spreadsheet writes yet).
+- Chest selector + manage tool tabs:
+  - `Manage Chests`
+  - `Create Group`
+  - `Manage Groups`
+  - `Manage Tokens`
+- Token list grouped by token prefix with per-group theme styling.
+- Status filters (`IN_CHEST`, `AWARDED`, `UNUSED`) with counts.
+- Detail panel with read/edit mode:
+  - status toggle in read mode
+  - edit fields for item details
+  - multiline description and notes preservation
+  - optional item link (hidden in read mode if empty)
+- Local save/revert snapshot model.
+- Undo/redo for status and item-edit actions only.
 
-## Spreadsheet Dependencies
+## Data Sources
 
-Named ranges required:
+### Spreadsheet-backed features
+- Cash Loot and Spell Scrolls depend on script properties populated by initialization.
+
+Named ranges used:
 - `Investigation_DCs`
 - `Gold_Tables`
 - `InvestigationCheck_GoldValueMods`
 - `GoldtoDice_Translation`
 - `SpellScroll_Export`
 
-Script Properties keys populated during initialization:
+Script properties used:
 - `cleanedInvestigationData`
 - `cleanedGoldData`
+- `goldToDiceData`
 - `highSuccessMod`
 - `mediumSuccessMod`
 - `lowSuccessMod`
 - `failedCheckMod`
-- `goldToDiceData`
 - `combinedSpellScrollData`
 - `initializationComplete`
 
-## File Map (Primary)
+### Local-only feature
+- Loot Chests currently runs on in-memory dummy state.
+- It does not currently read/write spreadsheet chest data.
 
-### Server
-- `Code.js`
-- `initialization.js`
-- `spell-scroll-initialization.js`
-- `spell-scroll.js`
+## Runtime Architecture
 
-### v2 UI
-- Gold v2:
-  - `goldcalculatorv2header.html`
+### Composition
+- Root template: `Index.html`
+- Include helper: `include(filename)` in `Code.js`
+- Shared shell:
+  - `header.html`
+  - `global.css.html`
+  - `v2-cards.css.html`
+  - `buttons.css.html`
+  - `tab-scripts.html`
+
+### Tab shells and styles
+- Cash Loot:
   - `goldcalculatorv2-shell.html`
   - `gold-v2.css.html`
   - `gold-v2-scripts.html`
-- Spell Scrolls v2:
-  - `spellscrollsv2header.html`
+- Spell Scrolls:
   - `spellscrollsv2-shell.html`
   - `spell-v2.css.html`
   - `spell-v2-scripts.html`
-- Loot Chests (prototype v1):
-  - `lootchestsheader.html`
+- Loot Chests:
   - `lootchests-shell.html`
   - `loot.css.html`
-  - `loot-v2-scripts.state.html`
-  - `loot-v2-scripts.helpers.html`
-  - `loot-v2-scripts.render.html`
-  - `loot-v2-scripts.actions.html`
-  - `loot-v2-scripts.events-init.html`
+  - `loot-v2-scripts.html` (runtime bundle)
 
-### Shared composition and tab wiring
-- `Index.html`
-- `header.html`
-- `tab-scripts.html`
-- `global.css.html`
-- `v2-cards.css.html`
+### Loot script authoring model
+Loot logic is authored in split files:
+- `loot-v2-scripts.state.html`
+- `loot-v2-scripts.helpers.html`
+- `loot-v2-scripts.render.html`
+- `loot-v2-scripts.actions.html`
+- `loot-v2-scripts.events-init.html`
 
-### Retained Icon System
-- `icon-styles.css.html` is intentionally retained and included globally.
-- It still supports:
-  - five predefined icon sizes (`extrasmall`, `small`, `medium`, `large`, `extralarge`)
-  - configurable border widths via size + override classes
-  - indicator overlays with positional classes (`top-left`, `top-right`, `bottom-left`, `bottom-right`)
-  - shape controls for indicator badges (`rounded`, `square`, `circle`)
-  - rarity/color pair class system
+Runtime includes the bundled file:
+- `loot-v2-scripts.html`
 
-## Deploy and Test
-- Push GAS files: `clasp push`
-- Validate template include expansion + script parse locally: `node scripts/validate-index.js`
-- Open deployed web app and smoke test:
-  1. Gold v2: add/remove rows, check stepper, calculate, reset, Floof toggle.
-  2. Spell Scrolls v2: level load, row click detail, click-off collapse, d100 roll.
-  3. Loot Chests: mode switch, status toggle, generate range skip behavior, detail save, local save/revert.
-  4. Tablet/mobile: header wrapping, detail panel behavior, list scroll behavior.
+When editing split files, you must rebuild/sync `loot-v2-scripts.html` before pushing.
+
+## Styling Baseline
+The current visual baseline is defined by Loot Chests and shared across tabs via tokens:
+- shared shell width token
+- shared card header sizing/padding token
+- shared section header gradient family
+
+Spell table styling was moved closer to Loot table behavior:
+- compact row rhythm
+- alternating row colors
+- rounded header clipping
+- left-aligned spell column header
+
+## Dev Workflow
+
+1. Make edits.
+2. If loot split files changed, regenerate `loot-v2-scripts.html`.
+3. Validate include expansion and script parse:
+- `node scripts/validate-index.js`
+4. Deploy:
+- `clasp push`
+
+## Local Tooling and Deployment
+- `.claspignore` excludes local docs/scripts/tooling from deployment.
+- `scripts/validate-index.js` validates unresolved template tags and JS parse safety after include expansion.
 
 ## Documentation Map
-- Current technical handoff: `CODEX_CONTEXT.md`
-- Loot chest planning and implementation handoff: `docs/LOOT_CHEST_HANDOFF.md`
-- Loot chest v1 prototype UI contract: `docs/LOOT_CHEST_V1_UI_SPEC.md`
-- Quick regression checklist: `docs/SMOKE_TEST.md`
-
-## Notes
-- This README is intentionally concise and practical.
-- For implementation-level details, use `CODEX_CONTEXT.md`.
+- `CODEX_CONTEXT.md` - detailed technical handoff.
+- `docs/SMOKE_TEST.md` - regression checklist.
+- `docs/LOOT_CHEST_V1_UI_SPEC.md` - current Loot Chests UI contract.
+- `docs/LOOT_CHEST_HANDOFF.md` - next-phase implementation plan for real chest data.

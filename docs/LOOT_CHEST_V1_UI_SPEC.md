@@ -1,92 +1,179 @@
-# Loot Chest v1 UI Spec (Prototype)
+# Loot Chests UI Spec (Current Local Prototype)
 
-Last updated: 2026-02-20
+Last updated: 2026-02-21
 
 ## Scope
-- Prototype only: local in-browser state.
-- No spreadsheet reads/writes in this phase.
-- Goal: lock tablet UX for fast token lookup and status updates.
+- This spec covers the current `PPQ Loot Chests` runtime.
+- State is local/in-memory only (prototype behavior).
+- Spreadsheet persistence is intentionally not enabled yet.
 
-## Title and Statuses
-- Page title: `PPQ Loot Chests`
-- Internal statuses:
-  - `IN_CHEST`
-  - `AWARDED`
-  - `UNUSED`
-- Display labels:
-  - `In Chest`
-  - `Awarded`
-  - `Unused`
+## Status Model
+Internal statuses:
+- `IN_CHEST`
+- `AWARDED`
+- `UNUSED`
 
-## Modes
-- `Play` mode
-  - Optimized for live session flow.
-  - Defaults to `In Chest` view.
-- `Manage` mode
-  - Authoring/editing/generation mode.
-  - Defaults to `All Statuses`.
+Display labels:
+- `In Chest`
+- `Awarded`
+- `Unused`
 
-## Main Layout
-1. Top control card
-- Mode toggle (`Play`, `Manage`)
+Status order (render/grouping):
+1. In Chest
+2. Awarded
+3. Unused
+
+## Top Card
+Card header:
+- `Loot Chests`
+
+Left controls:
 - Chest selector
-- Search (token or item name)
-- View filter (`In Chest`, `Awarded`, `Unused`, `All Statuses`)
-- `Save` and `Revert`
-- Metrics: count of `In Chest`, `Awarded`, `Unused`
-- Toast with optional `Undo`
-- Floof sync lane for save/revert wait state
+- Save
+- Revert All
+- Undo Last / Redo Last
+- History state text
 
-2. Table setup card (Manage mode only)
-- Quick Generate Tokens:
-  - Color theme
-  - Optional category label override
-  - Range input (`1-10,12,15-18`)
-  - Existing active tokens are skipped
-- Add single token
-- Delete selected token
+Right controls:
+- Manage tab strip:
+  - Manage Chests
+  - Create Group
+  - Manage Groups
+  - Manage Tokens
+- Context panel content for selected manage tab
 
-3. Token list card
-- Two-column list layout (Spell Scrolls style):
-  - left table + right table
-  - each table shows `Token` and `Item` only
-  - no internal list scroll area
-- In `All Statuses` view, rows are grouped by status in fixed order:
-  - In Chest
-  - Awarded
-  - Unused
+## Manage Tabs
 
-4. Detail card (Sidebar only)
-- Selected token detail view:
+### Manage Chests
+Fields/actions:
+- `Enter Chest name...` + `Add Chest`
+- `Select Chest to delete` + `Delete Chest` (confirm second click)
+
+Rules:
+- Add disabled until non-empty name.
+- Duplicate chest names blocked.
+- Deleting selected chest reselects first available chest.
+- If no chest remains, app enters create-first state.
+
+### Create Group
+Fields/actions:
+- `Group Name`
+- `Theme`
+- `Tokens` numeric with `-` / `+` hold-to-repeat
+- `Add Group`
+
+Rules:
+- Required: name + theme + count in `1..999`.
+- Group name conflict blocked (case-insensitive prefix key).
+- Created tokens default to `UNUSED`.
+- Adding a group ensures `UNUSED` filter is active.
+- First created token becomes selected detail row.
+
+### Manage Groups
+Fields/actions:
+- `Group` selector
+- `Name`
+- `Theme`
+- `Update`
+- `Delete` (confirm second click)
+
+Rules:
+- Update enabled only when valid and changed.
+- Rename collisions blocked.
+- Token rename collision checks enforced.
+- Delete soft-deletes all tokens in group.
+
+### Manage Tokens
+Fields/actions:
+- `Group Name` selector
+- `Start`
+- `End`
+- `Add (N)`
+- `Delete (N)`
+
+Rules:
+- Valid numeric range: `1..999`.
+- Empty/invalid range disables apply buttons.
+- Add count reflects missing tokens in range.
+- Delete count reflects existing tokens in range.
+- Add ensures `UNUSED` filter is active.
+
+## Tokens Card
+Card header:
+- `Tokens`
+
+Filter row:
+- Status filter toggles with live counts.
+- Search input (`Enter filter text...`).
+
+Table area:
+- Grouped by token prefix.
+- Split into two columns by group block.
+- Group titles and per-group table theme colors.
+- Two columns per group table:
   - Token
-  - Status
-  - Item name
-  - Rarity
-  - Type
-  - Attunement required
-  - Description
-  - Notes
-- Editing flow:
-  - default state is read-only
-  - status can be changed from sidebar without entering edit mode
-  - explicit `Edit` toggle enables fields
-  - `Save Item` and `Revert Item` appear only while editing
-- Sidebar behavior:
-  - hidden until a row is selected
-  - slides in on desktop when active
-  - closes when clicking outside row/detail area (spell-scroll style click-off)
+  - Item
 
-## Token Rules (Prototype)
-- Token uniqueness is enforced within a chest among non-deleted rows.
-- Range generation creates only missing active tokens.
-- Soft-deleted rows are hidden from normal active views.
+Row visuals:
+- Item status marker glyphs inline.
+- Awarded/unused rows dimmed.
+- Selected row highlighted.
 
-## Local Save Model (Prototype)
-- `Save`: commits working state to local snapshot (simulated async delay).
-- `Revert`: restores working state from local snapshot.
-- Floof sync lane appears only during save delay.
+## Detail Card
+Header:
+- Selected token title (e.g. `Blue 6`)
+- Edit/Cancel toggle button
 
-## Visual Constraints
-- Stable workspace grid and fixed panel allocations to reduce layout shifts.
-- `In Chest` rows render at full emphasis.
-- `Awarded` and `Unused` rows are visually dimmed.
+Read mode:
+- Item name + rarity/type tags.
+- Status buttons (active state visible).
+- Description read block.
+- Item Link shown only when URL exists.
+- Notes read block.
+
+Edit mode:
+- Item Name input
+- Rarity select
+- Type select
+- Description textarea (auto-grow)
+- Item Link input
+- Notes textarea (auto-grow)
+- Save Item / Revert Item buttons
+- Status buttons are hidden while editing.
+
+Text behavior:
+- Description and notes preserve multiline newlines.
+- No read-mode collapse to single line for multiline content.
+
+## Click-Off Behavior
+Detail panel stays open when interacting with:
+- Token rows
+- Any interactive control in top card
+- Any interactive control in token filter row
+- Detail panel itself
+
+Detail panel closes when clicking non-interactive whitespace outside those zones.
+
+## Save/Revert/Undo Semantics
+Save/Revert:
+- `Save` copies working state to persisted snapshot.
+- `Revert All` restores working state from persisted snapshot.
+
+Undo/redo support:
+- Status changes are undoable/redoable.
+- Item detail saves are undoable/redoable.
+
+Not undoable:
+- Chest add/delete
+- Group add/update/delete
+- Token range add/delete
+
+## Empty States
+- No chest: `Create a loot chest to begin.`
+- Chest with no tokens: `No tokens created. Create a Token Group to get started.`
+- No filter active: `No filter selected.`
+- No visible results: `No tokens match this view.`
+
+## Styling Baseline
+- Card shell and section header styles use shared v2 tokens.
+- This tab is the baseline for cross-tab visual standardization.

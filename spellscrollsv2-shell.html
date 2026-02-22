@@ -78,8 +78,9 @@
         </button>
       </div>
       <div class="v2-card-body">
-        <label class="spell-v2-filter-label" for="spellV2FilterInput">Filter Current Level</label>
-        <input id="spellV2FilterInput" class="spell-v2-filter-input" type="search" placeholder="Type spell name...">
+        <div class="spell-v2-token-search">
+          <input id="spellV2FilterInput" class="spell-v2-filter-input" type="search" placeholder="Enter filter text...">
+        </div>
 
         <div id="spellV2ListScroll" class="spell-v2-list-scroll">
           <div class="spell-v2-list-columns">
@@ -127,65 +128,67 @@
         <div id="spellV2DetailTitle" class="v2-card-header spell-v2-detail-title">Select a Spell</div>
       </div>
       <div class="v2-card-body">
-        <div class="spell-v2-facts-grid spell-v2-facts-top">
-          <div class="spell-v2-fact">
-            <div class="spell-v2-fact-label">Cast Time</div>
-            <div id="spellV2CastTime" class="spell-v2-fact-value">--</div>
-          </div>
-          <div class="spell-v2-fact">
-            <div class="spell-v2-fact-label">Range/Area</div>
-            <div id="spellV2Range" class="spell-v2-fact-value">--</div>
-          </div>
-        </div>
-
-        <div class="spell-v2-facts-grid spell-v2-facts-mid">
-          <div class="spell-v2-fact">
-            <div class="spell-v2-fact-label">Components</div>
-            <div class="spell-v2-components-items">
-              <div id="spellV2CompV" class="spell-v2-component-icon">
-                <img src="https://i.ibb.co/vqR6TW1/floof-bark-128.png" alt="Verbal component">
-                <span>V</span>
-              </div>
-              <div id="spellV2CompS" class="spell-v2-component-icon">
-                <img src="https://i.ibb.co/hL5qBwc/floof-wave-hand-128.png" alt="Somatic component">
-                <span>S</span>
-              </div>
-              <div id="spellV2CompM" class="spell-v2-component-icon">
-                <img src="https://i.ibb.co/B6vKL0V/floof-give-bone-128-b.png" alt="Material component">
-                <span>M</span>
-              </div>
+        <div class="spell-v2-detail-scroll">
+          <div class="spell-v2-facts-grid spell-v2-facts-top">
+            <div class="spell-v2-fact">
+              <div class="spell-v2-fact-label">Cast Time</div>
+              <div id="spellV2CastTime" class="spell-v2-fact-value">--</div>
             </div>
-            <div id="spellV2MaterialText" class="spell-v2-material-text"></div>
-          </div>
-          <div class="spell-v2-fact">
-            <div class="spell-v2-fact-label">Duration</div>
-            <div id="spellV2CompC" class="spell-v2-component-icon spell-v2-component-icon-duration">
-              <img src="https://i.ibb.co/vPsjc6F/floof-concentrate-128-b.png" alt="Concentration component">
-              <span>C</span>
+            <div class="spell-v2-fact">
+              <div class="spell-v2-fact-label">Range/Area</div>
+              <div id="spellV2Range" class="spell-v2-fact-value">--</div>
             </div>
-            <div id="spellV2Duration" class="spell-v2-fact-value">--</div>
           </div>
-        </div>
 
-        <div class="spell-v2-description-wrap">
-          <div id="spellV2Description" class="spell-v2-description">Pick a spell to view details.</div>
-          <div id="spellV2DetailLoading" class="spell-v2-loading spell-v2-loading-overlay" hidden>
-            <div class="spell-v2-loading-icon">
-              <img class="spell-v2-loading-frame frame-a" src="https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png" alt="Dog fetching spell details">
-              <img class="spell-v2-loading-frame frame-b" src="https://i.ibb.co/HTGHfXp/floof-fetch-scroll-A-128.png" alt="" aria-hidden="true">
+          <div class="spell-v2-facts-grid spell-v2-facts-mid">
+            <div class="spell-v2-fact">
+              <div class="spell-v2-fact-label">Components</div>
+              <div class="spell-v2-components-items">
+                <div id="spellV2CompV" class="spell-v2-component-icon">
+                  <img src="https://i.ibb.co/vqR6TW1/floof-bark-128.png" alt="Verbal component">
+                  <span>V</span>
+                </div>
+                <div id="spellV2CompS" class="spell-v2-component-icon">
+                  <img src="https://i.ibb.co/hL5qBwc/floof-wave-hand-128.png" alt="Somatic component">
+                  <span>S</span>
+                </div>
+                <div id="spellV2CompM" class="spell-v2-component-icon">
+                  <img src="https://i.ibb.co/B6vKL0V/floof-give-bone-128-b.png" alt="Material component">
+                  <span>M</span>
+                </div>
+              </div>
+              <div id="spellV2MaterialText" class="spell-v2-material-text"></div>
             </div>
-            <div class="spell-v2-loading-text">Floof is fetching spell details...</div>
+            <div class="spell-v2-fact">
+              <div class="spell-v2-fact-label">Duration</div>
+              <div id="spellV2CompC" class="spell-v2-component-icon spell-v2-component-icon-duration">
+                <img src="https://i.ibb.co/vPsjc6F/floof-concentrate-128-b.png" alt="Concentration component">
+                <span>C</span>
+              </div>
+              <div id="spellV2Duration" class="spell-v2-fact-value">--</div>
+            </div>
           </div>
-        </div>
 
-        <div class="spell-v2-facts-grid spell-v2-facts-bottom">
-          <div class="spell-v2-fact">
-            <div class="spell-v2-fact-label">Damage Type</div>
-            <div id="spellV2DamageEffect" class="spell-v2-fact-value">--</div>
+          <div class="spell-v2-description-wrap">
+            <div id="spellV2Description" class="spell-v2-description">Pick a spell to view details.</div>
+            <div id="spellV2DetailLoading" class="spell-v2-loading spell-v2-loading-overlay" hidden>
+              <div class="spell-v2-loading-icon">
+                <img class="spell-v2-loading-frame frame-a" src="https://i.ibb.co/091Wp5Y/floof-fetch-scroll-b-128.png" alt="Dog fetching spell details">
+                <img class="spell-v2-loading-frame frame-b" src="https://i.ibb.co/HTGHfXp/floof-fetch-scroll-A-128.png" alt="" aria-hidden="true">
+              </div>
+              <div class="spell-v2-loading-text">Floof is fetching spell details...</div>
+            </div>
           </div>
-          <div class="spell-v2-fact">
-            <div class="spell-v2-fact-label">Saving Throw</div>
-            <div id="spellV2AttackSave" class="spell-v2-fact-value">--</div>
+
+          <div class="spell-v2-facts-grid spell-v2-facts-bottom">
+            <div class="spell-v2-fact">
+              <div class="spell-v2-fact-label">Damage Type</div>
+              <div id="spellV2DamageEffect" class="spell-v2-fact-value">--</div>
+            </div>
+            <div class="spell-v2-fact">
+              <div class="spell-v2-fact-label">Saving Throw</div>
+              <div id="spellV2AttackSave" class="spell-v2-fact-value">--</div>
+            </div>
           </div>
         </div>
       </div>

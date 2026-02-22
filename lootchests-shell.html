@@ -12,9 +12,9 @@
           </div>
 
           <div class="loot-v2-action-row">
-            <button class="button loot-v2-primary" type="button" data-action="save-working">Save</button>
-            <button class="button loot-v2-secondary" type="button" data-action="revert-working">Revert All</button>
-            <button id="lootV2UndoLastBtn" class="button loot-v2-secondary" type="button" data-action="undo-status-change">Undo Last</button>
+            <button id="lootV2SyncStatusBtn" class="button loot-v2-secondary loot-v2-sync-status" type="button" data-action="retry-sync">Saved</button>
+            <button id="lootV2BackupsBtn" class="button loot-v2-secondary" type="button" data-action="open-backups">Backup</button>
+            <button id="lootV2UndoLastBtn" class="button loot-v2-secondary" type="button" data-action="undo-status-change">Undo</button>
             <div id="lootV2HistoryState" class="loot-v2-history-state">No changes made.</div>
           </div>
         </div>
@@ -116,6 +116,23 @@
       </div>
     </div>
   </section>
+
+  <div id="lootV2BackupsModal" class="loot-v2-modal" hidden>
+    <div class="loot-v2-modal-card" role="dialog" aria-modal="true" aria-labelledby="lootV2BackupsTitle">
+      <div class="loot-v2-modal-header">
+        <h3 id="lootV2BackupsTitle">Backup</h3>
+        <button id="lootV2BackupsHeaderCloseBtn" class="loot-v2-modal-close" type="button" data-action="close-backups" aria-label="Close backups">X</button>
+      </div>
+      <div class="loot-v2-modal-body">
+        <div class="loot-v2-modal-help">Create one local snapshot and restore it when needed.</div>
+        <div id="lootV2BackupsSummary" class="loot-v2-modal-summary">No backup saved.</div>
+        <div class="loot-v2-modal-actions">
+          <button id="lootV2SaveCheckpointBtn" class="button loot-v2-primary" type="button" data-action="save-checkpoint">Save Backup</button>
+          <button id="lootV2RestoreCheckpointBtn" class="button loot-v2-secondary" type="button" data-action="restore-checkpoint">Restore Backup</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="loot-v2-workspace">
     <section class="v2-card loot-v2-table-card">

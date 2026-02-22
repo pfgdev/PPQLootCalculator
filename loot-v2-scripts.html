@@ -118,11 +118,16 @@
     let searchInputNode;
     let columnANode;
     let columnBNode;
-    let saveWorkingButtonNode;
-    let revertWorkingButtonNode;
+    let syncStatusButtonNode;
+    let backupsButtonNode;
     let undoLastButtonNode;
     let historyStateNode;
     let syncLaneNode;
+    let backupsModalNode;
+    let backupsSummaryNode;
+    let saveCheckpointButtonNode;
+    let restoreCheckpointButtonNode;
+    let backupsHeaderCloseButtonNode;
     let tableToolsCardNode;
     let manageTabButtonNodes;
     let managePanelNodes;
@@ -175,7 +180,10 @@
     let activeListStatusFilters = new Set([STATUS.IN_CHEST, STATUS.AWARDED]);
     let searchTerm = "";
     let isSyncing = false;
+    let syncState = "saved";
+    let syncErrorText = "";
     let isDetailEditing = false;
+    let detailDraftInitial = null;
     let activeManageTab = "chest";
     let statusCounts = {
       IN_CHEST: 0,
@@ -183,12 +191,16 @@
       UNUSED: 0
     };
 
+    let persistedChestList = [];
     let nextId = 1;
     let lastChangeState = null;
+    let manualCheckpoint = null;
     let pendingDeleteChestId = "";
     let pendingDeleteGroupPrefix = "";
     let groupCountRepeatDelayTimer = null;
     let groupCountRepeatIntervalTimer = null;
+    let autoSaveTimer = null;
+    let modalLastFocusNode = null;
 
     function deepClone(value) {
       return JSON.parse(JSON.stringify(value));
@@ -507,21 +519,49 @@
       });
     }
 
+    function buildWorkingSnapshot() {
+      return {
+        chests: chestList,
+        itemsByChest: workingItemsByChest
+      };
+    }
+
+    function buildPersistedSnapshot() {
+      return {
+        chests: persistedChestList,
+        itemsByChest: persistedItemsByChest
+      };
+    }
+
     function isDirty() {
-      return JSON.stringify(workingItemsByChest) !== JSON.stringify(persistedItemsByChest);
+      return JSON.stringify(buildWorkingSnapshot()) !== JSON.stringify(buildPersistedSnapshot());
     }
 
     function updateDirtyState() {
       const hasChest = chestList.length > 0;
       const dirty = hasChest && isDirty();
-      if (saveWorkingButtonNode) {
-        saveWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
-        saveWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "All changes saved" : "";
+      if (syncStatusButtonNode) {
+        syncStatusButtonNode.classList.remove("is-saved", "is-saving", "is-retry");
+        if (!hasChest) {
+          syncStatusButtonNode.textContent = "Saved";
+          syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.classList.add("is-saved");
+        } else if (syncState === "saving" || dirty) {
+          syncStatusButtonNode.textContent = "Saving...";
+          syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.classList.add("is-saving");
+        } else if (syncState === "retry") {
+          syncStatusButtonNode.textContent = "Retry";
+          syncStatusButtonNode.disabled = false;
+          syncStatusButtonNode.title = syncErrorText || "Retry sync";
+          syncStatusButtonNode.classList.add("is-retry");
+        } else {
+          syncStatusButtonNode.textContent = "Saved";
+          syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.classList.add("is-saved");
+        }
       }
-      if (revertWorkingButtonNode) {
-        revertWorkingButtonNode.disabled = !hasChest || isSyncing || !dirty;
-        revertWorkingButtonNode.title = hasChest && !isSyncing && !dirty ? "No unsaved changes" : "";
-      }
+      if (backupsButtonNode) backupsButtonNode.disabled = !hasChest;
     }
 
     function getVisibleItems() {
@@ -999,9 +1039,12 @@
         detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit";
       }
       if (isDetailEditing) {
+        const selectedItem = getItemById(selectedItemId);
+        detailDraftInitial = selectedItem ? snapshotEditableFields(selectedItem) : null;
         autoSizeDescriptionField();
         autoSizeNotesField();
       } else {
+        detailDraftInitial = null;
         setDescriptionFieldToMinHeight();
         setNotesFieldToMinHeight();
       }
@@ -1051,17 +1094,17 @@
     function renderUndoActionState() {
       if (!undoLastButtonNode) return;
       if (!hasSelectedChest()) {
-        undoLastButtonNode.textContent = "Undo Last";
+        undoLastButtonNode.textContent = "Undo";
         undoLastButtonNode.disabled = true;
         return;
       }
       if (!lastChangeState || !lastChangeState.can_toggle) {
-        undoLastButtonNode.textContent = "Undo Last";
+        undoLastButtonNode.textContent = "Undo";
         undoLastButtonNode.disabled = true;
         return;
       }
       undoLastButtonNode.disabled = false;
-      undoLastButtonNode.textContent = lastChangeState.mode === "redo" ? "Redo Last" : "Undo Last";
+      undoLastButtonNode.textContent = lastChangeState.mode === "redo" ? "Redo" : "Undo";
     }
 
     function renderChestSelect() {
@@ -1461,6 +1504,7 @@
       renderUndoActionState();
       renderTable();
       renderDetail();
+      renderBackupsModalState();
       updateDirtyState();
       root.classList.toggle("is-syncing", isSyncing);
       if (syncLaneNode) {
@@ -1470,7 +1514,18 @@
 
     function setHistoryState(message, toneClass) {
       if (!historyStateNode) return;
-      historyStateNode.textContent = message || "No changes made.";
+      const safeMessage = normalizeWhitespace(message) || "No changes made.";
+      historyStateNode.textContent = "";
+      const prefixMatch = safeMessage.match(/^([^:]{1,24}:\s*)(.*)$/);
+      if (prefixMatch) {
+        const prefixNode = document.createElement("span");
+        prefixNode.className = "loot-v2-history-prefix";
+        prefixNode.textContent = prefixMatch[1].replace(/:\s*$/, ": ");
+        historyStateNode.appendChild(prefixNode);
+        historyStateNode.appendChild(document.createTextNode(prefixMatch[2] || ""));
+      } else {
+        historyStateNode.textContent = safeMessage;
+      }
       historyStateNode.classList.remove("is-idle", "is-info", "is-success", "is-warn");
       historyStateNode.classList.add(toneClass || "is-idle");
     }
@@ -1478,6 +1533,188 @@
     function clearUndoHistoryState() {
       lastChangeState = null;
       setHistoryState("No changes made.", "is-idle");
+    }
+
+    function setNonUndoableAction(message) {
+      const shortMessage = normalizeWhitespace(message) || "Action";
+      lastChangeState = {
+        kind: "non-undoable",
+        can_toggle: false,
+        message: shortMessage
+      };
+      setHistoryState("Can't Undo: " + shortMessage, "is-warn");
+    }
+
+    function setSyncState(nextState, errorText) {
+      syncState = nextState || "saved";
+      syncErrorText = errorText || "";
+    }
+
+    function persistWorkingSnapshot() {
+      persistedChestList = deepClone(chestList);
+      persistedItemsByChest = deepClone(workingItemsByChest);
+    }
+
+    function clearAutoSaveTimer() {
+      if (!autoSaveTimer) return;
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = null;
+    }
+
+    function performAutoSave() {
+      clearAutoSaveTimer();
+      if (!isDirty()) {
+        setSyncState("saved");
+        renderAll();
+        return;
+      }
+      if (isSyncing) return;
+      isSyncing = true;
+      setSyncState("saving");
+      renderAll();
+
+      setTimeout(function () {
+        try {
+          persistWorkingSnapshot();
+          isSyncing = false;
+          setSyncState("saved");
+          renderAll();
+        } catch (error) {
+          isSyncing = false;
+          setSyncState("retry", "Sync failed");
+          renderAll();
+        }
+      }, 280);
+    }
+
+    function scheduleAutoSave(delayMs) {
+      const delay = Number.isFinite(Number(delayMs)) ? Number(delayMs) : 420;
+      if (!isDirty()) {
+        clearAutoSaveTimer();
+        setSyncState("saved");
+        renderAll();
+        return;
+      }
+      setSyncState("saving");
+      renderAll();
+      clearAutoSaveTimer();
+      autoSaveTimer = setTimeout(performAutoSave, delay);
+    }
+
+    function getDraftSnapshotFromFields() {
+      if (!isDetailEditing) return null;
+      return {
+        item_name: normalizeWhitespace(editItemNameNode && editItemNameNode.value),
+        rarity: normalizeWhitespace(editRarityNode && editRarityNode.value),
+        type: normalizeWhitespace(editTypeNode && editTypeNode.value),
+        description: normalizeMultilineText(editDescriptionNode && editDescriptionNode.value),
+        item_url: normalizeWhitespace(editItemUrlNode && editItemUrlNode.value),
+        notes: normalizeMultilineText(editNotesNode && editNotesNode.value)
+      };
+    }
+
+    function isDetailDraftDirty() {
+      if (!isDetailEditing || !detailDraftInitial) return false;
+      const current = getDraftSnapshotFromFields();
+      return JSON.stringify(current) !== JSON.stringify(detailDraftInitial);
+    }
+
+    function promptEditGuardDecision() {
+      const saveFirst = window.confirm(
+        "You have unsaved item edits.\n\nPress OK to save changes.\nPress Cancel for more options."
+      );
+      if (saveFirst) return "save";
+      const discard = window.confirm(
+        "Discard unsaved item changes?\n\nPress OK to discard.\nPress Cancel to keep editing."
+      );
+      return discard ? "discard" : "cancel";
+    }
+
+    function ensureEditGuardResolved() {
+      if (!isDetailEditing || !isDetailDraftDirty()) return true;
+      const decision = promptEditGuardDecision();
+      if (decision === "save") {
+        saveSelectedItem();
+        return true;
+      }
+      if (decision === "discard") {
+        revertItemDraft();
+        return true;
+      }
+      return false;
+    }
+
+    function hasCheckpoint() {
+      return !!(manualCheckpoint && manualCheckpoint.itemsByChest && manualCheckpoint.chests);
+    }
+
+    function formatCheckpointSummary() {
+      if (!hasCheckpoint()) return "No backup saved.";
+      const savedAt = manualCheckpoint.savedAt ? new Date(manualCheckpoint.savedAt) : null;
+      if (!savedAt || Number.isNaN(savedAt.getTime())) return "Backup saved.";
+      return "Backup saved: " + savedAt.toLocaleString();
+    }
+
+    function renderBackupsModalState() {
+      if (!backupsSummaryNode) return;
+      backupsSummaryNode.textContent = formatCheckpointSummary();
+      if (restoreCheckpointButtonNode) {
+        restoreCheckpointButtonNode.disabled = !hasCheckpoint() || !hasSelectedChest();
+      }
+      if (saveCheckpointButtonNode) {
+        saveCheckpointButtonNode.disabled = !hasSelectedChest();
+      }
+    }
+
+    function openBackupsModal() {
+      if (!backupsModalNode || !hasSelectedChest()) return;
+      renderBackupsModalState();
+      modalLastFocusNode = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+      backupsModalNode.hidden = false;
+      const focusTarget = saveCheckpointButtonNode || backupsHeaderCloseButtonNode;
+      if (focusTarget && typeof focusTarget.focus === "function") {
+        focusTarget.focus();
+      }
+    }
+
+    function closeBackupsModal() {
+      if (!backupsModalNode) return;
+      backupsModalNode.hidden = true;
+      const focusTarget = modalLastFocusNode || backupsButtonNode;
+      if (focusTarget && typeof focusTarget.focus === "function") {
+        focusTarget.focus();
+      }
+      modalLastFocusNode = null;
+    }
+
+    function saveCheckpointSnapshot() {
+      if (!hasSelectedChest()) return;
+      manualCheckpoint = {
+        savedAt: Date.now(),
+        chests: deepClone(chestList),
+        itemsByChest: deepClone(workingItemsByChest)
+      };
+      renderBackupsModalState();
+    }
+
+    function restoreCheckpointSnapshot() {
+      if (!hasCheckpoint()) return;
+      chestList = deepClone(manualCheckpoint.chests || []);
+      workingItemsByChest = deepClone(manualCheckpoint.itemsByChest || {});
+      persistedChestList = deepClone(manualCheckpoint.chests || []);
+      persistedItemsByChest = deepClone(manualCheckpoint.itemsByChest || {});
+      pendingDeleteChestId = "";
+      pendingDeleteGroupPrefix = "";
+      clearAutoSaveTimer();
+      setSyncState("saved");
+      setNonUndoableAction("Restored Backup");
+      if (selectedChestId && !workingItemsByChest[selectedChestId]) {
+        selectedChestId = chestList.length ? chestList[0].chest_id : "";
+      }
+      selectedItemId = "";
+      setDetailEditMode(false);
+      renderAll();
+      closeBackupsModal();
     }
 
     function describeStatusMove(token, toStatus) {
@@ -1689,9 +1926,9 @@
     }
 
     function applyTokenRangeChanges(action) {
-      if (!hasSelectedChest()) return;
+      if (!hasSelectedChest()) return false;
       const plan = evaluateTokenRangePlan(action);
-      if (!plan.canApply) return;
+      if (!plan.canApply) return false;
 
       const items = getWorkingItems(selectedChestId);
       let firstCreatedId = "";
@@ -1735,6 +1972,7 @@
 
       clearUndoHistoryState();
       renderAll();
+      return true;
     }
 
     function getItemsForGroup(groupName) {
@@ -1746,16 +1984,16 @@
     }
 
     function createGroup() {
-      if (!hasSelectedChest()) return;
+      if (!hasSelectedChest()) return false;
       const groupName = normalizeWhitespace(createGroupNameNode && createGroupNameNode.value);
       const groupTheme = resolveThemeValue(createGroupThemeNode && createGroupThemeNode.value);
       const tokenCountRaw = Number(normalizeWhitespace(createGroupCountNode && createGroupCountNode.value));
 
       if (!groupName || !groupTheme) {
-        return;
+        return false;
       }
       if (!Number.isInteger(tokenCountRaw) || tokenCountRaw < GROUP_COUNT_LIMITS.min || tokenCountRaw > GROUP_COUNT_LIMITS.max) {
-        return;
+        return false;
       }
       const tokenCount = clampNumber(tokenCountRaw, GROUP_COUNT_LIMITS.min, GROUP_COUNT_LIMITS.max);
 
@@ -1765,7 +2003,7 @@
       });
       if (exists) {
         renderAll();
-        return;
+        return false;
       }
 
       const items = getWorkingItems(selectedChestId);
@@ -1788,7 +2026,7 @@
 
       if (!firstItemId) {
         renderAll();
-        return;
+        return false;
       }
 
       selectedItemId = firstItemId;
@@ -1804,18 +2042,19 @@
         manageGroupSelectNode.value = groupName;
         renderGroupEditorState();
       }
+      return true;
     }
 
     function updateGroup() {
-      if (!hasSelectedChest() || !manageGroupSelectNode) return;
+      if (!hasSelectedChest() || !manageGroupSelectNode) return false;
       const selectedName = normalizeWhitespace(manageGroupSelectNode.value);
       const group = getGroupByName(selectedName);
-      if (!group) return;
+      if (!group) return false;
 
       const nextName = normalizeWhitespace(manageGroupNameNode && manageGroupNameNode.value);
       const nextTheme = resolveThemeValue(manageGroupThemeNode && manageGroupThemeNode.value);
       if (!nextName || !nextTheme) {
-        return;
+        return false;
       }
 
       const summaries = getGroupSummaries();
@@ -1825,12 +2064,12 @@
       });
       if (nameConflict) {
         renderAll();
-        return;
+        return false;
       }
 
       const targets = getItemsForGroup(group.name);
       if (!targets.length) {
-        return;
+        return false;
       }
 
       const collisionToken = targets.find(function (item) {
@@ -1840,7 +2079,7 @@
         return tokenExistsActive(selectedChestId, nextToken, item.item_id);
       });
       if (collisionToken) {
-        return;
+        return false;
       }
 
       targets.forEach(function (item) {
@@ -1866,23 +2105,24 @@
         manageGroupSelectNode.value = nextName;
         renderGroupEditorState();
       }
+      return true;
     }
 
     function deleteGroup() {
-      if (!hasSelectedChest() || !manageGroupSelectNode) return;
+      if (!hasSelectedChest() || !manageGroupSelectNode) return false;
       const selectedName = normalizeWhitespace(manageGroupSelectNode.value);
-      if (!selectedName) return;
+      if (!selectedName) return false;
 
       if (!pendingDeleteGroupPrefix || normalizePrefixKey(pendingDeleteGroupPrefix) !== normalizePrefixKey(selectedName)) {
         pendingDeleteGroupPrefix = selectedName;
         renderGroupEditorState();
-        return;
+        return false;
       }
 
       const targets = getItemsForGroup(selectedName);
       if (!targets.length) {
         clearDeleteGroupConfirmState();
-        return;
+        return false;
       }
 
       const selectedTarget = targets.some(function (item) { return item.item_id === selectedItemId; });
@@ -1897,6 +2137,7 @@
       pendingDeleteGroupPrefix = "";
       clearUndoHistoryState();
       renderAll();
+      return true;
     }
 
     function openChestTools() {
@@ -1909,11 +2150,11 @@
 
     function createChest() {
       const chestName = normalizeWhitespace(newChestNameNode && newChestNameNode.value);
-      if (!chestName) return;
+      if (!chestName) return false;
       const duplicateName = chestList.some(function (chest) {
         return normalizeWhitespace(chest.chest_name).toLowerCase() === chestName.toLowerCase();
       });
-      if (duplicateName) return;
+      if (duplicateName) return false;
 
       const chestId = buildChestId(chestName);
       const nextChest = { chest_id: chestId, chest_name: chestName };
@@ -1928,20 +2169,21 @@
       if (newChestNameNode) newChestNameNode.value = "";
       setManageTab("group-create");
       renderAll();
+      return true;
     }
 
     function deleteChest() {
-      if (!deleteChestSelectNode) return;
+      if (!deleteChestSelectNode) return false;
       const chestId = deleteChestSelectNode.value || "";
       if (!chestId) {
         pendingDeleteChestId = "";
         renderChestToolsState();
-        return;
+        return false;
       }
       if (!pendingDeleteChestId || pendingDeleteChestId !== chestId) {
         pendingDeleteChestId = chestId;
         renderChestToolsState();
-        return;
+        return false;
       }
 
       chestList = chestList.filter(function (chest) { return chest.chest_id !== chestId; });
@@ -1963,6 +2205,7 @@
         setListStatusFilters([STATUS.IN_CHEST, STATUS.AWARDED]);
       }
       renderAll();
+      return true;
     }
 
     function applyStatusFromDetail(nextStatus) {
@@ -1986,6 +2229,7 @@
       };
       setHistoryState("Last: " + describeStatusMove(item.token, status), "is-info");
       renderAll();
+      scheduleAutoSave(180);
     }
 
     function toggleLastStatusChange() {
@@ -2012,16 +2256,17 @@
         if (lastChangeState.mode === "undo") {
           applyEditableFieldSnapshot(item, lastChangeState.before);
           lastChangeState.mode = "redo";
-          setHistoryState("Undid item edits for " + item.token + ".", "is-info");
+          setHistoryState("Undid: Edited details for " + item.token, "is-info");
         } else {
           applyEditableFieldSnapshot(item, lastChangeState.after);
           lastChangeState.mode = "undo";
-          setHistoryState("Redid item edits for " + item.token + ".", "is-info");
+          setHistoryState("Redid: Edited details for " + item.token, "is-info");
         }
       } else {
         return;
       }
       renderAll();
+      scheduleAutoSave(180);
     }
 
     function saveSelectedItem() {
@@ -2050,12 +2295,15 @@
       };
 
       setDetailEditMode(false);
-      setHistoryState("Saved item details for " + item.token + ".", "is-success");
+      setHistoryState("Last: Edited details for " + item.token, "is-info");
+      detailDraftInitial = null;
       renderAll();
+      scheduleAutoSave(180);
     }
 
     function revertItemDraft() {
       setDetailEditMode(false);
+      detailDraftInitial = null;
       renderDetail();
     }
 
@@ -2070,6 +2318,7 @@
         clearUndoHistoryState();
       }
       renderAll();
+      scheduleAutoSave(180);
     }
 
     function selectChest(nextChestId) {
@@ -2080,38 +2329,38 @@
       pendingDeleteGroupPrefix = "";
       clearUndoHistoryState();
       setDetailEditMode(false);
+      detailDraftInitial = null;
       renderAll();
     }
 
-    function saveWorkingChanges() {
-      if (isSyncing) return;
-      if (!chestList.length) return;
-      if (!isDirty()) return;
-
-      isSyncing = true;
-      renderAll();
-      setTimeout(function () {
-        persistedItemsByChest = deepClone(workingItemsByChest);
-        isSyncing = false;
-        renderAll();
-      }, 1100);
-    }
-
-    function revertWorkingChanges() {
-      if (isSyncing) return;
-      if (!chestList.length) return;
-      workingItemsByChest = deepClone(persistedItemsByChest);
-      selectedItemId = "";
-      clearUndoHistoryState();
-      setDetailEditMode(false);
-      renderAll();
+    function shouldGuardAction(action) {
+      if (!isDetailEditing || !isDetailDraftDirty()) return false;
+      const safeActions = new Set([
+        "save-item",
+        "revert-item-draft",
+        "toggle-detail-edit",
+        "open-backups",
+        "close-backups",
+        "save-checkpoint",
+        "restore-checkpoint",
+        "retry-sync"
+      ]);
+      return !safeActions.has(action);
     }
 
     function handleRootClick(event) {
+      if (backupsModalNode && !backupsModalNode.hidden && event.target === backupsModalNode) {
+        closeBackupsModal();
+        return;
+      }
+
       const actionButton = event.target.closest("button[data-action]");
       if (actionButton && root.contains(actionButton)) {
         event.stopPropagation();
         const action = actionButton.getAttribute("data-action");
+        if (shouldGuardAction(action) && !ensureEditGuardResolved()) {
+          return;
+        }
         if (action !== "delete-chest") {
           clearDeleteConfirmState();
         }
@@ -2133,12 +2382,24 @@
           setManageTab(nextTab);
           return;
         }
-        if (action === "save-working") {
-          saveWorkingChanges();
+        if (action === "retry-sync") {
+          performAutoSave();
           return;
         }
-        if (action === "revert-working") {
-          revertWorkingChanges();
+        if (action === "open-backups") {
+          openBackupsModal();
+          return;
+        }
+        if (action === "close-backups") {
+          closeBackupsModal();
+          return;
+        }
+        if (action === "save-checkpoint") {
+          saveCheckpointSnapshot();
+          return;
+        }
+        if (action === "restore-checkpoint") {
+          restoreCheckpointSnapshot();
           return;
         }
         if (action === "undo-status-change") {
@@ -2176,31 +2437,31 @@
           return;
         }
         if (action === "add-token-range") {
-          applyTokenRangeChanges("add");
+          if (applyTokenRangeChanges("add")) scheduleAutoSave(220);
           return;
         }
         if (action === "delete-token-range") {
-          applyTokenRangeChanges("delete");
+          if (applyTokenRangeChanges("delete")) scheduleAutoSave(220);
           return;
         }
         if (action === "add-group") {
-          createGroup();
+          if (createGroup()) scheduleAutoSave(220);
           return;
         }
         if (action === "update-group") {
-          updateGroup();
+          if (updateGroup()) scheduleAutoSave(220);
           return;
         }
         if (action === "delete-group") {
-          deleteGroup();
+          if (deleteGroup()) scheduleAutoSave(220);
           return;
         }
         if (action === "create-chest") {
-          createChest();
+          if (createChest()) scheduleAutoSave(220);
           return;
         }
         if (action === "delete-chest") {
-          deleteChest();
+          if (deleteChest()) scheduleAutoSave(220);
           return;
         }
       }
@@ -2216,9 +2477,15 @@
       if (clickedRow && root.contains(clickedRow)) {
         const itemId = clickedRow.getAttribute("data-item-id");
         if (itemId && itemId !== selectedItemId) {
+          if (!ensureEditGuardResolved()) return;
           selectedItemId = itemId;
           setDetailEditMode(false);
+          detailDraftInitial = null;
+          showDetail(getItemById(selectedItemId));
           renderAll();
+        } else if (itemId && itemId === selectedItemId) {
+          if (!ensureEditGuardResolved()) return;
+          clearSelectedItem();
         }
       }
     }
@@ -2227,11 +2494,47 @@
       if (!root || !root.classList.contains("loot-v2-has-detail")) return;
       const target = event.target;
       if (isDetailPersistentClickTarget(target)) return;
+      if (!ensureEditGuardResolved()) return;
       clearSelectedItem();
+    }
+
+    function handleDocumentKeydown(event) {
+      if (!event || event.key !== "Escape") return;
+      if (!backupsModalNode || backupsModalNode.hidden) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeBackupsModal();
+    }
+
+    function handleBackupsModalClick(event) {
+      if (!backupsModalNode || backupsModalNode.hidden) return;
+      const target = event && event.target;
+      if (!(target instanceof Element)) return;
+      if (target === backupsModalNode || target.closest('[data-action="close-backups"]')) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeBackupsModal();
+      }
+    }
+
+    function bindBackupsModalHandlers() {
+      if (backupsModalNode && !backupsModalNode.dataset.boundCloseHandler) {
+        backupsModalNode.addEventListener("click", handleBackupsModalClick);
+        backupsModalNode.dataset.boundCloseHandler = "1";
+      }
+      if (backupsHeaderCloseButtonNode && !backupsHeaderCloseButtonNode.dataset.boundCloseHandler) {
+        backupsHeaderCloseButtonNode.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeBackupsModal();
+        });
+        backupsHeaderCloseButtonNode.dataset.boundCloseHandler = "1";
+      }
     }
 
     function isDetailPersistentClickTarget(target) {
       if (!target || !(target instanceof Element)) return false;
+      if (target.closest("#lootV2BackupsModal")) return true;
       if (target.closest("#lootV2DetailPanel")) return true;
       if (target.closest("tr[data-item-id]")) return true;
       if (target.closest(".loot-v2-top-card :is(button, input, select, textarea, a, label, [data-action])")) return true;
@@ -2242,6 +2545,7 @@
     function handleTabChanged(event) {
       const nextTab = event && event.detail ? event.detail.tabName : "";
       if (nextTab !== "LootChestsV2") {
+        if (!ensureEditGuardResolved()) return;
         clearSelectedItem();
       }
     }
@@ -2291,6 +2595,10 @@
 
     function handleRootChange(event) {
       if (event.target === chestSelectNode) {
+        if (!ensureEditGuardResolved()) {
+          renderChestSelect();
+          return;
+        }
         if (chestSelectNode.value === CREATE_CHEST_OPTION) {
           openChestTools();
           return;
@@ -2349,11 +2657,16 @@
       searchInputNode = document.getElementById("lootV2SearchInput");
       columnANode = document.getElementById("lootV2ColumnA");
       columnBNode = document.getElementById("lootV2ColumnB");
-      saveWorkingButtonNode = root.querySelector('[data-action="save-working"]');
-      revertWorkingButtonNode = root.querySelector('[data-action="revert-working"]');
+      syncStatusButtonNode = document.getElementById("lootV2SyncStatusBtn");
+      backupsButtonNode = document.getElementById("lootV2BackupsBtn");
       undoLastButtonNode = document.getElementById("lootV2UndoLastBtn");
       historyStateNode = document.getElementById("lootV2HistoryState");
       syncLaneNode = document.getElementById("lootV2SyncLane");
+      backupsModalNode = document.getElementById("lootV2BackupsModal");
+      backupsSummaryNode = document.getElementById("lootV2BackupsSummary");
+      saveCheckpointButtonNode = document.getElementById("lootV2SaveCheckpointBtn");
+      restoreCheckpointButtonNode = document.getElementById("lootV2RestoreCheckpointBtn");
+      backupsHeaderCloseButtonNode = document.getElementById("lootV2BackupsHeaderCloseBtn");
       tableToolsCardNode = document.getElementById("lootV2TableToolsCard");
       manageTabButtonNodes = Array.from(root.querySelectorAll('[data-action="set-manage-tab"]'));
       managePanelNodes = Array.from(root.querySelectorAll("[data-manage-panel]"));
@@ -2402,6 +2715,7 @@
     function initData() {
       const dummy = buildDummyState();
       chestList = dummy.chests;
+      persistedChestList = deepClone(dummy.chests);
       persistedItemsByChest = deepClone(dummy.itemsByChest);
       workingItemsByChest = deepClone(dummy.itemsByChest);
       selectedChestId = chestList.length ? chestList[0].chest_id : "";
@@ -2413,6 +2727,7 @@
 
       initData();
       bindNodes();
+      bindBackupsModalHandlers();
       renderChestSelect();
       renderColorOptions();
       setDetailEditMode(false);
@@ -2421,6 +2736,7 @@
 
       root.addEventListener("click", handleRootClick);
       document.addEventListener("click", handleDocumentClick);
+      document.addEventListener("keydown", handleDocumentKeydown);
       document.addEventListener("app:tab-changed", handleTabChanged);
       root.addEventListener("input", handleRootInput);
       root.addEventListener("change", handleRootChange);

@@ -135,6 +135,7 @@
     let detailEditButtonNode;
     let detailHeaderTitleNode;
     let listFilterButtonNodes;
+    let editFirstToggleButtonNode;
 
     let detailEmptyNode;
     let detailContentNode;
@@ -182,6 +183,7 @@
     let selectedItemId = "";
     let activeListStatusFilters = new Set([STATUS.IN_CHEST, STATUS.AWARDED]);
     let searchTerm = "";
+    let isEditFirstMode = false;
     let isSyncing = false;
     let syncState = "saved";
     let syncErrorText = "";
@@ -730,6 +732,11 @@
       }) || null;
     }
 
+    function isItemNameUnassigned(item) {
+      if (!item) return true;
+      return !normalizeWhitespace(item.item_name);
+    }
+
     function ensureSelection() {
       if (!selectedItemId) return;
       if (!getItemById(selectedItemId)) {
@@ -1170,7 +1177,7 @@
       root.classList.toggle("loot-v2-detail-editing", isDetailEditing);
       setDetailFieldDisabled(!isDetailEditing);
       if (detailEditButtonNode) {
-        detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit";
+        detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit Item";
       }
       if (isDetailEditing) {
         const selectedItem = getItemById(selectedItemId);
@@ -1183,6 +1190,36 @@
         setNotesFieldToMinHeight();
       }
       renderItemUrlView(getItemById(selectedItemId));
+    }
+
+    function shouldAutoFocusItemName() {
+      try {
+        if (window.matchMedia && window.matchMedia("(any-pointer: coarse)").matches) {
+          return false;
+        }
+      } catch (error) {
+        // Ignore matchMedia errors and continue with fallback.
+      }
+      return true;
+    }
+
+    function focusItemNameForAutoEdit(expectedItemId) {
+      if (!editItemNameNode) return;
+      if (!shouldAutoFocusItemName()) return;
+      const targetItemId = expectedItemId || selectedItemId;
+      requestAnimationFrame(function () {
+        if (!isDetailEditing || !editItemNameNode) return;
+        if (targetItemId && selectedItemId !== targetItemId) return;
+        try {
+          editItemNameNode.focus({ preventScroll: true });
+        } catch (error) {
+          editItemNameNode.focus();
+        }
+        const length = (editItemNameNode.value || "").length;
+        if (typeof editItemNameNode.setSelectionRange === "function") {
+          editItemNameNode.setSelectionRange(length, length);
+        }
+      });
     }
 
     function clearSelectedItem(options) {
@@ -1626,6 +1663,21 @@
       });
     }
 
+    function renderEditFirstToggle() {
+      if (!editFirstToggleButtonNode) return;
+      editFirstToggleButtonNode.classList.toggle("is-active", isEditFirstMode);
+      editFirstToggleButtonNode.setAttribute("aria-pressed", isEditFirstMode ? "true" : "false");
+      editFirstToggleButtonNode.textContent = isEditFirstMode ? "Edit First On" : "Edit First Off";
+      editFirstToggleButtonNode.title = isEditFirstMode
+        ? "Item clicks open in edit mode"
+        : "Item clicks open in read mode";
+    }
+
+    function toggleEditFirstMode() {
+      isEditFirstMode = !isEditFirstMode;
+      renderEditFirstToggle();
+    }
+
     function renderAll() {
       ensureSelection();
       pruneDeferredStatusState();
@@ -1647,6 +1699,7 @@
       renderTokenRangeState();
       const noChest = !hasSelectedChest();
       if (searchInputNode) searchInputNode.disabled = noChest;
+      renderEditFirstToggle();
       renderListStatusFilters();
       renderUndoActionState();
       renderTable();
@@ -1786,29 +1839,11 @@
       return JSON.stringify(current) !== JSON.stringify(detailDraftInitial);
     }
 
-    function promptEditGuardDecision() {
-      const saveFirst = window.confirm(
-        "You have unsaved item edits.\n\nPress OK to save changes.\nPress Cancel for more options."
-      );
-      if (saveFirst) return "save";
-      const discard = window.confirm(
-        "Discard unsaved item changes?\n\nPress OK to discard.\nPress Cancel to keep editing."
-      );
-      return discard ? "discard" : "cancel";
-    }
-
     function ensureEditGuardResolved() {
       if (!isDetailEditing || !isDetailDraftDirty()) return true;
-      const decision = promptEditGuardDecision();
-      if (decision === "save") {
-        saveSelectedItem();
-        return true;
-      }
-      if (decision === "discard") {
-        revertItemDraft();
-        return true;
-      }
-      return false;
+      // Auto-save dirty edits and continue the requested action without interrupting the flow.
+      saveSelectedItem();
+      return true;
     }
 
     function hasCheckpoint() {
@@ -2191,6 +2226,7 @@
         }
         if (firstCreatedId) {
           selectedItemId = firstCreatedId;
+          setDetailEditMode(true);
         }
         ensureListStatusFilter(STATUS.UNUSED);
       } else {
@@ -2211,6 +2247,9 @@
 
       clearUndoHistoryState();
       renderAll();
+      if (firstCreatedId) {
+        focusItemNameForAutoEdit(firstCreatedId);
+      }
       return true;
     }
 
@@ -2269,6 +2308,7 @@
       }
 
       selectedItemId = firstItemId;
+      setDetailEditMode(true);
       ensureListStatusFilter(STATUS.UNUSED);
       clearUndoHistoryState();
       pendingDeleteGroupPrefix = "";
@@ -2277,6 +2317,7 @@
       if (createGroupCountNode) createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
       setManageTab("group-manage");
       renderAll();
+      focusItemNameForAutoEdit(firstItemId);
       if (manageGroupSelectNode) {
         manageGroupSelectNode.value = groupName;
         renderGroupEditorState();
@@ -2587,6 +2628,7 @@
         "save-item",
         "revert-item-draft",
         "toggle-detail-edit",
+        "toggle-edit-first",
         "open-backups",
         "close-backups",
         "save-checkpoint",
@@ -2651,6 +2693,10 @@
           performAutoSave();
           return;
         }
+        if (action === "toggle-edit-first") {
+          toggleEditFirstMode();
+          return;
+        }
         if (action === "open-backups") {
           openBackupsModal();
           return;
@@ -2692,11 +2738,19 @@
           const itemId = actionButton.getAttribute("data-item-id");
           if (!itemId) return;
           if (isDetailEditing && !ensureEditGuardResolved()) return;
+          let anchorButton = actionButton;
+          const refreshedRow = root.querySelector('tr[data-item-id="' + itemId + '"]');
+          if (refreshedRow) {
+            const refreshedAnchor = refreshedRow.querySelector('button[data-action="open-row-status"]');
+            if (refreshedAnchor) {
+              anchorButton = refreshedAnchor;
+            }
+          }
           if (statusPopoverNode && !statusPopoverNode.hidden && statusPopoverItemId === itemId) {
             closeStatusPopover();
             return;
           }
-          openStatusPopoverForItem(itemId, actionButton);
+          openStatusPopoverForItem(itemId, anchorButton);
           return;
         }
         if (action === "set-row-status") {
@@ -2774,7 +2828,8 @@
         const itemId = clickedRow.getAttribute("data-item-id");
         if (!itemId) return;
         if (isDetailEditing && !ensureEditGuardResolved()) return;
-        let statusAnchor = clickedRow.querySelector('button[data-action="open-row-status"]');
+        const rowForAnchor = root.querySelector('tr[data-item-id="' + itemId + '"]') || clickedRow;
+        let statusAnchor = rowForAnchor ? rowForAnchor.querySelector('button[data-action="open-row-status"]') : null;
         if (itemId !== justChangedItemId && (deferredHiddenItemIds.size || justChangedItemId)) {
           const scrollState = captureScrollState();
           clearDeferredStatusState();
@@ -2800,10 +2855,12 @@
         if (itemId && itemId !== selectedItemId) {
           if (!ensureEditGuardResolved()) return;
           selectedItemId = itemId;
-          setDetailEditMode(false);
-          detailDraftInitial = null;
-          showDetail(getItemById(selectedItemId));
+          const selectedItem = getItemById(selectedItemId);
+          const shouldAutoEdit = isEditFirstMode || isItemNameUnassigned(selectedItem);
+          setDetailEditMode(shouldAutoEdit);
+          showDetail(selectedItem);
           renderAll();
+          if (shouldAutoEdit) focusItemNameForAutoEdit(itemId);
         } else if (itemId && itemId === selectedItemId) {
           if (!ensureEditGuardResolved()) return;
           clearSelectedItem();
@@ -3020,6 +3077,7 @@
       detailEditButtonNode = document.getElementById("lootV2ToggleEditBtn");
       detailHeaderTitleNode = document.getElementById("lootV2DetailHeaderTitle");
       listFilterButtonNodes = Array.from(root.querySelectorAll('[data-action="toggle-list-status-filter"]'));
+      editFirstToggleButtonNode = document.getElementById("lootV2EditFirstToggleBtn");
 
       detailEmptyNode = document.getElementById("lootV2DetailEmpty");
       detailContentNode = document.getElementById("lootV2DetailContent");
@@ -3075,6 +3133,7 @@
       if (!root) return;
 
       initData();
+      isEditFirstMode = false;
       bindNodes();
       bindBackupsModalHandlers();
       renderChestSelect();

@@ -707,7 +707,54 @@
   }
 
   .loot-v2-list-header {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .loot-v2-edit-first-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 25px;
+    height: 25px;
+    padding: 3px 9px;
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.1;
+    white-space: nowrap;
+    border-color: #95add6;
+    background: #f7fbff;
+    color: #2d4a77;
+    box-shadow: 0 1px 4px rgba(22, 37, 77, 0.12);
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+    transform: none;
+  }
+
+  .loot-v2-edit-first-toggle::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #8fa8cf;
+    box-shadow: inset 0 0 0 1px rgba(31, 62, 113, 0.24);
+    flex: 0 0 auto;
+    transition: background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+  }
+
+  .loot-v2-edit-first-toggle.is-active {
+    background: #e7f6eb;
+    border-color: #8fbfa0;
+    color: #2f6642;
+    box-shadow: 0 1px 4px rgba(34, 99, 57, 0.18);
+  }
+
+  .loot-v2-edit-first-toggle.is-active::before,
+  .loot-v2-edit-first-toggle[aria-pressed="true"]::before {
+    background: #3eb569;
+    box-shadow: inset 0 0 0 1px rgba(34, 99, 57, 0.24);
+    transform: scale(1.06);
   }
 
   .loot-v2-filter-row {
@@ -784,6 +831,21 @@
     .loot-v2-list-filter-btn:hover {
       background: #edf4ff;
       border-color: #7f99c7;
+    }
+
+    .loot-v2-edit-first-toggle:hover {
+      background: #edf4ff;
+      border-color: #7f99c7;
+      box-shadow: 0 1px 4px rgba(22, 37, 77, 0.12);
+      transform: none;
+    }
+
+    .loot-v2-edit-first-toggle.is-active:hover {
+      background: #dcf2e3;
+      border-color: #76ae8b;
+      color: #295b3a;
+      box-shadow: 0 1px 4px rgba(34, 99, 57, 0.18);
+      transform: none;
     }
   }
 
@@ -1730,6 +1792,10 @@
     .loot-v2-filter-row {
       grid-template-columns: 1fr;
       gap: 6px;
+    }
+
+    .loot-v2-list-header {
+      flex-wrap: wrap;
     }
 
     .loot-v2-field-span-2 {

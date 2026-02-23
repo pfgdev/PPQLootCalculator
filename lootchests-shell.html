@@ -157,8 +157,8 @@
                 <table class="loot-v2-table" aria-label="Loot tokens column A">
                   <thead>
                     <tr>
-                      <th>Token</th>
-                      <th>Item</th>
+                      <th class="loot-v2-token-col-heading">Token</th>
+                      <th class="loot-v2-item-col-heading">Item</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -175,9 +175,22 @@
       </div>
     </section>
 
+    <div id="lootV2StatusPopover" class="loot-v2-status-popover" hidden role="dialog" aria-label="Set token status">
+      <div class="loot-v2-status-popover-title">Status</div>
+      <button class="loot-v2-status-popover-btn" type="button" data-action="set-row-status" data-status="IN_CHEST"><span aria-hidden="true">&#128230;</span><span>In Chest</span></button>
+      <button class="loot-v2-status-popover-btn" type="button" data-action="set-row-status" data-status="AWARDED"><span aria-hidden="true">&#9989;</span><span>Awarded</span></button>
+      <button class="loot-v2-status-popover-btn" type="button" data-action="set-row-status" data-status="UNUSED"><span aria-hidden="true">&#10134;</span><span>Inactive</span></button>
+    </div>
+
     <aside id="lootV2DetailPanel" class="v2-card loot-v2-detail-card">
       <div class="v2-card-header loot-v2-detail-header">
-        <span id="lootV2DetailHeaderTitle">Item Details</span>
+        <div class="loot-v2-detail-header-main">
+          <span id="lootV2DetailHeaderTitle">Item Details</span>
+          <button id="lootV2DetailStatusChip" class="loot-v2-detail-status-chip loot-v2-detail-status-chip-header" type="button" data-action="open-row-status" hidden>
+            <span id="lootV2DetailStatusGlyph" class="loot-v2-detail-status-chip-glyph" aria-hidden="true">&#128230;</span>
+            <span id="lootV2DetailStatusLabel" class="loot-v2-detail-status-chip-label">In Chest</span>
+          </button>
+        </div>
         <button id="lootV2ToggleEditBtn" class="loot-v2-detail-edit-btn" type="button" data-action="toggle-detail-edit">Edit</button>
       </div>
       <div class="v2-card-body">
@@ -200,16 +213,6 @@
             </div>
 
             <div class="loot-v2-detail-grid">
-              <label class="loot-v2-field loot-v2-field-span-2 loot-v2-status-field">
-                <span>Status</span>
-                <div id="lootV2DetailStatusToggle" class="loot-v2-status-toggle" role="group" aria-label="Item status">
-                  <button type="button" data-action="set-detail-status" data-status="IN_CHEST">In Chest</button>
-                  <button type="button" data-action="set-detail-status" data-status="AWARDED">Awarded</button>
-                  <button type="button" data-action="set-detail-status" data-status="UNUSED">Unused</button>
-                </div>
-                <div class="loot-v2-status-lock-hint">Status is locked while editing item details.</div>
-              </label>
-
               <label class="loot-v2-field loot-v2-field-span-2 loot-v2-item-name-edit-field">
                 <span>Item Name</span>
                 <input id="lootV2EditItemName" type="text" placeholder="Item name" disabled aria-label="Item name">

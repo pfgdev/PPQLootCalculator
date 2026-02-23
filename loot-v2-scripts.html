@@ -128,6 +128,7 @@
     let saveCheckpointButtonNode;
     let restoreCheckpointButtonNode;
     let backupsHeaderCloseButtonNode;
+    let statusPopoverNode;
     let tableToolsCardNode;
     let manageTabButtonNodes;
     let managePanelNodes;
@@ -140,7 +141,9 @@
     let detailItemNameReadNode;
     let detailRarityTagNode;
     let detailTypeTagNode;
-    let detailStatusToggleNode;
+    let detailStatusChipNode;
+    let detailStatusGlyphNode;
+    let detailStatusLabelNode;
     let editItemNameNode;
     let editRarityNode;
     let editTypeNode;
@@ -200,7 +203,14 @@
     let groupCountRepeatDelayTimer = null;
     let groupCountRepeatIntervalTimer = null;
     let autoSaveTimer = null;
+    let savePendingWhileSync = false;
     let modalLastFocusNode = null;
+    let statusPopoverItemId = "";
+    let statusPopoverCloseTimer = null;
+    let statusPopoverAnchorNode = null;
+    let statusPopoverAnchorRowNode = null;
+    let deferredHiddenItemIds = new Set();
+    let justChangedItemId = "";
 
     function deepClone(value) {
       return JSON.parse(JSON.stringify(value));
@@ -219,6 +229,64 @@
         })
         .join("\n")
         .trim();
+    }
+
+    function getPrimaryScrollHost() {
+      let node = root ? root.parentElement : null;
+      while (node && node !== document.body && node !== document.documentElement) {
+        const styles = window.getComputedStyle(node);
+        const overflowY = styles ? styles.overflowY : "";
+        if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
+          return node;
+        }
+        node = node.parentElement;
+      }
+      return document.scrollingElement || document.documentElement;
+    }
+
+    function captureScrollState() {
+      const tableScroll = document.getElementById("lootV2TableScroll");
+      const detailScroll = document.getElementById("lootV2DetailScroll");
+      const host = getPrimaryScrollHost();
+      return {
+        host: host,
+        hostTop: host ? host.scrollTop : 0,
+        hostLeft: host ? host.scrollLeft : 0,
+        tableTop: tableScroll ? tableScroll.scrollTop : null,
+        detailTop: detailScroll ? detailScroll.scrollTop : null
+      };
+    }
+
+    function restoreScrollState(state) {
+      if (!state) return;
+      const apply = function () {
+        const host = state.host || getPrimaryScrollHost();
+        if (host) {
+          if (Math.abs((host.scrollTop || 0) - (state.hostTop || 0)) > 1) {
+            host.scrollTop = state.hostTop || 0;
+          }
+          if (Math.abs((host.scrollLeft || 0) - (state.hostLeft || 0)) > 1) {
+            host.scrollLeft = state.hostLeft || 0;
+          }
+        }
+        const tableScroll = document.getElementById("lootV2TableScroll");
+        if (tableScroll && state.tableTop !== null) {
+          tableScroll.scrollTop = state.tableTop;
+        }
+        const detailScroll = document.getElementById("lootV2DetailScroll");
+        if (detailScroll && state.detailTop !== null) {
+          detailScroll.scrollTop = state.detailTop;
+        }
+      };
+      apply();
+      requestAnimationFrame(apply);
+    }
+
+    function renderAllPreservingScroll(existingState) {
+      const state = existingState || captureScrollState();
+      renderAll();
+      restoreScrollState(state);
+      return state;
     }
 
     function clampNumber(value, min, max) {
@@ -567,7 +635,8 @@
     function getVisibleItems() {
       const activeItems = getActiveItems(selectedChestId);
       const filtered = activeItems.filter(function (item) {
-        if (!activeListStatusFilters.has(item.status)) return false;
+        const includeByStatus = activeListStatusFilters.has(item.status) || deferredHiddenItemIds.has(item.item_id);
+        if (!includeByStatus) return false;
         if (!searchTerm) return true;
         const haystack = (item.token + " " + item.item_name).toLowerCase();
         return haystack.indexOf(searchTerm) !== -1;
@@ -578,6 +647,43 @@
       });
 
       return filtered;
+    }
+
+    function clearDeferredStatusState() {
+      const hadDeferred = deferredHiddenItemIds.size > 0;
+      const hadChanged = !!justChangedItemId;
+      deferredHiddenItemIds.clear();
+      justChangedItemId = "";
+      return hadDeferred || hadChanged;
+    }
+
+    function markStatusJustChanged(item, status) {
+      if (!item || !item.item_id) return;
+      justChangedItemId = item.item_id;
+      deferredHiddenItemIds.delete(item.item_id);
+      if (!activeListStatusFilters.has(status)) {
+        deferredHiddenItemIds.add(item.item_id);
+      }
+    }
+
+    function clearDeferredStatusStateAfterInteraction(exemptItemId) {
+      if (!deferredHiddenItemIds.size && !justChangedItemId) return;
+      if (exemptItemId && justChangedItemId && exemptItemId === justChangedItemId) return;
+      clearDeferredStatusState();
+    }
+
+    function pruneDeferredStatusState() {
+      const activeIds = new Set(getActiveItems(selectedChestId).map(function (item) { return item.item_id; }));
+      if (justChangedItemId && !activeIds.has(justChangedItemId)) {
+        justChangedItemId = "";
+      }
+      if (deferredHiddenItemIds.size) {
+        deferredHiddenItemIds.forEach(function (itemId) {
+          if (!activeIds.has(itemId)) {
+            deferredHiddenItemIds.delete(itemId);
+          }
+        });
+      }
     }
 
     function getActiveFilterList() {
@@ -658,28 +764,45 @@
       if (item.item_id === selectedItemId) {
         tr.classList.add("is-selected");
       }
+      if (item.item_id === justChangedItemId) {
+        tr.classList.add("is-just-changed");
+      }
       tr.setAttribute("data-item-id", item.item_id);
 
       const tokenCell = document.createElement("td");
-      const tokenNode = document.createElement("div");
+      tokenCell.className = "loot-v2-token-cell";
+      const statusButton = document.createElement("button");
+      statusButton.className = "loot-v2-token-status-trigger";
+      if (item.item_id === justChangedItemId) {
+        statusButton.classList.add("is-just-changed");
+      }
+      statusButton.type = "button";
+      statusButton.setAttribute("data-action", "open-row-status");
+      statusButton.setAttribute("data-item-id", item.item_id);
+      statusButton.setAttribute("data-status", item.status || STATUS.UNUSED);
+      statusButton.setAttribute("aria-label", "Set status: " + toDisplayStatus(item.status || STATUS.UNUSED));
+      statusButton.setAttribute("title", "Set status");
+      const statusGlyphNode = document.createElement("span");
+      statusGlyphNode.className = "loot-v2-token-status-glyph loot-v2-item-status-" + getStatusClassSuffix(item.status);
+      statusGlyphNode.textContent = getStatusGlyph(item.status);
+      statusGlyphNode.setAttribute("aria-hidden", "true");
+      const tokenNode = document.createElement("span");
       tokenNode.className = "loot-v2-token";
       tokenNode.textContent = item.token;
-      tokenCell.appendChild(tokenNode);
+      statusButton.appendChild(statusGlyphNode);
+      statusButton.appendChild(tokenNode);
+      tokenCell.appendChild(statusButton);
 
       const nameCell = document.createElement("td");
+      nameCell.className = "loot-v2-item-cell";
       const nameNode = document.createElement("div");
       nameNode.className = "loot-v2-item-name loot-v2-item-name-" + getStatusClassSuffix(item.status);
       if (!normalizeWhitespace(item.item_name)) {
         nameNode.classList.add("is-unassigned");
       }
-      const markerNode = document.createElement("span");
-      markerNode.className = "loot-v2-item-status-marker loot-v2-item-status-" + getStatusClassSuffix(item.status);
-      markerNode.setAttribute("aria-hidden", "true");
-      markerNode.textContent = getStatusGlyph(item.status);
       const textNode = document.createElement("span");
       textNode.className = "loot-v2-item-name-text";
       textNode.textContent = item.item_name || "(Unassigned)";
-      nameNode.appendChild(markerNode);
       nameNode.appendChild(textNode);
       nameCell.appendChild(nameNode);
 
@@ -753,6 +876,7 @@
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
       const tokenHeader = document.createElement("th");
+      tokenHeader.className = "loot-v2-token-col-heading";
       tokenHeader.textContent = "Token";
       const itemHeader = document.createElement("th");
       itemHeader.className = "loot-v2-item-col-heading";
@@ -925,6 +1049,29 @@
       itemUrlAnchorNode.textContent = item.item_url;
     }
 
+    function renderDetailStatusChip(item) {
+      if (!detailStatusChipNode || !detailStatusGlyphNode || !detailStatusLabelNode) return;
+      if (!item) {
+        detailStatusChipNode.hidden = true;
+        detailStatusChipNode.removeAttribute("data-item-id");
+        detailStatusChipNode.removeAttribute("data-status");
+        detailStatusChipNode.setAttribute("aria-label", "Set status");
+        detailStatusGlyphNode.textContent = getStatusGlyph(STATUS.UNUSED);
+        detailStatusGlyphNode.className = "loot-v2-detail-status-chip-glyph loot-v2-item-status-unused";
+        detailStatusLabelNode.textContent = "Status";
+        return;
+      }
+
+      const status = item.status || STATUS.UNUSED;
+      detailStatusChipNode.hidden = false;
+      detailStatusChipNode.setAttribute("data-item-id", item.item_id);
+      detailStatusChipNode.setAttribute("data-status", status);
+      detailStatusChipNode.setAttribute("aria-label", "Set status: " + toDisplayStatus(status));
+      detailStatusGlyphNode.textContent = getStatusGlyph(status);
+      detailStatusGlyphNode.className = "loot-v2-detail-status-chip-glyph loot-v2-item-status-" + getStatusClassSuffix(status);
+      detailStatusLabelNode.textContent = toDisplayStatus(status);
+    }
+
     function showDetail(item) {
       if (!item) {
         detailEmptyNode.hidden = false;
@@ -948,6 +1095,7 @@
           detailTypeTagNode.textContent = "";
           detailTypeTagNode.hidden = true;
         }
+        renderDetailStatusChip(null);
         renderItemUrlView(null);
         if (descriptionReadNode) {
           descriptionReadNode.textContent = "Short item summary for table play";
@@ -983,10 +1131,7 @@
         detailTypeTagNode.textContent = typeLabel;
         detailTypeTagNode.hidden = !typeLabel;
       }
-      root.querySelectorAll('[data-action="set-detail-status"]').forEach(function (button) {
-        const isSelected = button.getAttribute("data-status") === item.status;
-        button.classList.toggle("is-selected", isSelected);
-      });
+      renderDetailStatusChip(item);
       editItemNameNode.value = item.item_name || "";
       editRarityNode.value = item.rarity || "";
       editTypeNode.value = item.type || "";
@@ -1020,21 +1165,10 @@
         });
     }
 
-    function setDetailStatusDisabled(disabled) {
-      const isDisabled = !!disabled;
-      if (!detailStatusToggleNode) return;
-      detailStatusToggleNode.classList.toggle("is-locked", isDisabled);
-      detailStatusToggleNode.querySelectorAll('button[data-action="set-detail-status"]').forEach(function (button) {
-        button.disabled = isDisabled;
-        button.setAttribute("aria-disabled", isDisabled ? "true" : "false");
-      });
-    }
-
     function setDetailEditMode(editing) {
       isDetailEditing = !!editing;
       root.classList.toggle("loot-v2-detail-editing", isDetailEditing);
       setDetailFieldDisabled(!isDetailEditing);
-      setDetailStatusDisabled(isDetailEditing);
       if (detailEditButtonNode) {
         detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit";
       }
@@ -1051,11 +1185,23 @@
       renderItemUrlView(getItemById(selectedItemId));
     }
 
-    function clearSelectedItem() {
+    function clearSelectedItem(options) {
       if (!selectedItemId) return;
+      const preserveDeferredStatus = !!(options && options.preserveDeferredStatus);
+      const shouldRestoreDeferred =
+        preserveDeferredStatus && (deferredHiddenItemIds.size > 0 || !!justChangedItemId);
+      const deferredSnapshot = shouldRestoreDeferred ? new Set(deferredHiddenItemIds) : null;
+      const justChangedSnapshot = shouldRestoreDeferred ? justChangedItemId : "";
+      const scrollState = shouldRestoreDeferred ? captureScrollState() : null;
       selectedItemId = "";
       setDetailEditMode(false);
+      closeStatusPopover();
       renderAll();
+      if (shouldRestoreDeferred) {
+        deferredHiddenItemIds = deferredSnapshot;
+        justChangedItemId = justChangedSnapshot;
+        renderAllPreservingScroll(scrollState);
+      }
     }
 
     function renderDetail() {
@@ -1482,6 +1628,7 @@
 
     function renderAll() {
       ensureSelection();
+      pruneDeferredStatusState();
       if (!hasSelectedChest()) {
         activeManageTab = "chest";
       }
@@ -1563,26 +1710,37 @@
 
     function performAutoSave() {
       clearAutoSaveTimer();
-      if (!isDirty()) {
-        setSyncState("saved");
-        renderAll();
+      if (isSyncing) {
+        savePendingWhileSync = true;
         return;
       }
-      if (isSyncing) return;
+      if (!isDirty()) {
+        savePendingWhileSync = false;
+        setSyncState("saved");
+        renderAllPreservingScroll();
+        return;
+      }
       isSyncing = true;
+      savePendingWhileSync = false;
       setSyncState("saving");
-      renderAll();
+      renderAllPreservingScroll();
 
       setTimeout(function () {
         try {
           persistWorkingSnapshot();
           isSyncing = false;
+          if (savePendingWhileSync || isDirty()) {
+            savePendingWhileSync = false;
+            performAutoSave();
+            return;
+          }
           setSyncState("saved");
-          renderAll();
+          renderAllPreservingScroll();
         } catch (error) {
           isSyncing = false;
+          savePendingWhileSync = false;
           setSyncState("retry", "Sync failed");
-          renderAll();
+          renderAllPreservingScroll();
         }
       }, 280);
     }
@@ -1591,12 +1749,21 @@
       const delay = Number.isFinite(Number(delayMs)) ? Number(delayMs) : 420;
       if (!isDirty()) {
         clearAutoSaveTimer();
+        if (!isSyncing) {
+          savePendingWhileSync = false;
+        }
         setSyncState("saved");
-        renderAll();
+        renderAllPreservingScroll();
+        return;
+      }
+      if (isSyncing) {
+        savePendingWhileSync = true;
+        setSyncState("saving");
+        renderAllPreservingScroll();
         return;
       }
       setSyncState("saving");
-      renderAll();
+      renderAllPreservingScroll();
       clearAutoSaveTimer();
       autoSaveTimer = setTimeout(performAutoSave, delay);
     }
@@ -1719,6 +1886,78 @@
 
     function describeStatusMove(token, toStatus) {
       return token + " -> " + toDisplayStatus(toStatus);
+    }
+
+    function closeStatusPopover() {
+      if (statusPopoverCloseTimer) {
+        clearTimeout(statusPopoverCloseTimer);
+        statusPopoverCloseTimer = null;
+      }
+      if (statusPopoverAnchorNode && statusPopoverAnchorNode.classList) {
+        statusPopoverAnchorNode.classList.remove("is-popover-open");
+      }
+      if (statusPopoverAnchorRowNode && statusPopoverAnchorRowNode.classList) {
+        statusPopoverAnchorRowNode.classList.remove("is-status-popover-anchor");
+      }
+      statusPopoverAnchorNode = null;
+      statusPopoverAnchorRowNode = null;
+      if (!statusPopoverNode) return;
+      statusPopoverNode.hidden = true;
+      statusPopoverItemId = "";
+      statusPopoverNode.removeAttribute("data-item-id");
+      statusPopoverNode.style.left = "";
+      statusPopoverNode.style.top = "";
+    }
+
+    function openStatusPopoverForItem(itemId, anchorNode) {
+      if (!statusPopoverNode || !itemId || !(anchorNode instanceof Element)) return;
+      if (statusPopoverCloseTimer) {
+        clearTimeout(statusPopoverCloseTimer);
+        statusPopoverCloseTimer = null;
+      }
+      if (statusPopoverAnchorNode && statusPopoverAnchorNode.classList) {
+        statusPopoverAnchorNode.classList.remove("is-popover-open");
+      }
+      if (statusPopoverAnchorRowNode && statusPopoverAnchorRowNode.classList) {
+        statusPopoverAnchorRowNode.classList.remove("is-status-popover-anchor");
+      }
+      const item = getItemById(itemId);
+      if (!item) return;
+      statusPopoverItemId = itemId;
+      statusPopoverNode.dataset.itemId = itemId;
+      statusPopoverNode.hidden = false;
+      statusPopoverAnchorNode = anchorNode;
+      statusPopoverAnchorNode.classList.add("is-popover-open");
+      statusPopoverAnchorRowNode = anchorNode.closest("tr[data-item-id]");
+      if (statusPopoverAnchorRowNode) {
+        statusPopoverAnchorRowNode.classList.add("is-status-popover-anchor");
+      }
+
+      const actionButtons = statusPopoverNode.querySelectorAll('[data-action="set-row-status"]');
+      actionButtons.forEach(function (button) {
+        const status = button.getAttribute("data-status");
+        button.classList.toggle("is-current", status === item.status);
+      });
+
+      const rect = anchorNode.getBoundingClientRect();
+      const popRect = statusPopoverNode.getBoundingClientRect();
+      const viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+      const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+      const gutter = 8;
+      let left = rect.left + (rect.width / 2) - (popRect.width / 2);
+      let top = rect.top - popRect.height - 6;
+      if (left + popRect.width > viewportW - gutter) {
+        left = viewportW - popRect.width - gutter;
+      }
+      if (left < gutter) left = gutter;
+      if (top < gutter) {
+        top = rect.bottom + 6;
+      }
+      if (top + popRect.height > viewportH - gutter) {
+        top = Math.max(gutter, viewportH - popRect.height - gutter);
+      }
+      statusPopoverNode.style.left = Math.round(left) + "px";
+      statusPopoverNode.style.top = Math.round(top) + "px";
     }
 
     function snapshotEditableFields(item) {
@@ -2208,16 +2447,21 @@
       return true;
     }
 
-    function applyStatusFromDetail(nextStatus) {
-      if (isDetailEditing) return;
-      const item = getItemById(selectedItemId);
-      if (!item) return;
+    function applyStatusForItem(itemId, nextStatus) {
+      const item = getItemById(itemId);
+      if (!item) return false;
       const status = String(nextStatus || "").trim();
-      if (!STATUS_LABELS[status]) return;
-      if (item.status === status) return;
+      if (!STATUS_LABELS[status]) return false;
+      if (item.status === status) return false;
+      const scrollState = captureScrollState();
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active.matches('button[data-action="set-row-status"], button[data-action="open-row-status"]')) {
+        active.blur();
+      }
 
       const previousStatus = item.status;
       item.status = status;
+      markStatusJustChanged(item, status);
       lastChangeState = {
         kind: "status",
         item_id: item.item_id,
@@ -2228,8 +2472,9 @@
         can_toggle: true
       };
       setHistoryState("Last: " + describeStatusMove(item.token, status), "is-info");
-      renderAll();
+      renderAllPreservingScroll(scrollState);
       scheduleAutoSave(180);
+      return true;
     }
 
     function toggleLastStatusChange() {
@@ -2245,10 +2490,12 @@
         const token = lastChangeState.token || item.token;
         if (lastChangeState.mode === "undo") {
           item.status = lastChangeState.from_status;
+          markStatusJustChanged(item, lastChangeState.from_status);
           lastChangeState.mode = "redo";
           setHistoryState("Undid: " + describeStatusMove(token, lastChangeState.to_status), "is-info");
         } else {
           item.status = lastChangeState.to_status;
+          markStatusJustChanged(item, lastChangeState.to_status);
           lastChangeState.mode = "undo";
           setHistoryState("Redid: " + describeStatusMove(token, lastChangeState.to_status), "is-info");
         }
@@ -2323,6 +2570,7 @@
 
     function selectChest(nextChestId) {
       if (!nextChestId || !workingItemsByChest[nextChestId]) return;
+      clearDeferredStatusState();
       selectedChestId = nextChestId;
       selectedItemId = "";
       pendingDeleteChestId = "";
@@ -2354,10 +2602,27 @@
         return;
       }
 
+      const target = event && event.target;
+      const isStatusPopoverOpen = !!(statusPopoverNode && !statusPopoverNode.hidden);
+      const clickedStatusPopover = (target instanceof Element) ? target.closest("#lootV2StatusPopover") : null;
+      const clickedStatusTrigger = (target instanceof Element) ? target.closest('button[data-action="open-row-status"]') : null;
+      if (isStatusPopoverOpen && !clickedStatusPopover && !clickedStatusTrigger) {
+        closeStatusPopover();
+        event.stopPropagation();
+        return;
+      }
+
       const actionButton = event.target.closest("button[data-action]");
       if (actionButton && root.contains(actionButton)) {
         event.stopPropagation();
         const action = actionButton.getAttribute("data-action");
+        const actionItemId = actionButton.getAttribute("data-item-id");
+        if (action !== "set-row-status" && action !== "open-row-status") {
+          clearDeferredStatusStateAfterInteraction(actionItemId || "");
+        }
+        if (action !== "open-row-status" && action !== "set-row-status") {
+          closeStatusPopover();
+        }
         if (shouldGuardAction(action) && !ensureEditGuardResolved()) {
           return;
         }
@@ -2423,9 +2688,37 @@
           setDetailEditMode(true);
           return;
         }
-        if (action === "set-detail-status") {
-          if (!selectedItemId) return;
-          applyStatusFromDetail(actionButton.getAttribute("data-status"));
+        if (action === "open-row-status") {
+          const itemId = actionButton.getAttribute("data-item-id");
+          if (!itemId) return;
+          if (isDetailEditing && !ensureEditGuardResolved()) return;
+          if (statusPopoverNode && !statusPopoverNode.hidden && statusPopoverItemId === itemId) {
+            closeStatusPopover();
+            return;
+          }
+          openStatusPopoverForItem(itemId, actionButton);
+          return;
+        }
+        if (action === "set-row-status") {
+          if (!statusPopoverItemId) {
+            closeStatusPopover();
+            return;
+          }
+          const nextStatus = actionButton.getAttribute("data-status");
+          const changed = applyStatusForItem(statusPopoverItemId, nextStatus);
+          if (changed) {
+            const status = actionButton.getAttribute("data-status");
+            if (statusPopoverNode) {
+              statusPopoverNode.querySelectorAll('[data-action="set-row-status"]').forEach(function (button) {
+                button.classList.toggle("is-current", button.getAttribute("data-status") === status);
+              });
+            }
+            statusPopoverCloseTimer = setTimeout(function () {
+              closeStatusPopover();
+            }, 180);
+          } else {
+            closeStatusPopover();
+          }
           return;
         }
         if (action === "toggle-list-status-filter") {
@@ -2474,8 +2767,36 @@
       }
 
       const clickedRow = event.target.closest("tr[data-item-id]");
-      if (clickedRow && root.contains(clickedRow)) {
+      const clickedTokenCell = event.target.closest("td.loot-v2-token-cell");
+      const clickedItemCell = event.target.closest("td.loot-v2-item-cell");
+      if (clickedRow && clickedTokenCell && root.contains(clickedRow)) {
+        event.stopPropagation();
         const itemId = clickedRow.getAttribute("data-item-id");
+        if (!itemId) return;
+        if (isDetailEditing && !ensureEditGuardResolved()) return;
+        let statusAnchor = clickedRow.querySelector('button[data-action="open-row-status"]');
+        if (itemId !== justChangedItemId && (deferredHiddenItemIds.size || justChangedItemId)) {
+          const scrollState = captureScrollState();
+          clearDeferredStatusState();
+          renderAllPreservingScroll(scrollState);
+          const refreshedRow = root.querySelector('tr[data-item-id="' + itemId + '"]');
+          statusAnchor = refreshedRow ? refreshedRow.querySelector('button[data-action="open-row-status"]') : null;
+        }
+        if (statusAnchor) {
+          if (statusPopoverNode && !statusPopoverNode.hidden && statusPopoverItemId === itemId) {
+            closeStatusPopover();
+          } else {
+            openStatusPopoverForItem(itemId, statusAnchor);
+          }
+        }
+        return;
+      }
+      if (clickedRow && clickedItemCell && root.contains(clickedRow)) {
+        event.stopPropagation();
+        const itemId = clickedRow.getAttribute("data-item-id");
+        if (!itemId || itemId !== justChangedItemId) {
+          clearDeferredStatusState();
+        }
         if (itemId && itemId !== selectedItemId) {
           if (!ensureEditGuardResolved()) return;
           selectedItemId = itemId;
@@ -2491,19 +2812,39 @@
     }
 
     function handleDocumentClick(event) {
+      const target = event && event.target;
+      if (statusPopoverNode && !statusPopoverNode.hidden) {
+        const clickedPopover = (target instanceof Element) ? target.closest("#lootV2StatusPopover") : null;
+        if (!clickedPopover) {
+          closeStatusPopover();
+          event.stopPropagation();
+          return;
+        }
+      }
       if (!root || !root.classList.contains("loot-v2-has-detail")) return;
-      const target = event.target;
       if (isDetailPersistentClickTarget(target)) return;
       if (!ensureEditGuardResolved()) return;
-      clearSelectedItem();
+      clearSelectedItem({ preserveDeferredStatus: true });
+    }
+
+    function handleGlobalScrollForStatusPopover() {
+      if (!statusPopoverNode || statusPopoverNode.hidden) return;
+      closeStatusPopover();
     }
 
     function handleDocumentKeydown(event) {
       if (!event || event.key !== "Escape") return;
-      if (!backupsModalNode || backupsModalNode.hidden) return;
-      event.preventDefault();
-      event.stopPropagation();
-      closeBackupsModal();
+      if (backupsModalNode && !backupsModalNode.hidden) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeBackupsModal();
+        return;
+      }
+      if (statusPopoverNode && !statusPopoverNode.hidden) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeStatusPopover();
+      }
     }
 
     function handleBackupsModalClick(event) {
@@ -2535,6 +2876,7 @@
     function isDetailPersistentClickTarget(target) {
       if (!target || !(target instanceof Element)) return false;
       if (target.closest("#lootV2BackupsModal")) return true;
+      if (target.closest("#lootV2StatusPopover")) return true;
       if (target.closest("#lootV2DetailPanel")) return true;
       if (target.closest("tr[data-item-id]")) return true;
       if (target.closest(".loot-v2-top-card :is(button, input, select, textarea, a, label, [data-action])")) return true;
@@ -2581,6 +2923,7 @@
         renderTokenRangeState();
       }
       if (event.target === searchInputNode) {
+        clearDeferredStatusState();
         searchTerm = searchInputNode.value.trim().toLowerCase();
         renderAll();
         return;
@@ -2605,6 +2948,9 @@
         }
         selectChest(chestSelectNode.value);
         return;
+      }
+      if (event.target && event.target.closest('[data-action="toggle-list-status-filter"]')) {
+        clearDeferredStatusState();
       }
       if (deleteChestSelectNode && event.target === deleteChestSelectNode) {
         pendingDeleteChestId = "";
@@ -2667,6 +3013,7 @@
       saveCheckpointButtonNode = document.getElementById("lootV2SaveCheckpointBtn");
       restoreCheckpointButtonNode = document.getElementById("lootV2RestoreCheckpointBtn");
       backupsHeaderCloseButtonNode = document.getElementById("lootV2BackupsHeaderCloseBtn");
+      statusPopoverNode = document.getElementById("lootV2StatusPopover");
       tableToolsCardNode = document.getElementById("lootV2TableToolsCard");
       manageTabButtonNodes = Array.from(root.querySelectorAll('[data-action="set-manage-tab"]'));
       managePanelNodes = Array.from(root.querySelectorAll("[data-manage-panel]"));
@@ -2679,7 +3026,9 @@
       detailItemNameReadNode = document.getElementById("lootV2DetailItemNameRead");
       detailRarityTagNode = document.getElementById("lootV2DetailRarityTag");
       detailTypeTagNode = document.getElementById("lootV2DetailTypeTag");
-      detailStatusToggleNode = document.getElementById("lootV2DetailStatusToggle");
+      detailStatusChipNode = document.getElementById("lootV2DetailStatusChip");
+      detailStatusGlyphNode = document.getElementById("lootV2DetailStatusGlyph");
+      detailStatusLabelNode = document.getElementById("lootV2DetailStatusLabel");
       editItemNameNode = document.getElementById("lootV2EditItemName");
       editRarityNode = document.getElementById("lootV2EditRarity");
       editTypeNode = document.getElementById("lootV2EditType");
@@ -2738,6 +3087,9 @@
       document.addEventListener("click", handleDocumentClick);
       document.addEventListener("keydown", handleDocumentKeydown);
       document.addEventListener("app:tab-changed", handleTabChanged);
+      document.addEventListener("scroll", handleGlobalScrollForStatusPopover, true);
+      document.addEventListener("wheel", handleGlobalScrollForStatusPopover, { passive: true });
+      document.addEventListener("touchmove", handleGlobalScrollForStatusPopover, { passive: true });
       root.addEventListener("input", handleRootInput);
       root.addEventListener("change", handleRootChange);
       root.addEventListener("pointerdown", handleGroupCountPointerDown);

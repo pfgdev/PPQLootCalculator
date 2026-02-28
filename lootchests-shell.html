@@ -192,7 +192,10 @@
             <span id="lootV2DetailStatusLabel" class="loot-v2-detail-status-chip-label">In Chest</span>
           </button>
         </div>
-        <button id="lootV2ToggleEditBtn" class="loot-v2-detail-edit-btn" type="button" data-action="toggle-detail-edit">Edit Item</button>
+        <div class="loot-v2-detail-header-actions">
+          <button id="lootV2CopyItemBtn" class="loot-v2-detail-edit-btn" type="button" data-action="copy-item">Copy Item</button>
+          <button id="lootV2ToggleEditBtn" class="loot-v2-detail-edit-btn" type="button" data-action="toggle-detail-edit">Edit Item</button>
+        </div>
       </div>
       <div class="v2-card-body">
         <div class="loot-v2-detail-scroll loot-v2-detail-body">
@@ -206,8 +209,8 @@
                 <div class="loot-v2-detail-summary-read">
                   <div id="lootV2DetailItemNameRead" class="loot-v2-detail-item-name-read">(Unassigned item)</div>
                   <div class="loot-v2-detail-tag-row">
-                    <span id="lootV2DetailRarityTag" class="loot-v2-detail-tag" hidden></span>
                     <span id="lootV2DetailTypeTag" class="loot-v2-detail-tag" hidden></span>
+                    <span id="lootV2DetailRarityTag" class="loot-v2-detail-tag" hidden></span>
                   </div>
                 </div>
               </div>
@@ -217,19 +220,6 @@
               <label class="loot-v2-field loot-v2-field-span-2 loot-v2-item-name-edit-field">
                 <span>Item Name</span>
                 <input id="lootV2EditItemName" type="text" placeholder="Item name" disabled aria-label="Item name">
-              </label>
-
-              <label class="loot-v2-field loot-v2-rarity-edit-field">
-                <span>Rarity</span>
-                <select id="lootV2EditRarity" disabled aria-label="Rarity">
-                  <option value="">--</option>
-                  <option value="Common">Common</option>
-                  <option value="Uncommon">Uncommon</option>
-                  <option value="Rare">Rare</option>
-                  <option value="Very Rare">Very Rare</option>
-                  <option value="Legendary">Legendary</option>
-                  <option value="Artifact">Artifact</option>
-                </select>
               </label>
 
               <label class="loot-v2-field loot-v2-type-edit-field">
@@ -248,6 +238,19 @@
                   <option value="Wondrous Items">Wondrous Items</option>
                   <option value="Other">Other</option>
                   <option value="n/a">n/a</option>
+                </select>
+              </label>
+
+              <label class="loot-v2-field loot-v2-rarity-edit-field">
+                <span>Rarity</span>
+                <select id="lootV2EditRarity" disabled aria-label="Rarity">
+                  <option value="">--</option>
+                  <option value="Common">Common</option>
+                  <option value="Uncommon">Uncommon</option>
+                  <option value="Rare">Rare</option>
+                  <option value="Very Rare">Very Rare</option>
+                  <option value="Legendary">Legendary</option>
+                  <option value="Artifact">Artifact</option>
                 </select>
               </label>
 

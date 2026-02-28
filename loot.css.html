@@ -1273,6 +1273,50 @@
     gap: 8px;
   }
 
+  .loot-v2-detail-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
+  .loot-v2-detail-action-feedback {
+    position: fixed;
+    z-index: 12000;
+    pointer-events: none;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid #c1d1ed;
+    background: #eef4ff;
+    color: #29436f;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    opacity: 0;
+    transform: translate(-50%, -86%);
+    transition: opacity 140ms ease, transform 160ms ease;
+    box-shadow: 0 6px 12px rgba(24, 44, 84, 0.18);
+    white-space: nowrap;
+  }
+
+  .loot-v2-detail-action-feedback.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+
+  .loot-v2-detail-action-feedback.is-copy {
+    background: #edf3ff;
+    border-color: #b8c9eb;
+    color: #29436f;
+  }
+
+  .loot-v2-detail-action-feedback.is-paste {
+    background: #e8f7ec;
+    border-color: #b7dfc0;
+    color: #2f6642;
+  }
+
   .loot-v2-detail-header-main {
     display: flex;
     align-items: center;

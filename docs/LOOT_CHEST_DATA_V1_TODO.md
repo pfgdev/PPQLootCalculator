@@ -1,6 +1,6 @@
 # Loot Chests Data v1 TODO
 
-Last updated: 2026-02-27
+Last updated: 2026-02-28
 
 Status legend:
 - `[ ]` not started
@@ -80,6 +80,12 @@ Status legend:
   - [ ] template clone + protection
   - [ ] local preference persistence
 - [ ] Tablet-specific pass (focus/autofocus guards, modal behavior, scroll stability).
+- [x] Auto-scroll token list to newly created token group so first-time group creation is visible immediately.
+- [~] Detail panel hardening while save queue is active:
+  - [x] Prevent first-open edit textarea oversize on unassigned items (deferred autosize after layout).
+  - [x] Keep detail panel open when text-selection drag starts inside details and mouse-up lands outside.
+  - [x] Token-cell status click updates open detail panel context when detail panel is already open.
+  - [ ] Re-verify no regressions with rapid status changes + in-flight auto-save.
 
 ## Phase 10: Optional Post-v1
 - [ ] CSV export from `LootTokens`.

@@ -140,6 +140,7 @@
     let tableToolsCardNode;
     let manageTabButtonNodes;
     let managePanelNodes;
+    let detailCopyButtonNode;
     let detailEditButtonNode;
     let detailHeaderTitleNode;
     let listFilterButtonNodes;
@@ -200,6 +201,7 @@
     let syncState = "saved";
     let syncErrorText = "";
     let isDetailEditing = false;
+    let itemClipboardSnapshot = null;
     let detailDraftInitial = null;
     let detailDraftItemId = "";
     let activeManageTab = "chest";
@@ -238,6 +240,12 @@
     let statusPopoverAnchorRowNode = null;
     let deferredHiddenItemIds = new Set();
     let justChangedItemId = "";
+    let detailPointerDownInside = false;
+    let detailActionFeedbackNode = null;
+    let detailActionFeedbackHideTimer = null;
+    let detailAutosizeRafA = 0;
+    let detailAutosizeRafB = 0;
+    let detailAutosizeTimer = null;
     let isCheckpointLoading = false;
     let checkpointActionInFlight = false;
     let checkpointStatusText = "";
@@ -1550,6 +1558,7 @@
       const palette = getGroupPalette(group.themeValue || group.label);
       const card = document.createElement("section");
       card.className = "loot-v2-group-card";
+      card.setAttribute("data-group-key", normalizePrefixKey(group.label));
       card.style.setProperty("--loot-group-header-bg", palette.headerBg);
       card.style.setProperty("--loot-group-header-text", palette.headerText);
       card.style.setProperty("--loot-group-row-odd", palette.rowOddBg);
@@ -1589,6 +1598,19 @@
       wrap.appendChild(table);
       card.appendChild(wrap);
       return card;
+    }
+
+    function scrollGroupIntoView(groupName) {
+      const key = normalizePrefixKey(groupName);
+      if (!key) return;
+      const tableScroll = document.getElementById("lootV2TableScroll");
+      if (!tableScroll) return;
+      const target = tableScroll.querySelector('.loot-v2-group-card[data-group-key="' + key + '"]');
+      if (!target) return;
+      const targetTop = target.offsetTop;
+      const gap = 10;
+      // Always top-anchor the group so token 1/header is visible after create/add flows.
+      tableScroll.scrollTop = Math.max(0, targetTop - gap);
     }
 
     function getNotesFieldMinHeight() {
@@ -1642,6 +1664,58 @@
       const measured = editNotesNode.scrollHeight || 0;
       const nextHeight = Math.max(minHeight, Math.ceil(measured));
       editNotesNode.style.height = nextHeight + "px";
+    }
+
+    function clearPendingDetailAutosize() {
+      if (detailAutosizeRafA) {
+        cancelAnimationFrame(detailAutosizeRafA);
+        detailAutosizeRafA = 0;
+      }
+      if (detailAutosizeRafB) {
+        cancelAnimationFrame(detailAutosizeRafB);
+        detailAutosizeRafB = 0;
+      }
+      if (detailAutosizeTimer) {
+        clearTimeout(detailAutosizeTimer);
+        detailAutosizeTimer = null;
+      }
+    }
+
+    function isDetailPanelVisibleForAutosize() {
+      const panel = document.getElementById("lootV2DetailPanel");
+      if (!panel || panel.hidden) return false;
+      const rect = panel.getBoundingClientRect();
+      return rect.width > 120 && rect.height > 120;
+    }
+
+    function scheduleDetailAutosize(expectedItemId) {
+      clearPendingDetailAutosize();
+      setDescriptionFieldToMinHeight();
+      setNotesFieldToMinHeight();
+
+      const runAutosize = function () {
+        if (!isDetailEditing) return;
+        if (expectedItemId && selectedItemId !== expectedItemId) return;
+        if (!isDetailPanelVisibleForAutosize()) {
+          setDescriptionFieldToMinHeight();
+          setNotesFieldToMinHeight();
+          return;
+        }
+        autoSizeDescriptionField();
+        autoSizeNotesField();
+      };
+
+      detailAutosizeRafA = requestAnimationFrame(function () {
+        detailAutosizeRafA = 0;
+        detailAutosizeRafB = requestAnimationFrame(function () {
+          detailAutosizeRafB = 0;
+          runAutosize();
+        });
+      });
+      detailAutosizeTimer = setTimeout(function () {
+        detailAutosizeTimer = null;
+        runAutosize();
+      }, 120);
     }
 
     function renderEmptyColumn(columnNode, message) {
@@ -1779,9 +1853,7 @@
         if (detailHeaderTitleNode) {
           detailHeaderTitleNode.textContent = "Item Details";
         }
-        if (detailEditButtonNode) {
-          detailEditButtonNode.disabled = true;
-        }
+        updateDetailHeaderButtons(null);
         if (detailItemNameReadNode) {
           detailItemNameReadNode.textContent = "";
           detailItemNameReadNode.classList.remove("is-empty");
@@ -1812,9 +1884,7 @@
       if (detailHeaderTitleNode) {
         detailHeaderTitleNode.textContent = item.token;
       }
-      if (detailEditButtonNode) {
-        detailEditButtonNode.disabled = false;
-      }
+      updateDetailHeaderButtons(item);
       if (detailItemNameReadNode) {
         const itemName = normalizeWhitespace(item.item_name);
         detailItemNameReadNode.textContent = itemName || "(Unassigned item)";
@@ -1855,9 +1925,9 @@
         descriptionReadNode.classList.toggle("is-empty", !normalizeWhitespace(descriptionText));
       }
       if (isDetailEditing) {
-        autoSizeDescriptionField();
-        autoSizeNotesField();
+        scheduleDetailAutosize(item.item_id);
       } else {
+        clearPendingDetailAutosize();
         setDescriptionFieldToMinHeight();
         setNotesFieldToMinHeight();
       }
@@ -1876,13 +1946,111 @@
         });
     }
 
+    function updateDetailHeaderButtons(item) {
+      const hasItem = !!item;
+      if (detailCopyButtonNode) {
+        if (isDetailEditing) {
+          detailCopyButtonNode.textContent = "Paste Item";
+          detailCopyButtonNode.setAttribute("data-action", "paste-item");
+          detailCopyButtonNode.disabled = !hasItem || !itemClipboardSnapshot;
+          detailCopyButtonNode.title = !itemClipboardSnapshot ? "Copy an item first" : "Paste copied item details";
+        } else {
+          detailCopyButtonNode.textContent = "Copy Item";
+          detailCopyButtonNode.setAttribute("data-action", "copy-item");
+          detailCopyButtonNode.disabled = !hasItem;
+          detailCopyButtonNode.title = hasItem ? "Copy this item's details" : "";
+        }
+      }
+      if (detailEditButtonNode) {
+        detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit Item";
+        detailEditButtonNode.setAttribute("data-action", "toggle-detail-edit");
+        detailEditButtonNode.disabled = !hasItem;
+        detailEditButtonNode.title = hasItem ? (isDetailEditing ? "Cancel editing" : "Edit this item") : "";
+      }
+    }
+
+    function copySelectedItemDetails() {
+      const item = getItemById(selectedItemId);
+      if (!item) return false;
+      let snapshot = snapshotEditableFields(item);
+      if (isDetailEditing && detailDraftItemId === item.item_id) {
+        snapshot = getDraftSnapshotFromFields() || snapshot;
+      }
+      if (!snapshot) return false;
+      itemClipboardSnapshot = deepClone(snapshot);
+      updateDetailHeaderButtons(item);
+      return true;
+    }
+
+    function pasteClipboardIntoSelectedItemDraft() {
+      if (!isDetailEditing || !itemClipboardSnapshot) return false;
+      const item = getItemById(selectedItemId);
+      if (!item) return false;
+      const snapshot = deepClone(itemClipboardSnapshot);
+      editItemNameNode.value = snapshot.item_name || "";
+      editRarityNode.value = snapshot.rarity || "";
+      editTypeNode.value = snapshot.type || "";
+      editDescriptionNode.value = snapshot.description || "";
+      editItemUrlNode.value = snapshot.item_url || "";
+      editNotesNode.value = snapshot.notes || "";
+      scheduleDetailAutosize(item.item_id);
+      return true;
+    }
+
+    function clearDetailActionFeedback() {
+      if (detailActionFeedbackHideTimer) {
+        clearTimeout(detailActionFeedbackHideTimer);
+        detailActionFeedbackHideTimer = null;
+      }
+      if (detailActionFeedbackNode && detailActionFeedbackNode.parentNode) {
+        detailActionFeedbackNode.parentNode.removeChild(detailActionFeedbackNode);
+      }
+      detailActionFeedbackNode = null;
+    }
+
+    function showDetailActionFeedback(message, tone) {
+      if (!message) return;
+      const anchor = detailCopyButtonNode || detailEditButtonNode;
+      if (!anchor || !document.body) return;
+      clearDetailActionFeedback();
+
+      const rect = anchor.getBoundingClientRect();
+      if (!rect || !rect.width || !rect.height) return;
+
+      const node = document.createElement("div");
+      node.className = "loot-v2-detail-action-feedback";
+      node.textContent = message;
+      if (tone === "paste") node.classList.add("is-paste");
+      if (tone === "copy") node.classList.add("is-copy");
+
+      node.style.left = (rect.left + (rect.width / 2)) + "px";
+      node.style.top = (rect.top - 6) + "px";
+
+      document.body.appendChild(node);
+      detailActionFeedbackNode = node;
+
+      requestAnimationFrame(function () {
+        if (detailActionFeedbackNode === node) {
+          node.classList.add("is-visible");
+        }
+      });
+
+      detailActionFeedbackHideTimer = setTimeout(function () {
+        if (!detailActionFeedbackNode || detailActionFeedbackNode !== node) return;
+        node.classList.remove("is-visible");
+        setTimeout(function () {
+          if (detailActionFeedbackNode === node) {
+            clearDetailActionFeedback();
+          }
+        }, 160);
+      }, 880);
+    }
+
     function setDetailEditMode(editing) {
       isDetailEditing = !!editing;
       root.classList.toggle("loot-v2-detail-editing", isDetailEditing);
       setDetailFieldDisabled(!isDetailEditing);
-      if (detailEditButtonNode) {
-        detailEditButtonNode.textContent = isDetailEditing ? "Cancel" : "Edit Item";
-      }
+      updateDetailHeaderButtons(getItemById(selectedItemId));
       if (isDetailEditing) {
         const selectedItem = getItemById(selectedItemId);
         detailDraftItemId = selectedItem ? selectedItem.item_id : "";
@@ -1895,9 +2063,9 @@
           editNotesNode.value = selectedItem.notes || "";
         }
         detailDraftInitial = selectedItem ? snapshotEditableFields(selectedItem) : null;
-        autoSizeDescriptionField();
-        autoSizeNotesField();
+        scheduleDetailAutosize(detailDraftItemId || selectedItemId);
       } else {
+        clearPendingDetailAutosize();
         detailDraftInitial = null;
         detailDraftItemId = "";
         setDescriptionFieldToMinHeight();
@@ -3388,6 +3556,9 @@
 
       clearUndoHistoryState();
       renderAll();
+      if (plan.action === "add" && plan.group && plan.group.name) {
+        scrollGroupIntoView(plan.group.name);
+      }
       if (firstCreatedId) {
         focusItemNameForAutoEdit(firstCreatedId);
       }
@@ -3459,6 +3630,7 @@
       if (createGroupCountNode) createGroupCountNode.value = String(DEFAULT_GROUP_COUNT);
       setManageTab("group-manage");
       renderAll();
+      scrollGroupIntoView(groupName);
       focusItemNameForAutoEdit(firstItemId);
       if (manageGroupSelectNode) {
         manageGroupSelectNode.value = groupName;
@@ -3797,6 +3969,8 @@
         "save-item",
         "revert-item-draft",
         "toggle-detail-edit",
+        "copy-item",
+        "paste-item",
         "toggle-edit-first",
         "open-backups",
         "close-backups",
@@ -3815,6 +3989,11 @@
       }
 
       const target = event && event.target;
+      if (detailPointerDownInside && target instanceof Element && !target.closest("#lootV2DetailPanel")) {
+        detailPointerDownInside = false;
+        event.stopPropagation();
+        return;
+      }
       const isStatusPopoverOpen = !!(statusPopoverNode && !statusPopoverNode.hidden);
       const clickedStatusPopover = (target instanceof Element) ? target.closest("#lootV2StatusPopover") : null;
       const clickedStatusTrigger = (target instanceof Element) ? target.closest('button[data-action="open-row-status"]') : null;
@@ -3900,6 +4079,18 @@
           revertItemDraft();
           return;
         }
+        if (action === "copy-item") {
+          if (copySelectedItemDetails()) {
+            showDetailActionFeedback("Item details copied", "copy");
+          }
+          return;
+        }
+        if (action === "paste-item") {
+          if (pasteClipboardIntoSelectedItemDraft()) {
+            showDetailActionFeedback("Item details pasted", "paste");
+          }
+          return;
+        }
         if (action === "toggle-detail-edit") {
           if (!selectedItemId) return;
           if (isDetailEditing) {
@@ -3913,12 +4104,35 @@
           const itemId = actionButton.getAttribute("data-item-id");
           if (!itemId) return;
           if (isDetailEditing && !ensureEditGuardResolved()) return;
+          const isDetailStatusTrigger = !!(
+            actionButton.closest("#lootV2DetailPanel") ||
+            (detailStatusChipNode && actionButton === detailStatusChipNode)
+          );
+          const hasOpenDetail = !!selectedItemId && root.classList.contains("loot-v2-has-detail");
+          if (hasOpenDetail && itemId !== selectedItemId) {
+            if (!ensureEditGuardResolved()) return;
+            const scrollState = captureScrollState();
+            if (itemId !== justChangedItemId && (deferredHiddenItemIds.size || justChangedItemId)) {
+              clearDeferredStatusState();
+            }
+            selectedItemId = itemId;
+            const selectedItem = getItemById(selectedItemId);
+            const shouldAutoEdit = isEditFirstMode || isItemNameUnassigned(selectedItem);
+            setDetailEditMode(shouldAutoEdit);
+            showDetail(selectedItem);
+            renderAllPreservingScroll(scrollState);
+            if (shouldAutoEdit) {
+              focusItemNameForAutoEdit(itemId);
+            }
+          }
           let anchorButton = actionButton;
-          const refreshedRow = root.querySelector('tr[data-item-id="' + itemId + '"]');
-          if (refreshedRow) {
-            const refreshedAnchor = refreshedRow.querySelector('button[data-action="open-row-status"]');
-            if (refreshedAnchor) {
-              anchorButton = refreshedAnchor;
+          if (!isDetailStatusTrigger) {
+            const refreshedRow = root.querySelector('tr[data-item-id="' + itemId + '"]');
+            if (refreshedRow) {
+              const refreshedAnchor = refreshedRow.querySelector('button[data-action="open-row-status"]');
+              if (refreshedAnchor) {
+                anchorButton = refreshedAnchor;
+              }
             }
           }
           if (statusPopoverNode && !statusPopoverNode.hidden && statusPopoverItemId === itemId) {
@@ -4003,12 +4217,26 @@
         const itemId = clickedRow.getAttribute("data-item-id");
         if (!itemId) return;
         if (isDetailEditing && !ensureEditGuardResolved()) return;
+        const hasOpenDetail = !!selectedItemId && root.classList.contains("loot-v2-has-detail");
         const rowForAnchor = root.querySelector('tr[data-item-id="' + itemId + '"]') || clickedRow;
         let statusAnchor = rowForAnchor ? rowForAnchor.querySelector('button[data-action="open-row-status"]') : null;
         if (itemId !== justChangedItemId && (deferredHiddenItemIds.size || justChangedItemId)) {
           const scrollState = captureScrollState();
           clearDeferredStatusState();
           renderAllPreservingScroll(scrollState);
+          const refreshedRow = root.querySelector('tr[data-item-id="' + itemId + '"]');
+          statusAnchor = refreshedRow ? refreshedRow.querySelector('button[data-action="open-row-status"]') : null;
+        }
+        if (hasOpenDetail && itemId !== selectedItemId) {
+          if (!ensureEditGuardResolved()) return;
+          const scrollState = captureScrollState();
+          selectedItemId = itemId;
+          const selectedItem = getItemById(selectedItemId);
+          const shouldAutoEdit = isEditFirstMode || isItemNameUnassigned(selectedItem);
+          setDetailEditMode(shouldAutoEdit);
+          showDetail(selectedItem);
+          renderAllPreservingScroll(scrollState);
+          if (shouldAutoEdit) focusItemNameForAutoEdit(itemId);
           const refreshedRow = root.querySelector('tr[data-item-id="' + itemId + '"]');
           statusAnchor = refreshedRow ? refreshedRow.querySelector('button[data-action="open-row-status"]') : null;
         }
@@ -4045,6 +4273,10 @@
 
     function handleDocumentClick(event) {
       const target = event && event.target;
+      if (detailPointerDownInside) {
+        detailPointerDownInside = false;
+        return;
+      }
       if (statusPopoverNode && !statusPopoverNode.hidden) {
         const clickedPopover = (target instanceof Element) ? target.closest("#lootV2StatusPopover") : null;
         if (!clickedPopover) {
@@ -4057,6 +4289,11 @@
       if (isDetailPersistentClickTarget(target)) return;
       if (!ensureEditGuardResolved()) return;
       clearSelectedItem({ preserveDeferredStatus: true });
+    }
+
+    function handleDocumentPointerDown(event) {
+      const target = event && event.target;
+      detailPointerDownInside = !!(target instanceof Element && target.closest("#lootV2DetailPanel"));
     }
 
     function handleGlobalScrollForStatusPopover() {
@@ -4253,6 +4490,7 @@
       tableToolsCardNode = document.getElementById("lootV2TableToolsCard");
       manageTabButtonNodes = Array.from(root.querySelectorAll('[data-action="set-manage-tab"]'));
       managePanelNodes = Array.from(root.querySelectorAll("[data-manage-panel]"));
+      detailCopyButtonNode = document.getElementById("lootV2CopyItemBtn");
       detailEditButtonNode = document.getElementById("lootV2ToggleEditBtn");
       detailHeaderTitleNode = document.getElementById("lootV2DetailHeaderTitle");
       listFilterButtonNodes = Array.from(root.querySelectorAll('[data-action="toggle-list-status-filter"]'));
@@ -4333,6 +4571,7 @@
 
       root.addEventListener("click", handleRootClick);
       document.addEventListener("click", handleDocumentClick);
+      document.addEventListener("pointerdown", handleDocumentPointerDown, true);
       document.addEventListener("keydown", handleDocumentKeydown);
       document.addEventListener("app:tab-changed", handleTabChanged);
       document.addEventListener("scroll", handleGlobalScrollForStatusPopover, true);

@@ -1,6 +1,6 @@
 # PPQ Loot Calculator (Google Apps Script)
 
-Last updated: 2026-02-21
+Last updated: 2026-02-27
 
 ## Overview
 PPQ Loot Calculator is a single Google Apps Script web app with three active tabs:
@@ -30,7 +30,9 @@ The runtime is v2-only. Legacy tab shells and legacy include chains are no longe
 - Detail card stacks on narrow screens.
 
 ### PPQ Loot Chests
-- Local prototype runtime (dummy/local state, no spreadsheet writes yet).
+- Hybrid runtime:
+  - local fallback state always available
+  - Sheets bootstrap/autosave path available behind feature flag
 - Chest selector + manage tool tabs:
   - `Manage Chests`
   - `Create Group`
@@ -43,7 +45,7 @@ The runtime is v2-only. Legacy tab shells and legacy include chains are no longe
   - edit fields for item details
   - multiline description and notes preservation
   - optional item link (hidden in read mode if empty)
-- Local save/revert snapshot model.
+- Local working snapshot model + autosave pipeline.
 - Undo/redo for status and item-edit actions only.
 
 ## Data Sources
@@ -69,9 +71,11 @@ Script properties used:
 - `combinedSpellScrollData`
 - `initializationComplete`
 
-### Local-only feature
-- Loot Chests currently runs on in-memory dummy state.
-- It does not currently read/write spreadsheet chest data.
+### Loot Chests data mode
+- Default fallback remains local in-memory state.
+- When `lootV1SheetsEnabled=true`, client bootstraps from sheet data via `lootBootstrap()`.
+- Working changes are persisted through `lootSaveSnapshot()` autosave flow.
+- If bootstrap/save fails, UI falls back to local mode with retry state.
 
 ## Runtime Architecture
 
@@ -142,3 +146,5 @@ Spell table styling was moved closer to Loot table behavior:
 - `docs/SMOKE_TEST.md` - regression checklist.
 - `docs/LOOT_CHEST_V1_UI_SPEC.md` - current Loot Chests UI contract.
 - `docs/LOOT_CHEST_HANDOFF.md` - next-phase implementation plan for real chest data.
+- `docs/LOOT_CHEST_DATA_V1_PLAN.md` - sheet schema + queue/write architecture for data-backed Loot Chests.
+- `docs/LOOT_CHEST_DATA_V1_TODO.md` - phased implementation checklist for delivery.

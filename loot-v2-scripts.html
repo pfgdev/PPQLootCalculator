@@ -20,6 +20,14 @@
 
     const STATUS_ORDER = [STATUS.IN_CHEST, STATUS.AWARDED, STATUS.UNUSED];
     const CREATE_CHEST_OPTION = "__create_new_chest__";
+    const SYNC_RETRY_BACKOFF_MS = [1000, 2000, 4000, 8000, 15000, 30000];
+    const VERSION_CONFLICT_RETRY_LIMIT = 3;
+    const AUTO_SAVE_MAX_WAIT_MS = 3000;
+    const RESTORE_CONFIRM_ARM_MS = 5000;
+    const LOCAL_MODE_SNAPSHOT_KEY = "loot_v2_local_snapshot_v1";
+    const UI_PREFS_KEY = "loot_v2_ui_prefs_v1";
+    const BOOTSTRAP_RUNNER_MAX_WAIT_MS = 3500;
+    const BOOTSTRAP_RUNNER_POLL_MS = 120;
 
     const STATUS_LABELS = {
       IN_CHEST: "In Chest",
@@ -181,14 +189,19 @@
     let workingItemsByChest = {};
     let selectedChestId = "";
     let selectedItemId = "";
+    let defaultListStatusFilters = [STATUS.IN_CHEST, STATUS.AWARDED];
     let activeListStatusFilters = new Set([STATUS.IN_CHEST, STATUS.AWARDED]);
     let searchTerm = "";
+    let uiPrefsByChest = {};
+    let preferredSelectedChestId = "";
+    let fallbackUiPreference = null;
     let isEditFirstMode = false;
     let isSyncing = false;
     let syncState = "saved";
     let syncErrorText = "";
     let isDetailEditing = false;
     let detailDraftInitial = null;
+    let detailDraftItemId = "";
     let activeManageTab = "chest";
     let statusCounts = {
       IN_CHEST: 0,
@@ -205,7 +218,19 @@
     let groupCountRepeatDelayTimer = null;
     let groupCountRepeatIntervalTimer = null;
     let autoSaveTimer = null;
+    let autoSaveMaxWaitTimer = null;
+    let autoSaveWindowStartedAt = 0;
+    let syncRetryTimer = null;
+    let syncRetryAttempt = 0;
+    let versionConflictRetryCount = 0;
     let savePendingWhileSync = false;
+    let dataSourceMode = "local";
+    let sheetsModeEnabled = false;
+    let lastServerDataVersion = "0";
+    let pendingTokenUpserts = new Map();
+    let pendingTokenDeletes = new Set();
+    let pendingDeleteChestOps = new Set();
+    let pendingForceSnapshotSave = false;
     let modalLastFocusNode = null;
     let statusPopoverItemId = "";
     let statusPopoverCloseTimer = null;
@@ -213,9 +238,271 @@
     let statusPopoverAnchorRowNode = null;
     let deferredHiddenItemIds = new Set();
     let justChangedItemId = "";
+    let isCheckpointLoading = false;
+    let checkpointActionInFlight = false;
+    let checkpointStatusText = "";
+    let restoreCheckpointConfirmArmed = false;
+    let restoreCheckpointConfirmTimer = null;
+    let isBootstrapping = false;
+    let initialLocalSnapshot = null;
+    let bootstrapRunnerWaitStartedAt = 0;
+    let bootstrapRunnerWaitTimer = null;
+    let bootstrapRequestNonce = 0;
+    let bootstrapInFlight = false;
 
     function deepClone(value) {
       return JSON.parse(JSON.stringify(value));
+    }
+
+    function readLocalModeSnapshot() {
+      try {
+        if (typeof window === "undefined" || !window.localStorage) return null;
+        const raw = window.localStorage.getItem(LOCAL_MODE_SNAPSHOT_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return null;
+        if (!Array.isArray(parsed.chests)) return null;
+        if (!parsed.itemsByChest || typeof parsed.itemsByChest !== "object") return null;
+        return parsed;
+      } catch (ignore) {
+        return null;
+      }
+    }
+
+    function writeLocalModeSnapshot(snapshot) {
+      try {
+        if (typeof window === "undefined" || !window.localStorage) return;
+        if (!snapshot || typeof snapshot !== "object") return;
+        window.localStorage.setItem(LOCAL_MODE_SNAPSHOT_KEY, JSON.stringify(snapshot));
+      } catch (ignore) {
+        // Ignore localStorage write errors (quota/privacy mode).
+      }
+    }
+
+    function clearLocalModeSnapshot() {
+      try {
+        if (typeof window === "undefined" || !window.localStorage) return;
+        window.localStorage.removeItem(LOCAL_MODE_SNAPSHOT_KEY);
+      } catch (ignore) {
+        // Ignore localStorage removal errors (quota/privacy mode).
+      }
+    }
+
+    function readUiPreferences() {
+      try {
+        if (typeof window === "undefined" || !window.localStorage) return null;
+        const raw = window.localStorage.getItem(UI_PREFS_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return null;
+        return parsed;
+      } catch (ignore) {
+        return null;
+      }
+    }
+
+    function writeUiPreferences(preferences) {
+      try {
+        if (typeof window === "undefined" || !window.localStorage) return;
+        if (!preferences || typeof preferences !== "object") return;
+        window.localStorage.setItem(UI_PREFS_KEY, JSON.stringify(preferences));
+      } catch (ignore) {
+        // Ignore localStorage write errors (quota/privacy mode).
+      }
+    }
+
+    function sanitizeUiPreferenceEntry(entry) {
+      if (!entry || typeof entry !== "object") return null;
+      const statuses = STATUS_ORDER.filter(function (status) {
+        return Array.isArray(entry.statusFilters) && entry.statusFilters.indexOf(status) !== -1;
+      });
+      return {
+        statusFilters: statuses.length ? statuses : defaultListStatusFilters.slice(),
+        searchTerm: typeof entry.searchTerm === "string" ? entry.searchTerm : ""
+      };
+    }
+
+    function getCurrentUiPreferenceEntry() {
+      const rawSearch = searchInputNode
+        ? String(searchInputNode.value || "")
+        : String(searchTerm || "");
+      return sanitizeUiPreferenceEntry({
+        statusFilters: getActiveFilterList(),
+        searchTerm: rawSearch
+      }) || {
+        statusFilters: defaultListStatusFilters.slice(),
+        searchTerm: ""
+      };
+    }
+
+    function applyUiPreferencesForChest(chestId) {
+      const chestKey = normalizeWhitespace(chestId);
+      const scoped = chestKey ? uiPrefsByChest[chestKey] : null;
+      const pref = scoped || fallbackUiPreference;
+      const statuses = pref && Array.isArray(pref.statusFilters) && pref.statusFilters.length
+        ? pref.statusFilters
+        : defaultListStatusFilters.slice();
+      const rawSearch = pref && typeof pref.searchTerm === "string" ? pref.searchTerm : "";
+      setListStatusFilters(statuses, { persist: false });
+      searchTerm = rawSearch.trim().toLowerCase();
+      if (searchInputNode) {
+        searchInputNode.value = rawSearch;
+      }
+    }
+
+    function buildUiPreferencesForStorage() {
+      const byChest = {};
+      Object.keys(uiPrefsByChest || {}).forEach(function (chestId) {
+        const normalizedId = normalizeWhitespace(chestId);
+        if (!normalizedId) return;
+        const normalizedPref = sanitizeUiPreferenceEntry(uiPrefsByChest[chestId]);
+        if (!normalizedPref) return;
+        byChest[normalizedId] = normalizedPref;
+      });
+
+      const selectedChestKey = normalizeWhitespace(selectedChestId);
+      if (selectedChestKey) {
+        byChest[selectedChestKey] = getCurrentUiPreferenceEntry();
+      }
+
+      const legacy = selectedChestKey && byChest[selectedChestKey]
+        ? byChest[selectedChestKey]
+        : getCurrentUiPreferenceEntry();
+
+      return {
+        lastSelectedChestId: selectedChestKey || normalizeWhitespace(preferredSelectedChestId),
+        byChest: byChest,
+        // Backward-compatible top-level fields for older builds.
+        statusFilters: legacy.statusFilters,
+        searchTerm: legacy.searchTerm
+      };
+    }
+
+    function persistUiPreferences() {
+      writeUiPreferences(buildUiPreferencesForStorage());
+    }
+
+    function applyStoredUiPreferences() {
+      const prefs = readUiPreferences();
+      uiPrefsByChest = {};
+      preferredSelectedChestId = "";
+      fallbackUiPreference = null;
+      if (!prefs) return;
+
+      if (prefs.byChest && typeof prefs.byChest === "object") {
+        Object.keys(prefs.byChest).forEach(function (chestId) {
+          const normalizedId = normalizeWhitespace(chestId);
+          if (!normalizedId) return;
+          const normalizedPref = sanitizeUiPreferenceEntry(prefs.byChest[chestId]);
+          if (!normalizedPref) return;
+          uiPrefsByChest[normalizedId] = normalizedPref;
+        });
+      }
+
+      if (typeof prefs.lastSelectedChestId === "string") {
+        preferredSelectedChestId = normalizeWhitespace(prefs.lastSelectedChestId);
+      }
+
+      const legacy = sanitizeUiPreferenceEntry({
+        statusFilters: Array.isArray(prefs.statusFilters) ? prefs.statusFilters : [],
+        searchTerm: typeof prefs.searchTerm === "string" ? prefs.searchTerm : ""
+      });
+      if (legacy) {
+        fallbackUiPreference = legacy;
+      }
+    }
+
+    function clearBootstrapRunnerWaitTimer() {
+      if (!bootstrapRunnerWaitTimer) return;
+      clearTimeout(bootstrapRunnerWaitTimer);
+      bootstrapRunnerWaitTimer = null;
+    }
+
+    function buildLocalModeSnapshotForStorage() {
+      return {
+        chests: deepClone(chestList),
+        itemsByChest: deepClone(workingItemsByChest),
+        selectedChestId: selectedChestId || "",
+        selectedItemId: selectedItemId || "",
+        savedAt: Date.now()
+      };
+    }
+
+    function applyLocalSnapshotOrFallback(options) {
+      const settings = options && typeof options === "object" ? options : {};
+      const explicitSnapshot = settings.snapshot && typeof settings.snapshot === "object"
+        ? settings.snapshot
+        : null;
+      const snapshot = explicitSnapshot || readLocalModeSnapshot();
+      const allowDummyFallback = !!settings.allowDummyFallback;
+
+      if (snapshot) {
+        applySnapshotToState({
+          chests: snapshot.chests,
+          itemsByChest: snapshot.itemsByChest
+        });
+        const desiredChestId = normalizeWhitespace(snapshot.selectedChestId);
+        if (desiredChestId && chestList.some(function (chest) { return chest.chest_id === desiredChestId; })) {
+          selectedChestId = desiredChestId;
+        } else if (preferredSelectedChestId && chestList.some(function (chest) { return chest.chest_id === preferredSelectedChestId; })) {
+          selectedChestId = preferredSelectedChestId;
+        } else {
+          selectedChestId = chestList.length ? chestList[0].chest_id : "";
+        }
+        const desiredItemId = normalizeWhitespace(snapshot.selectedItemId);
+        if (desiredItemId && getItemById(desiredItemId)) {
+          selectedItemId = desiredItemId;
+        } else {
+          selectedItemId = "";
+        }
+        applyUiPreferencesForChest(selectedChestId);
+        maybeEnableUnusedFilterForSelectedChest();
+        return true;
+      }
+
+      if (!allowDummyFallback) {
+        applySnapshotToState({
+          chests: [],
+          itemsByChest: {}
+        });
+        selectedChestId = "";
+        selectedItemId = "";
+        applyUiPreferencesForChest("");
+        maybeEnableUnusedFilterForSelectedChest();
+        return false;
+      }
+
+      const dummy = buildDummyState();
+      applySnapshotToState({
+        chests: dummy.chests,
+        itemsByChest: dummy.itemsByChest
+      });
+      selectedChestId = chestList.length ? chestList[0].chest_id : "";
+      selectedItemId = "";
+      applyUiPreferencesForChest(selectedChestId);
+      maybeEnableUnusedFilterForSelectedChest();
+      writeLocalModeSnapshot(buildLocalModeSnapshotForStorage());
+      return false;
+    }
+
+    function isLegacyDummySnapshot(snapshot) {
+      if (!snapshot || !Array.isArray(snapshot.chests)) return false;
+      if (snapshot.chests.length < 2) return false;
+      const chestIdSet = new Set(snapshot.chests.map(function (chest) {
+        return normalizeWhitespace(chest && chest.chest_id);
+      }));
+      const chestNameSet = new Set(snapshot.chests.map(function (chest) {
+        return normalizeWhitespace(chest && chest.chest_name).toLowerCase();
+      }));
+      const hasLegacyIds = chestIdSet.has("main_campaign") && chestIdSet.has("boss_vault");
+      const hasLegacyNames = chestNameSet.has("main campaign chest") && chestNameSet.has("boss vault");
+      return hasLegacyIds || hasLegacyNames;
+    }
+
+    function sanitizeBootstrapFallbackSnapshot(snapshot) {
+      if (!snapshot || typeof snapshot !== "object") return null;
+      if (isLegacyDummySnapshot(snapshot)) return null;
+      return snapshot;
     }
 
     function normalizeWhitespace(value) {
@@ -571,6 +858,317 @@
       return { chests: chests, itemsByChest: byChest };
     }
 
+    function getAppsScriptRunner() {
+      if (typeof google === "undefined" || !google || !google.script || !google.script.run) {
+        return null;
+      }
+      return google.script.run;
+    }
+
+    function unwrapServerEnvelope(response) {
+      if (response && typeof response === "object" && Object.prototype.hasOwnProperty.call(response, "ok")) {
+        if (response.ok === false) {
+          return {
+            ok: false,
+            error: normalizeWhitespace(response.error) || "Request failed.",
+            data: response.data || null
+          };
+        }
+        return { ok: true, data: response.data || {} };
+      }
+      return { ok: true, data: response || {} };
+    }
+
+    function getErrorMessage(error, fallback) {
+      if (!error) return fallback || "Request failed.";
+      if (typeof error === "string") {
+        return normalizeWhitespace(error) || (fallback || "Request failed.");
+      }
+      if (error && typeof error.message === "string") {
+        return normalizeWhitespace(error.message) || (fallback || "Request failed.");
+      }
+      try {
+        const text = JSON.stringify(error);
+        return normalizeWhitespace(text) || (fallback || "Request failed.");
+      } catch (ignore) {
+        return fallback || "Request failed.";
+      }
+    }
+
+    function normalizeServerStatus(status) {
+      const safe = normalizeWhitespace(status).toUpperCase();
+      if (safe === STATUS.AWARDED) return STATUS.AWARDED;
+      if (safe === STATUS.UNUSED || safe === "INACTIVE") return STATUS.UNUSED;
+      return STATUS.IN_CHEST;
+    }
+
+    function deriveNextItemIdCounter(itemsByChest) {
+      let maxSeen = 0;
+      Object.keys(itemsByChest || {}).forEach(function (chestId) {
+        const items = Array.isArray(itemsByChest[chestId]) ? itemsByChest[chestId] : [];
+        items.forEach(function (item) {
+          const itemId = String(item && item.item_id ? item.item_id : "");
+          const match = itemId.match(/_item_(\d+)$/i);
+          if (!match) return;
+          const parsed = Number(match[1]);
+          if (Number.isInteger(parsed) && parsed > maxSeen) {
+            maxSeen = parsed;
+          }
+        });
+      });
+      return Math.max(1, maxSeen + 1);
+    }
+
+    function applySnapshotToState(snapshot) {
+      const nextChests = Array.isArray(snapshot && snapshot.chests) ? snapshot.chests : [];
+      const nextItemsByChest = snapshot && typeof snapshot.itemsByChest === "object"
+        ? snapshot.itemsByChest
+        : {};
+
+      chestList = deepClone(nextChests);
+      workingItemsByChest = deepClone(nextItemsByChest);
+      persistedChestList = deepClone(nextChests);
+      persistedItemsByChest = deepClone(nextItemsByChest);
+
+      if (selectedChestId && chestList.some(function (chest) { return chest.chest_id === selectedChestId; })) {
+        // Keep selected chest when still available.
+      } else if (preferredSelectedChestId && chestList.some(function (chest) { return chest.chest_id === preferredSelectedChestId; })) {
+        selectedChestId = preferredSelectedChestId;
+      } else {
+        selectedChestId = chestList.length ? chestList[0].chest_id : "";
+      }
+
+      if (!selectedChestId || !workingItemsByChest[selectedChestId]) {
+        selectedItemId = "";
+      } else if (!getItemById(selectedItemId)) {
+        selectedItemId = "";
+      }
+
+      applyUiPreferencesForChest(selectedChestId);
+      maybeEnableUnusedFilterForSelectedChest();
+
+      nextId = deriveNextItemIdCounter(workingItemsByChest);
+      resetPendingOperations();
+    }
+
+    function normalizeSheetsBootstrap(bootstrapData) {
+      const mode = normalizeWhitespace(bootstrapData && bootstrapData.mode).toLowerCase();
+      if (mode !== "sheets" || !(bootstrapData && bootstrapData.enabled)) {
+        return null;
+      }
+
+      const chestMap = {};
+      const itemsByChest = {};
+      const chests = [];
+
+      const sourceChests = Array.isArray(bootstrapData.chests) ? bootstrapData.chests : [];
+      sourceChests.forEach(function (chest) {
+        const chestId = normalizeWhitespace(chest && chest.chest_id);
+        if (!chestId || chestMap[chestId]) return;
+        const record = {
+          chest_id: chestId,
+          chest_name: normalizeWhitespace(chest.chest_name) || chestId
+        };
+        chestMap[chestId] = record;
+        chests.push(record);
+        itemsByChest[chestId] = [];
+      });
+
+      const sourceTokens = Array.isArray(bootstrapData.tokens) ? bootstrapData.tokens : [];
+      sourceTokens.forEach(function (token, index) {
+        if (!token) return;
+        const chestId = normalizeWhitespace(token.chest_id);
+        if (!chestId) return;
+        if (!chestMap[chestId]) {
+          const inferredChest = {
+            chest_id: chestId,
+            chest_name: normalizeWhitespace(token.chest_name) || chestId
+          };
+          chestMap[chestId] = inferredChest;
+          chests.push(inferredChest);
+          itemsByChest[chestId] = [];
+        }
+        if (!itemsByChest[chestId]) {
+          itemsByChest[chestId] = [];
+        }
+
+        const tokenLabel = normalizeWhitespace(token.token_label || token.token);
+        if (!tokenLabel) return;
+        const tokenParts = parseTokenParts(tokenLabel);
+        const groupLabel = normalizeWhitespace(token.group_name) || normalizeWhitespace(tokenParts.prefix);
+        const themeValue = resolveThemeValue(token.theme_key)
+          || inferThemeFromTokenPrefix(groupLabel)
+          || "";
+
+        itemsByChest[chestId].push({
+          item_id: normalizeWhitespace(token.token_id) || ("sheet_item_" + String(index + 1)),
+          chest_id: chestId,
+          token: tokenLabel,
+          status: normalizeServerStatus(token.status),
+          item_name: normalizeWhitespace(token.item_name),
+          rarity: normalizeWhitespace(token.rarity),
+          type: normalizeWhitespace(token.type),
+          attunement_required: false,
+          description: normalizeMultilineText(token.description),
+          item_url: normalizeWhitespace(token.item_link || token.item_url),
+          notes: normalizeMultilineText(token.notes),
+          color_theme: themeValue,
+          category_label: groupLabel,
+          deleted: false
+        });
+      });
+
+      chests.sort(function (a, b) {
+        return String(a.chest_name || "").localeCompare(String(b.chest_name || ""), undefined, { sensitivity: "base" });
+      });
+
+      Object.keys(itemsByChest).forEach(function (chestId) {
+        itemsByChest[chestId].sort(function (a, b) {
+          return compareTokens(a.token, b.token);
+        });
+      });
+
+      return {
+        chests: chests,
+        itemsByChest: itemsByChest,
+        defaults: bootstrapData.defaults || {},
+        lists: bootstrapData.lists || {},
+        dataVersion: String(bootstrapData.data_version || "0")
+      };
+    }
+
+    function applyServerDefaults(defaults) {
+      const value = defaults && typeof defaults === "object" ? defaults : {};
+      if (Array.isArray(value.default_status_filter)) {
+        const normalized = value.default_status_filter.map(function (entry) {
+          return normalizeServerStatus(entry);
+        });
+        const nextDefaults = STATUS_ORDER.filter(function (status) {
+          return normalized.indexOf(status) !== -1;
+        });
+        if (nextDefaults.length) {
+          defaultListStatusFilters = nextDefaults;
+        }
+      }
+      if (typeof value.default_edit_first === "boolean") {
+        isEditFirstMode = value.default_edit_first;
+      }
+    }
+
+    function loadInitialStateFromDataSource() {
+      const runner = getAppsScriptRunner();
+      if (!runner) {
+        if (isBootstrapping) {
+          const elapsed = Date.now() - (bootstrapRunnerWaitStartedAt || Date.now());
+          if (elapsed < BOOTSTRAP_RUNNER_MAX_WAIT_MS) {
+            clearBootstrapRunnerWaitTimer();
+            bootstrapRunnerWaitTimer = setTimeout(loadInitialStateFromDataSource, BOOTSTRAP_RUNNER_POLL_MS);
+            return;
+          }
+          isBootstrapping = false;
+          bootstrapInFlight = false;
+          dataSourceMode = "local";
+          sheetsModeEnabled = false;
+          applyLocalSnapshotOrFallback({
+            snapshot: sanitizeBootstrapFallbackSnapshot(initialLocalSnapshot),
+            allowDummyFallback: false
+          });
+          initialLocalSnapshot = null;
+          clearBootstrapRunnerWaitTimer();
+          resetSyncRetryState();
+          setSyncState("retry", "Unable to connect to data source.");
+          renderAllPreservingScroll();
+          return;
+        }
+        clearBootstrapRunnerWaitTimer();
+        bootstrapInFlight = false;
+        return;
+      }
+
+      clearBootstrapRunnerWaitTimer();
+      if (bootstrapInFlight) return;
+      bootstrapInFlight = true;
+      const requestNonce = ++bootstrapRequestNonce;
+      isBootstrapping = true;
+      renderAllPreservingScroll();
+
+      runner
+        .withSuccessHandler(function (response) {
+          if (requestNonce !== bootstrapRequestNonce) return;
+          bootstrapInFlight = false;
+          const envelope = unwrapServerEnvelope(response);
+          if (!envelope.ok) {
+            isBootstrapping = false;
+            dataSourceMode = "local";
+            sheetsModeEnabled = false;
+            applyLocalSnapshotOrFallback({
+              snapshot: sanitizeBootstrapFallbackSnapshot(initialLocalSnapshot),
+              allowDummyFallback: false
+            });
+            initialLocalSnapshot = null;
+            resetSyncRetryState();
+            setSyncState("retry", envelope.error || "Bootstrap failed.");
+            renderAllPreservingScroll();
+            return;
+          }
+
+          const normalized = normalizeSheetsBootstrap(envelope.data || {});
+          if (!normalized) {
+            isBootstrapping = false;
+            dataSourceMode = "local";
+            sheetsModeEnabled = false;
+            applyLocalSnapshotOrFallback({
+              snapshot: sanitizeBootstrapFallbackSnapshot(initialLocalSnapshot),
+              allowDummyFallback: false
+            });
+            initialLocalSnapshot = null;
+            resetSyncRetryState();
+            setSyncState("saved");
+            renderAllPreservingScroll();
+            return;
+          }
+
+          dataSourceMode = "sheets";
+          sheetsModeEnabled = true;
+          isBootstrapping = false;
+          resetSyncRetryState();
+          initialLocalSnapshot = null;
+          clearLocalModeSnapshot();
+          lastServerDataVersion = normalized.dataVersion || "0";
+          applySnapshotToState({
+            chests: normalized.chests,
+            itemsByChest: normalized.itemsByChest
+          });
+          applyServerDefaults(normalized.defaults);
+          applyStoredUiPreferences();
+          applyUiPreferencesForChest(selectedChestId);
+          maybeEnableUnusedFilterForSelectedChest();
+          pendingDeleteChestId = "";
+          pendingDeleteGroupPrefix = "";
+          selectedItemId = "";
+          setDetailEditMode(false);
+          clearUndoHistoryState();
+          setSyncState("saved");
+          renderAllPreservingScroll();
+        })
+        .withFailureHandler(function (error) {
+          if (requestNonce !== bootstrapRequestNonce) return;
+          bootstrapInFlight = false;
+          isBootstrapping = false;
+          dataSourceMode = "local";
+          sheetsModeEnabled = false;
+          applyLocalSnapshotOrFallback({
+            snapshot: sanitizeBootstrapFallbackSnapshot(initialLocalSnapshot),
+            allowDummyFallback: false
+          });
+          initialLocalSnapshot = null;
+          resetSyncRetryState();
+          setSyncState("retry", getErrorMessage(error, "Bootstrap failed."));
+          renderAllPreservingScroll();
+        })
+        .lootBootstrap();
+    }
+
     function hasSelectedChest() {
       return !!(selectedChestId && workingItemsByChest[selectedChestId]);
     }
@@ -612,26 +1210,49 @@
       const dirty = hasChest && isDirty();
       if (syncStatusButtonNode) {
         syncStatusButtonNode.classList.remove("is-saved", "is-saving", "is-retry");
-        if (!hasChest) {
+        if (isBootstrapping) {
+          syncStatusButtonNode.textContent = "Loading...";
+          syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.title = "";
+          syncStatusButtonNode.classList.add("is-saving");
+        } else if (!hasChest) {
           syncStatusButtonNode.textContent = "Saved";
           syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.title = "";
           syncStatusButtonNode.classList.add("is-saved");
-        } else if (syncState === "saving" || dirty) {
-          syncStatusButtonNode.textContent = "Saving...";
-          syncStatusButtonNode.disabled = true;
-          syncStatusButtonNode.classList.add("is-saving");
         } else if (syncState === "retry") {
           syncStatusButtonNode.textContent = "Retry";
           syncStatusButtonNode.disabled = false;
           syncStatusButtonNode.title = syncErrorText || "Retry sync";
           syncStatusButtonNode.classList.add("is-retry");
+        } else if (syncState === "saving") {
+          syncStatusButtonNode.textContent = "Saving...";
+          syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.title = "";
+          syncStatusButtonNode.classList.add("is-saving");
+        } else if (dirty) {
+          syncStatusButtonNode.textContent = "Saving...";
+          syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.title = "";
+          syncStatusButtonNode.classList.add("is-saving");
         } else {
           syncStatusButtonNode.textContent = "Saved";
           syncStatusButtonNode.disabled = true;
+          syncStatusButtonNode.title = "";
           syncStatusButtonNode.classList.add("is-saved");
         }
       }
-      if (backupsButtonNode) backupsButtonNode.disabled = !hasChest;
+      if (backupsButtonNode) backupsButtonNode.disabled = !hasChest || isBootstrapping;
+    }
+
+    function shouldShowDetailMetaTag(value) {
+      const label = normalizeWhitespace(value);
+      if (!label) return false;
+      const collapsed = label.replace(/\s+/g, "").toLowerCase();
+      if (collapsed === "--" || collapsed === "-" || collapsed === "n/a" || collapsed === "na") {
+        return false;
+      }
+      return true;
     }
 
     function getVisibleItems() {
@@ -674,6 +1295,36 @@
       clearDeferredStatusState();
     }
 
+    function clearSelectionStateForDeletedItems(deletedItemIds) {
+      if (!deletedItemIds || !deletedItemIds.size) return false;
+
+      let clearedSelected = false;
+      if (selectedItemId && deletedItemIds.has(selectedItemId)) {
+        selectedItemId = "";
+        setDetailEditMode(false);
+        detailDraftInitial = null;
+        clearedSelected = true;
+      }
+
+      if (statusPopoverItemId && deletedItemIds.has(statusPopoverItemId)) {
+        closeStatusPopover();
+      }
+
+      if (justChangedItemId && deletedItemIds.has(justChangedItemId)) {
+        justChangedItemId = "";
+      }
+
+      deletedItemIds.forEach(function (itemId) {
+        deferredHiddenItemIds.delete(itemId);
+      });
+
+      if (lastChangeState && lastChangeState.item_id && deletedItemIds.has(lastChangeState.item_id)) {
+        clearUndoHistoryState();
+      }
+
+      return clearedSelected;
+    }
+
     function pruneDeferredStatusState() {
       const activeIds = new Set(getActiveItems(selectedChestId).map(function (item) { return item.item_id; }));
       if (justChangedItemId && !activeIds.has(justChangedItemId)) {
@@ -694,7 +1345,30 @@
       });
     }
 
-    function setListStatusFilters(statuses) {
+    function maybeEnableUnusedFilterForSelectedChest() {
+      if (!selectedChestId) return false;
+      const activeItems = getActiveItems(selectedChestId);
+      if (!activeItems.length) return false;
+      const counts = {
+        IN_CHEST: 0,
+        AWARDED: 0,
+        UNUSED: 0
+      };
+      activeItems.forEach(function (item) {
+        if (counts[item.status] !== undefined) {
+          counts[item.status] += 1;
+        }
+      });
+      if (counts.IN_CHEST === 0 && counts.AWARDED === 0 && counts.UNUSED > 0) {
+        ensureListStatusFilter(STATUS.UNUSED, { persist: false });
+        return true;
+      }
+      return false;
+    }
+
+    function setListStatusFilters(statuses, options) {
+      const settings = options && typeof options === "object" ? options : {};
+      const shouldPersist = settings.persist !== false;
       const next = new Set();
       (statuses || []).forEach(function (status) {
         if (STATUS_LABELS[status]) {
@@ -702,17 +1376,27 @@
         }
       });
       activeListStatusFilters = next;
+      if (shouldPersist) {
+        persistUiPreferences();
+      }
     }
 
-    function ensureListStatusFilter(status) {
+    function ensureListStatusFilter(status, options) {
+      const settings = options && typeof options === "object" ? options : {};
+      const shouldPersist = settings.persist !== false;
       if (!STATUS_LABELS[status]) return;
       if (activeListStatusFilters.has(status)) return;
       const next = new Set(activeListStatusFilters);
       next.add(status);
       activeListStatusFilters = next;
+      if (shouldPersist) {
+        persistUiPreferences();
+      }
     }
 
-    function toggleListStatusFilter(status) {
+    function toggleListStatusFilter(status, options) {
+      const settings = options && typeof options === "object" ? options : {};
+      const shouldPersist = settings.persist !== false;
       if (!STATUS_LABELS[status]) return;
       const next = new Set(activeListStatusFilters);
       if (next.has(status)) {
@@ -721,6 +1405,9 @@
         next.add(status);
       }
       activeListStatusFilters = next;
+      if (shouldPersist) {
+        persistUiPreferences();
+      }
       renderAll();
     }
 
@@ -995,6 +1682,11 @@
     }
 
     function renderTable() {
+      if (isBootstrapping) {
+        setTableColumnsSplit(false);
+        renderEmptyColumn(columnANode, "Searching for save data in Google Drive. Please wait...");
+        return;
+      }
       if (!hasSelectedChest()) {
         setTableColumnsSplit(false);
         renderEmptyColumn(columnANode, "Create a loot chest to begin.");
@@ -1130,21 +1822,33 @@
       }
       if (detailRarityTagNode) {
         const rarityLabel = normalizeWhitespace(item.rarity);
-        detailRarityTagNode.textContent = rarityLabel;
-        detailRarityTagNode.hidden = !rarityLabel;
+        const showRarityTag = shouldShowDetailMetaTag(rarityLabel);
+        detailRarityTagNode.textContent = showRarityTag ? rarityLabel : "";
+        detailRarityTagNode.hidden = !showRarityTag;
       }
       if (detailTypeTagNode) {
         const typeLabel = normalizeWhitespace(item.type);
-        detailTypeTagNode.textContent = typeLabel;
-        detailTypeTagNode.hidden = !typeLabel;
+        const showTypeTag = shouldShowDetailMetaTag(typeLabel);
+        detailTypeTagNode.textContent = showTypeTag ? typeLabel : "";
+        detailTypeTagNode.hidden = !showTypeTag;
       }
       renderDetailStatusChip(item);
-      editItemNameNode.value = item.item_name || "";
-      editRarityNode.value = item.rarity || "";
-      editTypeNode.value = item.type || "";
-      editDescriptionNode.value = item.description || "";
-      editItemUrlNode.value = item.item_url || "";
-      editNotesNode.value = item.notes || "";
+      const shouldHydrateEditFields =
+        !isDetailEditing ||
+        !detailDraftItemId ||
+        detailDraftItemId !== item.item_id;
+      if (shouldHydrateEditFields) {
+        editItemNameNode.value = item.item_name || "";
+        editRarityNode.value = item.rarity || "";
+        editTypeNode.value = item.type || "";
+        editDescriptionNode.value = item.description || "";
+        editItemUrlNode.value = item.item_url || "";
+        editNotesNode.value = item.notes || "";
+        if (isDetailEditing) {
+          detailDraftItemId = item.item_id;
+          detailDraftInitial = snapshotEditableFields(item);
+        }
+      }
       if (descriptionReadNode) {
         const descriptionText = item.description || "";
         descriptionReadNode.textContent = descriptionText || "Short item summary for table play";
@@ -1181,11 +1885,21 @@
       }
       if (isDetailEditing) {
         const selectedItem = getItemById(selectedItemId);
+        detailDraftItemId = selectedItem ? selectedItem.item_id : "";
+        if (selectedItem) {
+          editItemNameNode.value = selectedItem.item_name || "";
+          editRarityNode.value = selectedItem.rarity || "";
+          editTypeNode.value = selectedItem.type || "";
+          editDescriptionNode.value = selectedItem.description || "";
+          editItemUrlNode.value = selectedItem.item_url || "";
+          editNotesNode.value = selectedItem.notes || "";
+        }
         detailDraftInitial = selectedItem ? snapshotEditableFields(selectedItem) : null;
         autoSizeDescriptionField();
         autoSizeNotesField();
       } else {
         detailDraftInitial = null;
+        detailDraftItemId = "";
         setDescriptionFieldToMinHeight();
         setNotesFieldToMinHeight();
       }
@@ -1255,7 +1969,7 @@
       manageTabButtonNodes.forEach(function (button) {
         const tab = button.getAttribute("data-manage-tab");
         const disabled = (noChest && tab !== "chest") || (!noChest && tab === "group-manage" && !hasGroups);
-        button.disabled = disabled;
+        button.disabled = disabled || isBootstrapping;
         button.classList.toggle("is-active", tab === activeManageTab);
       });
       managePanelNodes.forEach(function (panel) {
@@ -1276,7 +1990,7 @@
 
     function renderUndoActionState() {
       if (!undoLastButtonNode) return;
-      if (!hasSelectedChest()) {
+      if (isBootstrapping || !hasSelectedChest()) {
         undoLastButtonNode.textContent = "Undo";
         undoLastButtonNode.disabled = true;
         return;
@@ -1311,13 +2025,12 @@
       });
       if (hasCurrentChest) {
         chestSelectNode.value = current;
-        return;
-      }
-      if (selectedChestId) {
+      } else if (selectedChestId) {
         chestSelectNode.value = selectedChestId;
-        return;
+      } else {
+        chestSelectNode.value = CREATE_CHEST_OPTION;
       }
-      chestSelectNode.value = CREATE_CHEST_OPTION;
+      chestSelectNode.disabled = isBootstrapping;
     }
 
     function renderDeleteChestSelect() {
@@ -1366,16 +2079,19 @@
 
     function renderChestToolsState() {
       if (!deleteChestButtonNode || !deleteChestSelectNode) return;
+      const lockActions = isBootstrapping;
       const nextChestName = normalizeWhitespace(newChestNameNode && newChestNameNode.value);
       if (addChestButtonNode) {
-        addChestButtonNode.disabled = !nextChestName;
+        addChestButtonNode.disabled = lockActions || !nextChestName;
         addChestButtonNode.title = nextChestName ? "" : "Name required";
       }
       const selectedDeleteId = deleteChestSelectNode.value || "";
       const armed = !!pendingDeleteChestId && pendingDeleteChestId === selectedDeleteId;
-      deleteChestButtonNode.disabled = !selectedDeleteId && !armed;
+      deleteChestButtonNode.disabled = lockActions || (!selectedDeleteId && !armed);
       deleteChestButtonNode.title = selectedDeleteId ? "" : "Select Chest to delete";
       deleteChestButtonNode.textContent = armed ? "Confirm" : "Delete Chest";
+      if (newChestNameNode) newChestNameNode.disabled = lockActions;
+      deleteChestSelectNode.disabled = lockActions || !chestList.length;
     }
 
     function clearDeleteConfirmState() {
@@ -1463,7 +2179,7 @@
     }
 
     function renderGroupEditorState() {
-      const noChest = !hasSelectedChest();
+      const noChest = !hasSelectedChest() || isBootstrapping;
       const summaries = getGroupSummaries();
       const hasGroups = summaries.length > 0;
       if (!hasGroups && activeManageTab === "group-manage") {
@@ -1653,7 +2369,7 @@
         const status = button.getAttribute("data-status");
         const isActive = activeListStatusFilters.has(status);
         const count = statusCounts[status] || 0;
-        button.disabled = noChest;
+        button.disabled = noChest || isBootstrapping;
         clearNode(button);
         const labelNode = document.createElement("span");
         labelNode.className = "loot-v2-list-filter-label";
@@ -1671,6 +2387,7 @@
       editFirstToggleButtonNode.title = isEditFirstMode
         ? "Item clicks open in edit mode"
         : "Item clicks open in read mode";
+      editFirstToggleButtonNode.disabled = isBootstrapping;
     }
 
     function toggleEditFirstMode() {
@@ -1698,7 +2415,7 @@
       renderGroupEditorState();
       renderTokenRangeState();
       const noChest = !hasSelectedChest();
-      if (searchInputNode) searchInputNode.disabled = noChest;
+      if (searchInputNode) searchInputNode.disabled = noChest || isBootstrapping;
       renderEditFirstToggle();
       renderListStatusFilters();
       renderUndoActionState();
@@ -1750,9 +2467,108 @@
       syncErrorText = errorText || "";
     }
 
+    function persistSnapshot(snapshot) {
+      const safeSnapshot = snapshot && typeof snapshot === "object" ? snapshot : buildWorkingSnapshot();
+      persistedChestList = deepClone(Array.isArray(safeSnapshot.chests) ? safeSnapshot.chests : []);
+      persistedItemsByChest = deepClone(
+        safeSnapshot.itemsByChest && typeof safeSnapshot.itemsByChest === "object"
+          ? safeSnapshot.itemsByChest
+          : {}
+      );
+      if (dataSourceMode === "local" || !sheetsModeEnabled) {
+        writeLocalModeSnapshot(buildLocalModeSnapshotForStorage());
+      }
+    }
+
     function persistWorkingSnapshot() {
-      persistedChestList = deepClone(chestList);
-      persistedItemsByChest = deepClone(workingItemsByChest);
+      persistSnapshot(buildWorkingSnapshot());
+    }
+
+    function resetPendingOperations() {
+      pendingTokenUpserts.clear();
+      pendingTokenDeletes.clear();
+      pendingDeleteChestOps.clear();
+      pendingForceSnapshotSave = false;
+    }
+
+    function buildTokenOperationPayload(item) {
+      if (!item || !item.item_id) return null;
+      const chest = chestList.find(function (entry) {
+        return entry && entry.chest_id === item.chest_id;
+      }) || null;
+      const tokenParts = parseTokenParts(item.token || "");
+      return {
+        token_id: String(item.item_id || ""),
+        chest_id: String(item.chest_id || ""),
+        chest_name: normalizeWhitespace(chest && chest.chest_name ? chest.chest_name : item.chest_name || item.chest_id),
+        token_label: normalizeWhitespace(item.token),
+        token_number: Number.isFinite(tokenParts.number) ? Number(tokenParts.number) : 0,
+        group_name: normalizeWhitespace(item.category_label || tokenParts.prefix),
+        theme_key: resolveThemeValue(item.color_theme || ""),
+        status: item.status || STATUS.UNUSED,
+        item_name: normalizeWhitespace(item.item_name),
+        rarity: normalizeWhitespace(item.rarity),
+        type: normalizeWhitespace(item.type),
+        description: normalizeMultilineText(item.description),
+        item_link: normalizeWhitespace(item.item_url),
+        notes: normalizeMultilineText(item.notes)
+      };
+    }
+
+    function queueTokenUpsert(item) {
+      const payload = buildTokenOperationPayload(item);
+      if (!payload || !payload.token_id) return;
+      pendingTokenDeletes.delete(payload.token_id);
+      pendingTokenUpserts.set(payload.token_id, payload);
+    }
+
+    function queueTokenDelete(itemId) {
+      const tokenId = normalizeWhitespace(itemId);
+      if (!tokenId) return;
+      pendingTokenUpserts.delete(tokenId);
+      pendingTokenDeletes.add(tokenId);
+    }
+
+    function queueDeleteChest(chestId) {
+      const tokenId = normalizeWhitespace(chestId);
+      if (!tokenId) return;
+      pendingDeleteChestOps.add(tokenId);
+      pendingTokenDeletes.forEach(function (candidateId) {
+        const item = getItemById(candidateId);
+        if (item && item.chest_id === tokenId) {
+          pendingTokenDeletes.delete(candidateId);
+        }
+      });
+      pendingTokenUpserts.forEach(function (payload, candidateId) {
+        if (payload && payload.chest_id === tokenId) {
+          pendingTokenUpserts.delete(candidateId);
+        }
+      });
+    }
+
+    function queueForceSnapshotWrite() {
+      pendingForceSnapshotSave = true;
+      pendingTokenUpserts.clear();
+      pendingTokenDeletes.clear();
+      pendingDeleteChestOps.clear();
+    }
+
+    function buildOperationsPayload() {
+      const operations = [];
+      pendingDeleteChestOps.forEach(function (chestId) {
+        operations.push({ type: "delete_chest", chest_id: chestId });
+      });
+      pendingTokenDeletes.forEach(function (tokenId) {
+        operations.push({ type: "delete_token", token_id: tokenId });
+      });
+      pendingTokenUpserts.forEach(function (tokenPayload) {
+        operations.push({ type: "upsert_token", token: deepClone(tokenPayload) });
+      });
+      return {
+        chests: deepClone(chestList),
+        operations: operations,
+        data_version: String(lastServerDataVersion || "0")
+      };
     }
 
     function clearAutoSaveTimer() {
@@ -1761,13 +2577,74 @@
       autoSaveTimer = null;
     }
 
+    function clearAutoSaveMaxWaitTimer() {
+      if (!autoSaveMaxWaitTimer) return;
+      clearTimeout(autoSaveMaxWaitTimer);
+      autoSaveMaxWaitTimer = null;
+    }
+
+    function resetAutoSaveWindow() {
+      autoSaveWindowStartedAt = 0;
+      clearAutoSaveMaxWaitTimer();
+    }
+
+    function armAutoSaveMaxWaitWindow() {
+      if (autoSaveWindowStartedAt) return;
+      autoSaveWindowStartedAt = Date.now();
+      clearAutoSaveMaxWaitTimer();
+      autoSaveMaxWaitTimer = setTimeout(function () {
+        autoSaveMaxWaitTimer = null;
+        performAutoSave();
+      }, AUTO_SAVE_MAX_WAIT_MS);
+    }
+
+    function clearSyncRetryTimer() {
+      if (!syncRetryTimer) return;
+      clearTimeout(syncRetryTimer);
+      syncRetryTimer = null;
+    }
+
+    function resetSyncRetryState() {
+      clearSyncRetryTimer();
+      syncRetryAttempt = 0;
+    }
+
+    function getSyncRetryDelayMs() {
+      const index = Math.min(syncRetryAttempt, SYNC_RETRY_BACKOFF_MS.length - 1);
+      return SYNC_RETRY_BACKOFF_MS[index];
+    }
+
+    function scheduleSyncRetry() {
+      if (syncRetryTimer || !sheetsModeEnabled) return;
+      if (!isDirty()) return;
+      const delay = getSyncRetryDelayMs();
+      syncRetryAttempt += 1;
+      syncRetryTimer = setTimeout(function () {
+        syncRetryTimer = null;
+        if (!sheetsModeEnabled) {
+          resetSyncRetryState();
+          return;
+        }
+        if (!isDirty()) {
+          resetSyncRetryState();
+          setSyncState("saved");
+          renderAllPreservingScroll();
+          return;
+        }
+        retrySyncNow(true);
+      }, delay);
+    }
+
     function performAutoSave() {
       clearAutoSaveTimer();
+      resetAutoSaveWindow();
       if (isSyncing) {
         savePendingWhileSync = true;
         return;
       }
       if (!isDirty()) {
+        resetPendingOperations();
+        resetSyncRetryState();
         savePendingWhileSync = false;
         setSyncState("saved");
         renderAllPreservingScroll();
@@ -1778,23 +2655,82 @@
       setSyncState("saving");
       renderAllPreservingScroll();
 
-      setTimeout(function () {
-        try {
-          persistWorkingSnapshot();
-          isSyncing = false;
-          if (savePendingWhileSync || isDirty()) {
-            savePendingWhileSync = false;
-            performAutoSave();
+      const finalizeSuccess = function (saveData) {
+        resetSyncRetryState();
+        versionConflictRetryCount = 0;
+        persistSnapshot(payload);
+        resetPendingOperations();
+        if (saveData && saveData.data_version != null) {
+          lastServerDataVersion = String(saveData.data_version);
+        }
+        isSyncing = false;
+        if (savePendingWhileSync || isDirty()) {
+          savePendingWhileSync = false;
+          performAutoSave();
+          return;
+        }
+        setSyncState("saved");
+        renderAllPreservingScroll();
+      };
+
+      const finalizeFailure = function (message, options) {
+        const settings = options && typeof options === "object" ? options : {};
+        versionConflictRetryCount = 0;
+        isSyncing = false;
+        savePendingWhileSync = false;
+        setSyncState("retry", normalizeWhitespace(message) || "Sync failed.");
+        renderAllPreservingScroll();
+        if (settings.autoRetry !== false) {
+          scheduleSyncRetry();
+        }
+      };
+
+      const payload = deepClone(buildWorkingSnapshot());
+      const runner = getAppsScriptRunner();
+      if (sheetsModeEnabled && runner) {
+        const onSuccess = function (response) {
+          const envelope = unwrapServerEnvelope(response);
+          if (!envelope.ok) {
+            const errorMessage = envelope.error || "Sync failed.";
+            const errorText = String(errorMessage || "");
+            const serverVersion = envelope.data && envelope.data.server_data_version != null
+              ? String(envelope.data.server_data_version)
+              : "";
+            if (/version conflict/i.test(errorText) || (envelope.data && envelope.data.code === "VERSION_CONFLICT")) {
+              if (serverVersion) {
+                lastServerDataVersion = serverVersion;
+              }
+              isSyncing = false;
+              savePendingWhileSync = false;
+              versionConflictRetryCount += 1;
+              if (versionConflictRetryCount > VERSION_CONFLICT_RETRY_LIMIT) {
+                versionConflictRetryCount = 0;
+                setSyncState("retry", "Sync retry limit reached. Try again.");
+                renderAllPreservingScroll();
+                return;
+              }
+              setSyncState("saving");
+              renderAllPreservingScroll();
+              scheduleAutoSave(80);
+              return;
+            }
+            finalizeFailure(errorMessage);
             return;
           }
-          setSyncState("saved");
-          renderAllPreservingScroll();
-        } catch (error) {
-          isSyncing = false;
-          savePendingWhileSync = false;
-          setSyncState("retry", "Sync failed");
-          renderAllPreservingScroll();
-        }
+          finalizeSuccess(envelope.data || {});
+        };
+        const onFailure = function (error) {
+          finalizeFailure(getErrorMessage(error, "Sync failed."));
+        };
+        runner
+          .withSuccessHandler(onSuccess)
+          .withFailureHandler(onFailure)
+          .lootSaveSnapshot(payload);
+        return;
+      }
+
+      setTimeout(function () {
+        finalizeSuccess({ mode: dataSourceMode, data_version: lastServerDataVersion });
       }, 280);
     }
 
@@ -1802,6 +2738,8 @@
       const delay = Number.isFinite(Number(delayMs)) ? Number(delayMs) : 420;
       if (!isDirty()) {
         clearAutoSaveTimer();
+        resetAutoSaveWindow();
+        resetSyncRetryState();
         if (!isSyncing) {
           savePendingWhileSync = false;
         }
@@ -1815,10 +2753,23 @@
         renderAllPreservingScroll();
         return;
       }
+      clearSyncRetryTimer();
       setSyncState("saving");
       renderAllPreservingScroll();
+      armAutoSaveMaxWaitWindow();
       clearAutoSaveTimer();
       autoSaveTimer = setTimeout(performAutoSave, delay);
+    }
+
+    function retrySyncNow(isAutoRetry) {
+      if (isAutoRetry !== true) {
+        resetSyncRetryState();
+      }
+      if (isDirty() || sheetsModeEnabled) {
+        performAutoSave();
+        return;
+      }
+      loadInitialStateFromDataSource();
     }
 
     function getDraftSnapshotFromFields() {
@@ -1847,32 +2798,118 @@
     }
 
     function hasCheckpoint() {
-      return !!(manualCheckpoint && manualCheckpoint.itemsByChest && manualCheckpoint.chests);
+      if (!manualCheckpoint) return false;
+      if (manualCheckpoint.backupId) return true;
+      return !!(manualCheckpoint.itemsByChest && manualCheckpoint.chests);
     }
 
     function formatCheckpointSummary() {
+      if (checkpointStatusText) return checkpointStatusText;
       if (!hasCheckpoint()) return "No backup saved.";
       const savedAt = manualCheckpoint.savedAt ? new Date(manualCheckpoint.savedAt) : null;
       if (!savedAt || Number.isNaN(savedAt.getTime())) return "Backup saved.";
       return "Backup saved: " + savedAt.toLocaleString();
     }
 
+    function clearRestoreCheckpointConfirmState() {
+      restoreCheckpointConfirmArmed = false;
+      if (restoreCheckpointConfirmTimer) {
+        clearTimeout(restoreCheckpointConfirmTimer);
+        restoreCheckpointConfirmTimer = null;
+      }
+    }
+
+    function armRestoreCheckpointConfirmState() {
+      clearRestoreCheckpointConfirmState();
+      restoreCheckpointConfirmArmed = true;
+      restoreCheckpointConfirmTimer = setTimeout(function () {
+        clearRestoreCheckpointConfirmState();
+        renderBackupsModalState();
+      }, RESTORE_CONFIRM_ARM_MS);
+    }
+
     function renderBackupsModalState() {
       if (!backupsSummaryNode) return;
       backupsSummaryNode.textContent = formatCheckpointSummary();
       if (restoreCheckpointButtonNode) {
-        restoreCheckpointButtonNode.disabled = !hasCheckpoint() || !hasSelectedChest();
+        if (!hasCheckpoint() || !hasSelectedChest() || isCheckpointLoading || checkpointActionInFlight) {
+          clearRestoreCheckpointConfirmState();
+        }
+        restoreCheckpointButtonNode.textContent = restoreCheckpointConfirmArmed ? "Confirm Restore" : "Restore Backup";
+        restoreCheckpointButtonNode.title = restoreCheckpointConfirmArmed
+          ? "Click again to confirm restore."
+          : "Restore the latest backup.";
+        restoreCheckpointButtonNode.disabled = !hasCheckpoint() || !hasSelectedChest() || isCheckpointLoading || checkpointActionInFlight;
       }
       if (saveCheckpointButtonNode) {
-        saveCheckpointButtonNode.disabled = !hasSelectedChest();
+        saveCheckpointButtonNode.disabled = !hasSelectedChest() || isCheckpointLoading || checkpointActionInFlight;
       }
+    }
+
+    function setManualCheckpointFromServer(checkpoint, snapshotOverride) {
+      if (!checkpoint || typeof checkpoint !== "object") {
+        manualCheckpoint = null;
+        clearRestoreCheckpointConfirmState();
+        return;
+      }
+      const savedAtSource = normalizeWhitespace(checkpoint.created_at) || normalizeWhitespace(checkpoint.saved_at);
+      let savedAt = savedAtSource;
+      if (!savedAt) {
+        savedAt = Date.now();
+      }
+      manualCheckpoint = {
+        backupId: normalizeWhitespace(checkpoint.backup_id),
+        label: normalizeWhitespace(checkpoint.label),
+        chest_id: normalizeWhitespace(checkpoint.chest_id),
+        savedAt: savedAt,
+        createdBy: normalizeWhitespace(checkpoint.created_by),
+        chests: snapshotOverride && Array.isArray(snapshotOverride.chests) ? deepClone(snapshotOverride.chests) : null,
+        itemsByChest: snapshotOverride && snapshotOverride.itemsByChest ? deepClone(snapshotOverride.itemsByChest) : null,
+        source: "sheets"
+      };
+      clearRestoreCheckpointConfirmState();
+    }
+
+    function refreshCheckpointFromServer() {
+      const runner = getAppsScriptRunner();
+      if (!sheetsModeEnabled || !runner) return;
+      isCheckpointLoading = true;
+      checkpointStatusText = "Checking Google Drive for a backup...";
+      renderBackupsModalState();
+      runner
+        .withSuccessHandler(function (response) {
+          const envelope = unwrapServerEnvelope(response);
+          isCheckpointLoading = false;
+          if (!envelope.ok) {
+            checkpointStatusText = envelope.error || "Unable to check for backup.";
+            renderBackupsModalState();
+            return;
+          }
+          setManualCheckpointFromServer(envelope.data && envelope.data.checkpoint ? envelope.data.checkpoint : null, null);
+          checkpointStatusText = "";
+          renderBackupsModalState();
+        })
+        .withFailureHandler(function (error) {
+          isCheckpointLoading = false;
+          checkpointStatusText = getErrorMessage(error, "Unable to check for backup.");
+          renderBackupsModalState();
+        })
+        .lootGetLatestCheckpoint();
     }
 
     function openBackupsModal() {
       if (!backupsModalNode || !hasSelectedChest()) return;
+      clearRestoreCheckpointConfirmState();
+      if (sheetsModeEnabled) {
+        isCheckpointLoading = true;
+        checkpointStatusText = "Checking Google Drive for a backup...";
+      }
       renderBackupsModalState();
       modalLastFocusNode = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
       backupsModalNode.hidden = false;
+      if (sheetsModeEnabled) {
+        refreshCheckpointFromServer();
+      }
       const focusTarget = saveCheckpointButtonNode || backupsHeaderCloseButtonNode;
       if (focusTarget && typeof focusTarget.focus === "function") {
         focusTarget.focus();
@@ -1881,6 +2918,7 @@
 
     function closeBackupsModal() {
       if (!backupsModalNode) return;
+      clearRestoreCheckpointConfirmState();
       backupsModalNode.hidden = true;
       const focusTarget = modalLastFocusNode || backupsButtonNode;
       if (focusTarget && typeof focusTarget.focus === "function") {
@@ -1891,6 +2929,42 @@
 
     function saveCheckpointSnapshot() {
       if (!hasSelectedChest()) return;
+      clearRestoreCheckpointConfirmState();
+      checkpointStatusText = "";
+      if (sheetsModeEnabled) {
+        const runner = getAppsScriptRunner();
+        if (!runner) return;
+        const snapshot = deepClone(buildWorkingSnapshot());
+        checkpointActionInFlight = true;
+        checkpointStatusText = "Saving backup...";
+        renderBackupsModalState();
+        runner
+          .withSuccessHandler(function (response) {
+            const envelope = unwrapServerEnvelope(response);
+            checkpointActionInFlight = false;
+            if (!envelope.ok) {
+              checkpointStatusText = envelope.error || "Unable to save backup.";
+              renderBackupsModalState();
+              return;
+            }
+            setManualCheckpointFromServer(envelope.data && envelope.data.checkpoint ? envelope.data.checkpoint : null, snapshot);
+            checkpointStatusText = "";
+            setNonUndoableAction("Saved Backup");
+            renderAllPreservingScroll();
+            renderBackupsModalState();
+          })
+          .withFailureHandler(function (error) {
+            checkpointActionInFlight = false;
+            checkpointStatusText = getErrorMessage(error, "Unable to save backup.");
+            renderBackupsModalState();
+          })
+          .lootSaveCheckpoint({
+            snapshot: snapshot,
+            chest_id: selectedChestId,
+            label: "Manual Backup"
+          });
+        return;
+      }
       manualCheckpoint = {
         savedAt: Date.now(),
         chests: deepClone(chestList),
@@ -1901,22 +2975,90 @@
 
     function restoreCheckpointSnapshot() {
       if (!hasCheckpoint()) return;
+      clearRestoreCheckpointConfirmState();
+      checkpointStatusText = "";
+      if (sheetsModeEnabled) {
+        const runner = getAppsScriptRunner();
+        if (!runner) return;
+        checkpointActionInFlight = true;
+        checkpointStatusText = "Restoring backup...";
+        setSyncState("saving");
+        renderAllPreservingScroll();
+        renderBackupsModalState();
+        runner
+          .withSuccessHandler(function (response) {
+            const envelope = unwrapServerEnvelope(response);
+            checkpointActionInFlight = false;
+            if (!envelope.ok) {
+              checkpointStatusText = envelope.error || "Unable to restore backup.";
+              setSyncState("retry", checkpointStatusText);
+              renderAllPreservingScroll();
+              renderBackupsModalState();
+              return;
+            }
+            const restoredSnapshot = envelope.data && envelope.data.snapshot ? envelope.data.snapshot : null;
+            if (!restoredSnapshot || typeof restoredSnapshot !== "object") {
+              checkpointStatusText = "Backup restore returned no snapshot.";
+              setSyncState("retry", checkpointStatusText);
+              renderAllPreservingScroll();
+              renderBackupsModalState();
+              return;
+            }
+            applySnapshotToState(restoredSnapshot);
+            if (envelope.data && envelope.data.data_version != null) {
+              lastServerDataVersion = String(envelope.data.data_version);
+            }
+            setManualCheckpointFromServer(envelope.data && envelope.data.checkpoint ? envelope.data.checkpoint : null, restoredSnapshot);
+            checkpointStatusText = "";
+            pendingDeleteChestId = "";
+            pendingDeleteGroupPrefix = "";
+            selectedItemId = "";
+            nextId = deriveNextItemIdCounter(workingItemsByChest);
+            setDetailEditMode(false);
+            clearUndoHistoryState();
+            setNonUndoableAction("Restored Backup");
+            setSyncState("saved");
+            closeBackupsModal();
+            renderAllPreservingScroll();
+            return;
+          })
+          .withFailureHandler(function (error) {
+            checkpointActionInFlight = false;
+            checkpointStatusText = getErrorMessage(error, "Unable to restore backup.");
+            setSyncState("retry", checkpointStatusText);
+            renderAllPreservingScroll();
+            renderBackupsModalState();
+          })
+          .lootRestoreCheckpoint({
+            backup_id: manualCheckpoint && manualCheckpoint.backupId ? manualCheckpoint.backupId : ""
+          });
+        return;
+      }
       chestList = deepClone(manualCheckpoint.chests || []);
       workingItemsByChest = deepClone(manualCheckpoint.itemsByChest || {});
-      persistedChestList = deepClone(manualCheckpoint.chests || []);
-      persistedItemsByChest = deepClone(manualCheckpoint.itemsByChest || {});
+      resetPendingOperations();
+      queueForceSnapshotWrite();
       pendingDeleteChestId = "";
       pendingDeleteGroupPrefix = "";
       clearAutoSaveTimer();
-      setSyncState("saved");
+      setSyncState("saving");
       setNonUndoableAction("Restored Backup");
       if (selectedChestId && !workingItemsByChest[selectedChestId]) {
-        selectedChestId = chestList.length ? chestList[0].chest_id : "";
+        if (preferredSelectedChestId && chestList.some(function (chest) { return chest.chest_id === preferredSelectedChestId; })) {
+          selectedChestId = preferredSelectedChestId;
+        } else {
+          selectedChestId = chestList.length ? chestList[0].chest_id : "";
+        }
       }
       selectedItemId = "";
+      nextId = deriveNextItemIdCounter(workingItemsByChest);
       setDetailEditMode(false);
+      applyUiPreferencesForChest(selectedChestId);
+      maybeEnableUnusedFilterForSelectedChest();
+      persistUiPreferences();
       renderAll();
       closeBackupsModal();
+      scheduleAutoSave(120);
     }
 
     function describeStatusMove(token, toStatus) {
@@ -2145,7 +3287,7 @@
 
     function renderTokenRangeState() {
       if (!tokenRangeGroupNode) return;
-      const noChest = !hasSelectedChest();
+      const noChest = !hasSelectedChest() || isBootstrapping;
       const summaries = getGroupSummaries();
       const previous = tokenRangeGroupNode.value;
 
@@ -2221,6 +3363,7 @@
             category_label: plan.group.name
           });
           items.push(newItem);
+          queueTokenUpsert(newItem);
           plan.lookup[number] = newItem;
           if (!firstCreatedId) firstCreatedId = newItem.item_id;
         }
@@ -2230,19 +3373,17 @@
         }
         ensureListStatusFilter(STATUS.UNUSED);
       } else {
-        let selectedDeleted = false;
+        const deletedIds = new Set();
         for (let number = plan.from; number <= plan.to; number += 1) {
           const item = plan.lookup[number];
           if (!item) {
             continue;
           }
-          if (item.item_id === selectedItemId) selectedDeleted = true;
           item.deleted = true;
+          deletedIds.add(item.item_id);
+          queueTokenDelete(item.item_id);
         }
-        if (selectedDeleted) {
-          selectedItemId = "";
-          setDetailEditMode(false);
-        }
+        clearSelectionStateForDeletedItems(deletedIds);
       }
 
       clearUndoHistoryState();
@@ -2297,6 +3438,7 @@
           category_label: groupName
         });
         items.push(newItem);
+        queueTokenUpsert(newItem);
         if (!firstItemId) {
           firstItemId = newItem.item_id;
         }
@@ -2368,6 +3510,7 @@
         item.token = suffix ? (nextName + " " + suffix) : nextName;
         item.category_label = nextName;
         item.color_theme = nextTheme;
+        queueTokenUpsert(item);
       });
 
       if (manageGroupNameNode) {
@@ -2405,14 +3548,13 @@
         return false;
       }
 
-      const selectedTarget = targets.some(function (item) { return item.item_id === selectedItemId; });
+      const deletedIds = new Set();
       targets.forEach(function (item) {
         item.deleted = true;
+        deletedIds.add(item.item_id);
+        queueTokenDelete(item.item_id);
       });
-      if (selectedTarget) {
-        selectedItemId = "";
-        setDetailEditMode(false);
-      }
+      clearSelectionStateForDeletedItems(deletedIds);
 
       pendingDeleteGroupPrefix = "";
       clearUndoHistoryState();
@@ -2446,6 +3588,9 @@
       pendingDeleteChestId = "";
       pendingDeleteGroupPrefix = "";
       clearUndoHistoryState();
+      applyUiPreferencesForChest(selectedChestId);
+      maybeEnableUnusedFilterForSelectedChest();
+      persistUiPreferences();
       if (newChestNameNode) newChestNameNode.value = "";
       setManageTab("group-create");
       renderAll();
@@ -2466,24 +3611,41 @@
         return false;
       }
 
+      const deletedIds = new Set(
+        getWorkingItems(chestId)
+          .filter(function (item) { return item && !item.deleted; })
+          .map(function (item) { return item.item_id; })
+      );
+
       chestList = chestList.filter(function (chest) { return chest.chest_id !== chestId; });
       delete persistedItemsByChest[chestId];
       delete workingItemsByChest[chestId];
+      queueDeleteChest(chestId);
       pendingDeleteChestId = "";
       pendingDeleteGroupPrefix = "";
       clearUndoHistoryState();
 
+      clearSelectionStateForDeletedItems(deletedIds);
+
       if (selectedChestId === chestId) {
-        selectedChestId = chestList.length ? chestList[0].chest_id : "";
+        if (preferredSelectedChestId && chestList.some(function (chest) { return chest.chest_id === preferredSelectedChestId && chest.chest_id !== chestId; })) {
+          selectedChestId = preferredSelectedChestId;
+        } else {
+          selectedChestId = chestList.length ? chestList[0].chest_id : "";
+        }
         selectedItemId = "";
         setDetailEditMode(false);
+        detailDraftInitial = null;
       }
 
       if (!chestList.length) {
         selectedChestId = "";
         setManageTab("chest");
-        setListStatusFilters([STATUS.IN_CHEST, STATUS.AWARDED]);
+        setListStatusFilters([STATUS.IN_CHEST, STATUS.AWARDED], { persist: false });
       }
+      applyUiPreferencesForChest(selectedChestId);
+      maybeEnableUnusedFilterForSelectedChest();
+      persistUiPreferences();
       renderAll();
       return true;
     }
@@ -2502,6 +3664,7 @@
 
       const previousStatus = item.status;
       item.status = status;
+      queueTokenUpsert(item);
       markStatusJustChanged(item, status);
       lastChangeState = {
         kind: "status",
@@ -2553,6 +3716,7 @@
       } else {
         return;
       }
+      queueTokenUpsert(item);
       renderAll();
       scheduleAutoSave(180);
     }
@@ -2572,6 +3736,7 @@
       };
 
       applyEditableFieldSnapshot(item, after);
+      queueTokenUpsert(item);
       lastChangeState = {
         kind: "item-edit",
         item_id: item.item_id,
@@ -2600,6 +3765,7 @@
       const item = getItemById(selectedItemId);
       if (!item) return;
       item.deleted = true;
+      queueTokenDelete(item.item_id);
       selectedItemId = "";
       setDetailEditMode(false);
       if (lastChangeState && lastChangeState.item_id === item.item_id) {
@@ -2613,12 +3779,15 @@
       if (!nextChestId || !workingItemsByChest[nextChestId]) return;
       clearDeferredStatusState();
       selectedChestId = nextChestId;
+      applyUiPreferencesForChest(selectedChestId);
+      maybeEnableUnusedFilterForSelectedChest();
       selectedItemId = "";
       pendingDeleteChestId = "";
       pendingDeleteGroupPrefix = "";
       clearUndoHistoryState();
       setDetailEditMode(false);
       detailDraftInitial = null;
+      persistUiPreferences();
       renderAll();
     }
 
@@ -2639,6 +3808,7 @@
     }
 
     function handleRootClick(event) {
+      if (isBootstrapping) return;
       if (backupsModalNode && !backupsModalNode.hidden && event.target === backupsModalNode) {
         closeBackupsModal();
         return;
@@ -2690,7 +3860,7 @@
           return;
         }
         if (action === "retry-sync") {
-          performAutoSave();
+          retrySyncNow();
           return;
         }
         if (action === "toggle-edit-first") {
@@ -2710,6 +3880,11 @@
           return;
         }
         if (action === "restore-checkpoint") {
+          if (!restoreCheckpointConfirmArmed) {
+            armRestoreCheckpointConfirmState();
+            renderBackupsModalState();
+            return;
+          }
           restoreCheckpointSnapshot();
           return;
         }
@@ -2946,10 +4121,12 @@
       if (nextTab !== "LootChestsV2") {
         if (!ensureEditGuardResolved()) return;
         clearSelectedItem();
+        return;
       }
     }
 
     function handleRootInput(event) {
+      if (isBootstrapping) return;
       if (!event.target.closest("#lootV2DeleteChestSelect")) {
         clearDeleteConfirmState();
       }
@@ -2982,6 +4159,7 @@
       if (event.target === searchInputNode) {
         clearDeferredStatusState();
         searchTerm = searchInputNode.value.trim().toLowerCase();
+        persistUiPreferences();
         renderAll();
         return;
       }
@@ -2994,6 +4172,7 @@
     }
 
     function handleRootChange(event) {
+      if (isBootstrapping) return;
       if (event.target === chestSelectNode) {
         if (!ensureEditGuardResolved()) {
           renderChestSelect();
@@ -3120,12 +4299,21 @@
     }
 
     function initData() {
-      const dummy = buildDummyState();
-      chestList = dummy.chests;
-      persistedChestList = deepClone(dummy.chests);
-      persistedItemsByChest = deepClone(dummy.itemsByChest);
-      workingItemsByChest = deepClone(dummy.itemsByChest);
-      selectedChestId = chestList.length ? chestList[0].chest_id : "";
+      dataSourceMode = "local";
+      sheetsModeEnabled = false;
+      lastServerDataVersion = "0";
+      initialLocalSnapshot = sanitizeBootstrapFallbackSnapshot(readLocalModeSnapshot());
+      bootstrapRunnerWaitStartedAt = Date.now();
+      clearBootstrapRunnerWaitTimer();
+      bootstrapRequestNonce = 0;
+      bootstrapInFlight = false;
+      isBootstrapping = true;
+      applySnapshotToState({
+        chests: [],
+        itemsByChest: {}
+      });
+      selectedChestId = "";
+      selectedItemId = "";
     }
 
     function initLootV2() {
@@ -3135,11 +4323,12 @@
       initData();
       isEditFirstMode = false;
       bindNodes();
+      applyStoredUiPreferences();
       bindBackupsModalHandlers();
       renderChestSelect();
       renderColorOptions();
       setDetailEditMode(false);
-      setHistoryState("No changes made.", "is-idle");
+      setHistoryState(isBootstrapping ? "Loading data from Google Drive..." : "No changes made.", isBootstrapping ? "is-info" : "is-idle");
       renderAll();
 
       root.addEventListener("click", handleRootClick);
@@ -3149,6 +4338,11 @@
       document.addEventListener("scroll", handleGlobalScrollForStatusPopover, true);
       document.addEventListener("wheel", handleGlobalScrollForStatusPopover, { passive: true });
       document.addEventListener("touchmove", handleGlobalScrollForStatusPopover, { passive: true });
+      window.addEventListener("beforeunload", function () {
+        if (dataSourceMode === "local" || !sheetsModeEnabled) {
+          writeLocalModeSnapshot(buildLocalModeSnapshotForStorage());
+        }
+      });
       root.addEventListener("input", handleRootInput);
       root.addEventListener("change", handleRootChange);
       root.addEventListener("pointerdown", handleGroupCountPointerDown);
@@ -3157,6 +4351,8 @@
       root.addEventListener("pointerleave", clearGroupCountRepeatTimers);
       document.addEventListener("pointerup", clearGroupCountRepeatTimers);
       document.addEventListener("pointercancel", clearGroupCountRepeatTimers);
+
+      loadInitialStateFromDataSource();
     }
 
     

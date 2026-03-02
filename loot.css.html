@@ -1671,6 +1671,138 @@
     display: grid;
   }
 
+  .loot-v2-floof-preview {
+    --stage-size: 256px;
+    --anim-duration: 3200ms;
+    --idle-duration: 2200ms;
+    margin-top: 10px;
+    padding: 2px 0 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.96;
+  }
+
+  .loot-v2-floof-stage {
+    position: relative;
+    width: var(--stage-size);
+    height: var(--stage-size);
+    overflow: visible;
+  }
+
+  .loot-v2-floof-stage::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 10px;
+    width: 72%;
+    height: 16%;
+    transform: translateX(-50%);
+    background: rgba(32, 54, 94, 0.10);
+    filter: blur(10px);
+    border-radius: 999px;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .loot-v2-floof-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    transform-origin: 50% 66%;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  .loot-v2-floof-frame-closed {
+    z-index: 2;
+  }
+
+  .loot-v2-floof-frame-open {
+    z-index: 3;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .loot-v2-floof-frame-smoke {
+    z-index: 4;
+  }
+
+  .loot-v2-floof-preview.is-idle-hop .loot-v2-floof-frame-open {
+    animation: lootV2FloofOpenIdle var(--idle-duration) cubic-bezier(.2,.9,.2,1) infinite;
+  }
+
+  .loot-v2-floof-caption {
+    font-size: 11px;
+    font-style: italic;
+    font-weight: 700;
+    color: #4d638a;
+    letter-spacing: 0.01em;
+  }
+
+  .loot-v2-floof-preview.is-playing .loot-v2-floof-frame-closed {
+    animation: lootV2FloofClosed var(--anim-duration) ease-in-out both;
+  }
+
+  .loot-v2-floof-preview.is-playing .loot-v2-floof-frame-smoke {
+    animation: lootV2FloofSmoke var(--anim-duration) ease-out both;
+  }
+
+  .loot-v2-floof-preview.is-playing .loot-v2-floof-frame-open {
+    animation: lootV2FloofOpen var(--anim-duration) ease-out both;
+  }
+
+  @keyframes lootV2FloofClosed {
+    0%, 14% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+    20% { transform: translateY(-2px) rotate(-1.2deg) scale(1.005); }
+    24% { transform: translateY(0) rotate(0) scale(1); }
+    24%, 38% { transform: translateY(0) rotate(0) scale(1); }
+    44% { transform: translateY(-4px) rotate(2deg) scale(1.01); }
+    49% { transform: translateY(0) rotate(0) scale(1); }
+    49%, 64% { transform: translateY(0) rotate(0) scale(1); }
+    70% { transform: translateY(-6px) rotate(-2.8deg) scale(1.015); }
+    75% { transform: translateY(1px) rotate(1deg) scale(0.995); }
+    79% { transform: translateY(0) rotate(0) scale(1); }
+    82% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+    83% { opacity: 0; transform: translateY(0) rotate(0) scale(1); }
+    100% { opacity: 0; transform: translateY(0) rotate(0) scale(1); }
+  }
+
+  @keyframes lootV2FloofSmoke {
+    0%  { opacity: 0; transform: translateY(8px) scale(0.66); }
+    78% { opacity: 0; transform: translateY(8px) scale(0.66); }
+    82% { opacity: 0.90; transform: translateY(0) scale(1.08); }
+    84% { opacity: 1.00; transform: translateY(-2px) scale(1.14); }
+    86% { opacity: 0.90; transform: translateY(-4px) scale(1.18); }
+    94% { opacity: 0.45; transform: translateY(-10px) scale(1.32); }
+    100%{ opacity: 0.00; transform: translateY(-14px) scale(1.50); }
+  }
+
+  @keyframes lootV2FloofOpen {
+    0%  { opacity: 0; transform: translateY(8px) scale(0.9); }
+    81% { opacity: 0; transform: translateY(8px) scale(0.9); }
+    82% { opacity: 1; transform: translateY(-10px) scale(1.05); }
+    89% { transform: translateY(2px) scale(0.995); }
+    92% { transform: translateY(-2px) scale(1.005); }
+    96% { transform: translateY(0) scale(1); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes lootV2FloofOpenIdle {
+    0%, 78%, 100% { transform: translateY(0) scale(1); }
+    82% { transform: translateY(-4px) scale(1); }
+    85% { transform: translateY(0) scale(1); }
+    88% { transform: translateY(1px) scale(1); }
+    91% { transform: translateY(0) scale(1); }
+  }
+
   .loot-v2-side-btn {
     margin-top: 7px;
     width: 100%;

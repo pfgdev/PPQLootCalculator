@@ -246,6 +246,9 @@
     let detailAutosizeRafA = 0;
     let detailAutosizeRafB = 0;
     let detailAutosizeTimer = null;
+    let detailFloofPreviewNode = null;
+    let detailFloofPreviewTimer = null;
+    let detailFloofPreviewItemId = "";
     let isCheckpointLoading = false;
     let checkpointActionInFlight = false;
     let checkpointStatusText = "";
@@ -1845,6 +1848,38 @@
       detailStatusLabelNode.textContent = toDisplayStatus(status);
     }
 
+    function clearDetailFloofPreviewAnimation() {
+      if (detailFloofPreviewTimer) {
+        clearTimeout(detailFloofPreviewTimer);
+        detailFloofPreviewTimer = null;
+      }
+      if (detailFloofPreviewNode) {
+        detailFloofPreviewNode.classList.remove("is-playing");
+        detailFloofPreviewNode.classList.remove("is-idle-hop");
+      }
+    }
+
+    function replayDetailFloofPreview(itemId) {
+      if (!detailFloofPreviewNode) return;
+      if (!itemId) {
+        detailFloofPreviewItemId = "";
+        clearDetailFloofPreviewAnimation();
+        return;
+      }
+      if (detailFloofPreviewItemId === itemId) return;
+
+      detailFloofPreviewItemId = itemId;
+      clearDetailFloofPreviewAnimation();
+      void detailFloofPreviewNode.offsetWidth;
+      detailFloofPreviewNode.classList.add("is-playing");
+      detailFloofPreviewTimer = setTimeout(function () {
+        if (!detailFloofPreviewNode) return;
+        detailFloofPreviewNode.classList.remove("is-playing");
+        detailFloofPreviewNode.classList.add("is-idle-hop");
+        detailFloofPreviewTimer = null;
+      }, 3280);
+    }
+
     function showDetail(item) {
       if (!item) {
         detailEmptyNode.hidden = false;
@@ -1876,6 +1911,7 @@
           notesReadNode.textContent = "Optional DM notes";
           notesReadNode.classList.add("is-empty");
         }
+        replayDetailFloofPreview("");
         return;
       }
 
@@ -1937,6 +1973,7 @@
         notesReadNode.classList.toggle("is-empty", !normalizeWhitespace(notesText));
       }
       renderItemUrlView(item);
+      replayDetailFloofPreview(item.item_id);
     }
 
     function setDetailFieldDisabled(disabled) {
@@ -4515,6 +4552,7 @@
       itemUrlAnchorNode = document.getElementById("lootV2ItemUrlAnchor");
       notesReadNode = document.getElementById("lootV2NotesRead");
       editNotesNode = document.getElementById("lootV2EditNotes");
+      detailFloofPreviewNode = document.getElementById("lootV2FloofPreview");
 
       tokenRangeGroupNode = document.getElementById("lootV2TokenRangeGroup");
       tokenRangeFromNode = document.getElementById("lootV2TokenRangeFrom");

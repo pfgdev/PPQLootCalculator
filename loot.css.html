@@ -875,6 +875,21 @@
     scrollbar-color: #9eb2d4 transparent;
   }
 
+  .loot-v2-table-scroll.is-startup-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding-top: 8px;
+    overflow: visible;
+    position: relative;
+    z-index: 4;
+  }
+
+  .loot-v2-table-scroll.is-startup-loading .loot-v2-list-columns {
+    display: none;
+  }
+
   .loot-v2-table-scroll::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -1673,8 +1688,11 @@
 
   .loot-v2-floof-preview {
     --stage-size: 256px;
+    --stage-offset-x: 0px;
     --anim-duration: 3200ms;
     --idle-duration: 2200ms;
+    --startup-reveal-offset: -2624ms;
+    --startup-dismiss-duration: 720ms;
     margin-top: 10px;
     padding: 2px 0 4px;
     display: flex;
@@ -1687,11 +1705,48 @@
     opacity: 0.96;
   }
 
+  .loot-v2-startup-floof {
+    --stage-offset-x: -3px;
+    --startup-reveal-duration: 720ms;
+    --startup-reveal-offset: -2624ms;
+    --startup-dismiss-duration: var(--startup-reveal-duration);
+    margin-top: 0;
+    align-self: center;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .loot-v2-startup-floof[hidden] {
+    display: none !important;
+  }
+
+  .loot-v2-startup-floof .loot-v2-floof-caption {
+    font-size: 14px;
+    line-height: 1.25;
+    font-family: Arial, sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: #4f6285;
+    text-align: center;
+  }
+
+  #lootV2FloofPreview {
+    --stage-size: 128px;
+    --stage-offset-x: -10px;
+    --startup-dismiss-duration: 576ms;
+  }
+
+  #lootV2FloofPreview[hidden] {
+    display: none !important;
+  }
+
   .loot-v2-floof-stage {
     position: relative;
     width: var(--stage-size);
     height: var(--stage-size);
     overflow: visible;
+    transform: translateX(var(--stage-offset-x));
   }
 
   .loot-v2-floof-stage::after {
@@ -1759,6 +1814,76 @@
     animation: lootV2FloofOpen var(--anim-duration) ease-out both;
   }
 
+  .loot-v2-floof-preview.is-loading-loop .loot-v2-floof-frame-closed {
+    opacity: 1;
+    animation: lootV2FloofClosedLoop var(--anim-duration) ease-in-out infinite;
+  }
+
+  .loot-v2-floof-preview.is-loading-loop .loot-v2-floof-frame-smoke,
+  .loot-v2-floof-preview.is-loading-loop .loot-v2-floof-frame-open {
+    opacity: 0;
+    animation: none;
+  }
+
+  .loot-v2-floof-preview.is-reveal-fast .loot-v2-floof-frame-closed {
+    animation: lootV2FloofClosed var(--anim-duration) ease-in-out both;
+    animation-delay: var(--startup-reveal-offset);
+  }
+
+  .loot-v2-floof-preview.is-reveal-fast .loot-v2-floof-frame-smoke {
+    animation: lootV2FloofSmoke var(--anim-duration) ease-out both;
+    animation-delay: var(--startup-reveal-offset);
+  }
+
+  .loot-v2-floof-preview.is-reveal-fast .loot-v2-floof-frame-open {
+    animation: lootV2FloofOpen var(--anim-duration) ease-out both;
+    animation-delay: var(--startup-reveal-offset);
+  }
+
+  .loot-v2-floof-preview.is-transition-open .loot-v2-floof-frame-closed {
+    opacity: 0;
+    animation: none;
+  }
+
+  .loot-v2-floof-preview.is-transition-open .loot-v2-floof-frame-smoke {
+    animation: lootV2FloofSmoke var(--anim-duration) ease-out both;
+    animation-delay: var(--startup-reveal-offset);
+  }
+
+  .loot-v2-floof-preview.is-transition-open .loot-v2-floof-frame-open {
+    animation: lootV2FloofOpen var(--anim-duration) ease-out both;
+    animation-delay: var(--startup-reveal-offset);
+  }
+
+  .loot-v2-floof-preview.is-transition-smoke .loot-v2-floof-frame-closed,
+  .loot-v2-floof-preview.is-transition-smoke .loot-v2-floof-frame-open {
+    opacity: 0;
+    animation: none;
+  }
+
+  .loot-v2-floof-preview.is-transition-smoke .loot-v2-floof-frame-smoke {
+    animation: lootV2FloofSmoke var(--anim-duration) ease-out both;
+    animation-delay: var(--startup-reveal-offset);
+  }
+
+  .loot-v2-floof-preview.is-dismiss-fast .loot-v2-floof-frame-closed {
+    opacity: 0;
+    animation: none;
+  }
+
+  #lootV2FloofPreview.is-dismiss-fast .loot-v2-floof-frame-closed {
+    opacity: 1;
+  }
+
+  .loot-v2-floof-preview.is-dismiss-fast .loot-v2-floof-frame-smoke {
+    animation: lootV2FloofSmoke var(--anim-duration) ease-out both;
+    animation-delay: var(--startup-reveal-offset);
+  }
+
+  .loot-v2-floof-preview.is-dismiss-fast .loot-v2-floof-frame-open {
+    animation: lootV2FloofOpenDismiss var(--startup-dismiss-duration) ease-out both;
+  }
+
   @keyframes lootV2FloofClosed {
     0%, 14% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
     20% { transform: translateY(-2px) rotate(-1.2deg) scale(1.005); }
@@ -1801,6 +1926,26 @@
     85% { transform: translateY(0) scale(1); }
     88% { transform: translateY(1px) scale(1); }
     91% { transform: translateY(0) scale(1); }
+  }
+
+  @keyframes lootV2FloofClosedLoop {
+    0%, 14% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+    20% { transform: translateY(-2px) rotate(-1.2deg) scale(1.005); }
+    24% { transform: translateY(0) rotate(0) scale(1); }
+    24%, 38% { transform: translateY(0) rotate(0) scale(1); }
+    44% { transform: translateY(-4px) rotate(2deg) scale(1.01); }
+    49% { transform: translateY(0) rotate(0) scale(1); }
+    49%, 64% { transform: translateY(0) rotate(0) scale(1); }
+    70% { transform: translateY(-6px) rotate(-2.8deg) scale(1.015); }
+    75% { transform: translateY(1px) rotate(1deg) scale(0.995); }
+    79% { transform: translateY(0) rotate(0) scale(1); }
+    82%, 100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+  }
+
+  @keyframes lootV2FloofOpenDismiss {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    34% { opacity: 0; transform: translateY(2px) scale(1); }
+    100% { opacity: 0; transform: translateY(2px) scale(1); }
   }
 
   .loot-v2-side-btn {

@@ -28,6 +28,10 @@
     const UI_PREFS_KEY = "loot_v2_ui_prefs_v1";
     const BOOTSTRAP_RUNNER_MAX_WAIT_MS = 3500;
     const BOOTSTRAP_RUNNER_POLL_MS = 120;
+    const STARTUP_FLOOF_REVEAL_MS = 720;
+    const STARTUP_FLOOF_DISMISS_MS = STARTUP_FLOOF_REVEAL_MS;
+    const DETAIL_FLOOF_TRANSITION_MS = STARTUP_FLOOF_REVEAL_MS;
+    const DETAIL_FLOOF_TO_CHEST_MS = 576;
 
     const STATUS_LABELS = {
       IN_CHEST: "In Chest",
@@ -126,6 +130,7 @@
     let searchInputNode;
     let columnANode;
     let columnBNode;
+    let tableScrollNode;
     let syncStatusButtonNode;
     let backupsButtonNode;
     let undoLastButtonNode;
@@ -249,6 +254,15 @@
     let detailFloofPreviewNode = null;
     let detailFloofPreviewTimer = null;
     let detailFloofPreviewItemId = "";
+    let detailFloofPreviewStatus = "";
+    let detailFloofPreviewTransitionTargetStatus = "";
+    let startupFloofPreviewNode = null;
+    let startupFloofCaptionNode = null;
+    let startupFloofTimer = null;
+    let startupFloofRevealInProgress = false;
+    let startupFloofAwaitingDismiss = false;
+    let startupFloofDismissInProgress = false;
+    let startupFloofComplete = false;
     let isCheckpointLoading = false;
     let checkpointActionInFlight = false;
     let checkpointStatusText = "";
@@ -1760,10 +1774,17 @@
 
     function renderTable() {
       if (isBootstrapping) {
+        showStartupFloofLoading();
         setTableColumnsSplit(false);
         renderEmptyColumn(columnANode, "Searching for save data in Google Drive. Please wait...");
         return;
       }
+      if (runStartupFloofSequenceIfNeeded()) {
+        setTableColumnsSplit(false);
+        renderEmptyColumn(columnANode, "");
+        return;
+      }
+      hideStartupFloof();
       if (!hasSelectedChest()) {
         setTableColumnsSplit(false);
         renderEmptyColumn(columnANode, "Create a loot chest to begin.");
@@ -1853,31 +1874,213 @@
         clearTimeout(detailFloofPreviewTimer);
         detailFloofPreviewTimer = null;
       }
+      detailFloofPreviewTransitionTargetStatus = "";
       if (detailFloofPreviewNode) {
         detailFloofPreviewNode.classList.remove("is-playing");
         detailFloofPreviewNode.classList.remove("is-idle-hop");
+        detailFloofPreviewNode.classList.remove("is-loading-loop");
+        detailFloofPreviewNode.classList.remove("is-reveal-fast");
+        detailFloofPreviewNode.classList.remove("is-dismiss-fast");
+        detailFloofPreviewNode.classList.remove("is-transition-open");
+        detailFloofPreviewNode.classList.remove("is-transition-smoke");
       }
     }
 
-    function replayDetailFloofPreview(itemId) {
+    function setDetailFloofPreviewStatic(status) {
       if (!detailFloofPreviewNode) return;
-      if (!itemId) {
-        detailFloofPreviewItemId = "";
-        clearDetailFloofPreviewAnimation();
+      clearDetailFloofPreviewAnimation();
+      if (status === STATUS.UNUSED) {
+        detailFloofPreviewNode.hidden = true;
+        detailFloofPreviewStatus = STATUS.UNUSED;
         return;
       }
-      if (detailFloofPreviewItemId === itemId) return;
+      detailFloofPreviewNode.hidden = false;
+      if (status === STATUS.IN_CHEST) {
+        detailFloofPreviewNode.classList.add("is-loading-loop");
+      } else {
+        detailFloofPreviewNode.classList.add("is-idle-hop");
+      }
+      detailFloofPreviewStatus = status;
+    }
 
-      detailFloofPreviewItemId = itemId;
+    function playDetailFloofTransition(previousStatus, nextStatus) {
+      if (!detailFloofPreviewNode) return;
+      const transitionMs = nextStatus === STATUS.IN_CHEST
+        ? DETAIL_FLOOF_TO_CHEST_MS
+        : DETAIL_FLOOF_TRANSITION_MS;
       clearDetailFloofPreviewAnimation();
       void detailFloofPreviewNode.offsetWidth;
-      detailFloofPreviewNode.classList.add("is-playing");
+      detailFloofPreviewNode.hidden = false;
+      detailFloofPreviewTransitionTargetStatus = nextStatus;
+
+      if (nextStatus === STATUS.AWARDED) {
+        detailFloofPreviewNode.classList.add("is-transition-open");
+      } else if (nextStatus === STATUS.IN_CHEST && previousStatus === STATUS.AWARDED) {
+        detailFloofPreviewNode.classList.add("is-dismiss-fast");
+      } else {
+        detailFloofPreviewNode.classList.add("is-transition-smoke");
+      }
+
       detailFloofPreviewTimer = setTimeout(function () {
-        if (!detailFloofPreviewNode) return;
-        detailFloofPreviewNode.classList.remove("is-playing");
-        detailFloofPreviewNode.classList.add("is-idle-hop");
+        if (detailFloofPreviewTransitionTargetStatus !== nextStatus) {
+          detailFloofPreviewTimer = null;
+          return;
+        }
+        detailFloofPreviewTransitionTargetStatus = "";
+        detailFloofPreviewStatus = nextStatus;
+        setDetailFloofPreviewStatic(nextStatus);
         detailFloofPreviewTimer = null;
-      }, 3280);
+      }, transitionMs);
+    }
+
+    function renderDetailFloofPreview(item) {
+      if (!detailFloofPreviewNode) return;
+      const nextItemId = item && item.item_id ? item.item_id : "";
+      const nextStatus = item ? (item.status || STATUS.UNUSED) : STATUS.UNUSED;
+
+      if (!nextItemId) {
+        detailFloofPreviewItemId = "";
+        detailFloofPreviewStatus = "";
+        clearDetailFloofPreviewAnimation();
+        detailFloofPreviewNode.hidden = true;
+        return;
+      }
+
+      if (
+        detailFloofPreviewTimer &&
+        detailFloofPreviewItemId === nextItemId &&
+        detailFloofPreviewTransitionTargetStatus === nextStatus
+      ) {
+        return;
+      }
+
+      const isSameItem = detailFloofPreviewItemId === nextItemId;
+      const previousStatus = detailFloofPreviewStatus;
+      detailFloofPreviewItemId = nextItemId;
+
+      if (isSameItem && previousStatus && previousStatus !== nextStatus) {
+        detailFloofPreviewStatus = nextStatus;
+        playDetailFloofTransition(previousStatus, nextStatus);
+        return;
+      }
+
+      if (!isSameItem || previousStatus !== nextStatus) {
+        setDetailFloofPreviewStatic(nextStatus);
+        return;
+      }
+    }
+
+    function clearStartupFloofTimer() {
+      if (startupFloofTimer) {
+        clearTimeout(startupFloofTimer);
+        startupFloofTimer = null;
+      }
+    }
+
+    function setStartupFloofCaption(text) {
+      if (!startupFloofCaptionNode) return;
+      startupFloofCaptionNode.textContent = text;
+    }
+
+    function setStartupFloofCaptionVisible(visible) {
+      if (!startupFloofCaptionNode) return;
+      startupFloofCaptionNode.hidden = !visible;
+    }
+
+    function clearStartupFloofClasses() {
+      if (!startupFloofPreviewNode) return;
+      startupFloofPreviewNode.classList.remove("is-loading-loop");
+      startupFloofPreviewNode.classList.remove("is-playing");
+      startupFloofPreviewNode.classList.remove("is-idle-hop");
+      startupFloofPreviewNode.classList.remove("is-reveal-fast");
+      startupFloofPreviewNode.classList.remove("is-dismiss-fast");
+    }
+
+    function hideStartupFloof() {
+      clearStartupFloofTimer();
+      startupFloofRevealInProgress = false;
+      startupFloofAwaitingDismiss = false;
+      startupFloofDismissInProgress = false;
+      if (tableScrollNode) {
+        tableScrollNode.classList.remove("is-startup-loading");
+      }
+      if (!startupFloofPreviewNode) return;
+      clearStartupFloofClasses();
+      setStartupFloofCaptionVisible(true);
+      startupFloofPreviewNode.hidden = true;
+    }
+
+    function showStartupFloofLoading() {
+      if (!startupFloofPreviewNode || !tableScrollNode) return;
+      clearStartupFloofTimer();
+      startupFloofRevealInProgress = false;
+      startupFloofAwaitingDismiss = false;
+      startupFloofDismissInProgress = false;
+      setStartupFloofCaption("Searching for save data in Google Drive. Please wait...");
+      setStartupFloofCaptionVisible(true);
+      tableScrollNode.classList.add("is-startup-loading");
+      startupFloofPreviewNode.hidden = false;
+      clearStartupFloofClasses();
+      startupFloofPreviewNode.classList.add("is-loading-loop");
+    }
+
+    function beginStartupFloofDismissIfNeeded() {
+      if (!startupFloofAwaitingDismiss) return false;
+      if (startupFloofDismissInProgress) return false;
+      if (!startupFloofPreviewNode) {
+        startupFloofComplete = true;
+        return false;
+      }
+
+      startupFloofAwaitingDismiss = false;
+      startupFloofDismissInProgress = true;
+      clearStartupFloofTimer();
+      setStartupFloofCaptionVisible(false);
+      clearStartupFloofClasses();
+      void startupFloofPreviewNode.offsetWidth;
+      startupFloofPreviewNode.classList.add("is-dismiss-fast");
+
+      startupFloofTimer = setTimeout(function () {
+        startupFloofTimer = null;
+        startupFloofDismissInProgress = false;
+        startupFloofComplete = true;
+        hideStartupFloof();
+        renderAllPreservingScroll();
+      }, STARTUP_FLOOF_DISMISS_MS);
+
+      return true;
+    }
+
+    function runStartupFloofSequenceIfNeeded() {
+      if (startupFloofComplete) return false;
+      if (startupFloofRevealInProgress || startupFloofAwaitingDismiss || startupFloofDismissInProgress) {
+        return true;
+      }
+      if (!startupFloofPreviewNode || !tableScrollNode) {
+        startupFloofComplete = true;
+        return false;
+      }
+
+      startupFloofRevealInProgress = true;
+      clearStartupFloofTimer();
+      setStartupFloofCaptionVisible(false);
+      tableScrollNode.classList.add("is-startup-loading");
+      startupFloofPreviewNode.hidden = false;
+      clearStartupFloofClasses();
+      void startupFloofPreviewNode.offsetWidth;
+      startupFloofPreviewNode.classList.add("is-reveal-fast");
+
+      startupFloofTimer = setTimeout(function () {
+        startupFloofTimer = null;
+        startupFloofRevealInProgress = false;
+        startupFloofAwaitingDismiss = true;
+        clearStartupFloofClasses();
+        startupFloofPreviewNode.classList.add("is-idle-hop");
+        setStartupFloofCaption("Floof demands attention before you start!");
+        setStartupFloofCaptionVisible(true);
+      }, STARTUP_FLOOF_REVEAL_MS);
+
+      return true;
     }
 
     function showDetail(item) {
@@ -1911,7 +2114,7 @@
           notesReadNode.textContent = "Optional DM notes";
           notesReadNode.classList.add("is-empty");
         }
-        replayDetailFloofPreview("");
+        renderDetailFloofPreview(null);
         return;
       }
 
@@ -1973,7 +2176,7 @@
         notesReadNode.classList.toggle("is-empty", !normalizeWhitespace(notesText));
       }
       renderItemUrlView(item);
-      replayDetailFloofPreview(item.item_id);
+      renderDetailFloofPreview(item);
     }
 
     function setDetailFieldDisabled(disabled) {
@@ -4039,6 +4242,13 @@
         event.stopPropagation();
         return;
       }
+      const clickedStartupFloof = (target instanceof Element) ? target.closest("#lootV2StartupFloof") : null;
+      if (clickedStartupFloof && root.contains(clickedStartupFloof)) {
+        event.preventDefault();
+        event.stopPropagation();
+        beginStartupFloofDismissIfNeeded();
+        return;
+      }
 
       const actionButton = event.target.closest("button[data-action]");
       if (actionButton && root.contains(actionButton)) {
@@ -4513,6 +4723,9 @@
       searchInputNode = document.getElementById("lootV2SearchInput");
       columnANode = document.getElementById("lootV2ColumnA");
       columnBNode = document.getElementById("lootV2ColumnB");
+      tableScrollNode = document.getElementById("lootV2TableScroll");
+      startupFloofPreviewNode = document.getElementById("lootV2StartupFloof");
+      startupFloofCaptionNode = document.getElementById("lootV2StartupFloofCaption");
       syncStatusButtonNode = document.getElementById("lootV2SyncStatusBtn");
       backupsButtonNode = document.getElementById("lootV2BackupsBtn");
       undoLastButtonNode = document.getElementById("lootV2UndoLastBtn");
@@ -4575,6 +4788,15 @@
     }
 
     function initData() {
+      clearDetailFloofPreviewAnimation();
+      detailFloofPreviewItemId = "";
+      detailFloofPreviewStatus = "";
+      detailFloofPreviewTransitionTargetStatus = "";
+      clearStartupFloofTimer();
+      startupFloofRevealInProgress = false;
+      startupFloofAwaitingDismiss = false;
+      startupFloofDismissInProgress = false;
+      startupFloofComplete = false;
       dataSourceMode = "local";
       sheetsModeEnabled = false;
       lastServerDataVersion = "0";

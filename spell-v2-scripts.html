@@ -465,33 +465,16 @@
       const selectedSpell = currentSpells[index];
       if (!selectedSpell || selectedSpell.isReRoll) return;
 
-      const detailIndex = Number(selectedSpell.detailIndex);
-      if (!Number.isInteger(detailIndex) || detailIndex < 0) return;
-
       const fallbackName = selectedSpell.name ? selectedSpell.name : "Spell Details";
       const priorListTop = listScrollNode ? listScrollNode.scrollTop : 0;
       selectedSpellIndex = index;
       preserveListScroll(renderSpellList);
       toggleDetailPanel(true);
       pinListScrollThroughTransition(priorListTop);
-      setDetailPlaceholders("", fallbackName);
-      setDetailLoading(true);
-
-      detailRequestToken += 1;
-      const token = detailRequestToken;
-      google.script.run
-        .withSuccessHandler(function (detailData) {
-          if (token !== detailRequestToken) return;
-
-          renderDetail(detailData || {}, fallbackName);
-          setDetailLoading(false);
-        })
-        .withFailureHandler(function () {
-          if (token !== detailRequestToken) return;
-          setDetailLoading(false);
-          setDetailPlaceholders("Error loading spell detail.");
-        })
-        .getSpellScrollDetail(currentLevel, detailIndex);
+      // All spell fields are already available on the client from the level load.
+      // No server round-trip needed.
+      renderDetail(selectedSpell, fallbackName);
+      setDetailLoading(false);
     }
 
     function clearSelectedSpell() {

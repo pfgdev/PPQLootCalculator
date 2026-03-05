@@ -11,12 +11,13 @@ function initializeSpellScrollData() {
 
     try {
         var spellScrollRange = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('SpellScroll_Export');
-        addToLog('Fetched SpellScroll_Export range: ' + spellScrollRange.getA1Notation());
 
         if (!spellScrollRange) {
             addToLog('Named range "SpellScroll_Export" is missing.');
             return 'Named range "SpellScroll_Export" is missing.';
         }
+
+        addToLog('Fetched SpellScroll_Export range: ' + spellScrollRange.getA1Notation());
 
         var spellScrollData = spellScrollRange.getValues();
         addToLog('Fetched spell scroll data (length): ' + spellScrollData.length);

@@ -1,42 +1,35 @@
 // initialization.js.gs
 function initializeData() {
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) {
-    addToLog('Skipping initialization because lock is already held.');
-    return 'Skipping initialization because another initialization is in progress.';
-  }
-
+  // Note: locking is handled by the caller (doGet). This function must not
+  // acquire its own lock — doing so would deadlock because doGet already holds
+  // the script lock when it calls this function.
   var scriptProperties = PropertiesService.getScriptProperties();
-  try {
-    var isInitialized = scriptProperties.getProperty(initializationCompleteFlag);
+  var isInitialized = scriptProperties.getProperty(initializationCompleteFlag);
 
-    if (isInitialized) {
-      addToLog('Skipping initialization as it is already completed at ' + new Date().toISOString());
-      return 'Skipping initialization as it is already completed.';
-    }
-
-    addToLog('initializeData called at the start ' + new Date().toISOString());
-
-    var investigationLog = initializeInvestigationData();
-    var goldLog = initializeGoldData();
-    var modsLog = initializeMods();
-    var goldToDiceLog = initializeGoldToDiceTranslation();
-    var spellScrollLog = initializeSpellScrollData();
-
-    addToLog(investigationLog);
-    addToLog(goldLog);
-    addToLog(modsLog);
-    addToLog(goldToDiceLog);
-    addToLog(spellScrollLog);
-
-    scriptProperties.setProperty(initializationCompleteFlag, 'true'); // Mark as initialized
-    addToLog('Script Properties set initializationComplete to true');
-
-    addToLog('initializeData complete at ' + new Date().toISOString());
-    return logMessages.filter(msg => msg !== 'initializeData complete').join("\n");
-  } finally {
-    lock.releaseLock();
+  if (isInitialized) {
+    addToLog('Skipping initialization as it is already completed at ' + new Date().toISOString());
+    return 'Skipping initialization as it is already completed.';
   }
+
+  addToLog('initializeData called at the start ' + new Date().toISOString());
+
+  var investigationLog = initializeInvestigationData();
+  var goldLog = initializeGoldData();
+  var modsLog = initializeMods();
+  var goldToDiceLog = initializeGoldToDiceTranslation();
+  var spellScrollLog = initializeSpellScrollData();
+
+  addToLog(investigationLog);
+  addToLog(goldLog);
+  addToLog(modsLog);
+  addToLog(goldToDiceLog);
+  addToLog(spellScrollLog);
+
+  scriptProperties.setProperty(initializationCompleteFlag, 'true'); // Mark as initialized
+  addToLog('Script Properties set initializationComplete to true');
+
+  addToLog('initializeData complete at ' + new Date().toISOString());
+  return logMessages.filter(msg => msg !== 'initializeData complete').join("\n");
 }
 
 function initializeInvestigationData() {

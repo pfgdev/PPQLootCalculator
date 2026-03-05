@@ -1286,7 +1286,7 @@
         const includeByStatus = activeListStatusFilters.has(item.status) || deferredHiddenItemIds.has(item.item_id);
         if (!includeByStatus) return false;
         if (!searchTerm) return true;
-        const haystack = (item.token + " " + item.item_name).toLowerCase();
+        const haystack = (item.token + " " + item.item_name + " " + item.rarity + " " + item.type + " " + item.description).toLowerCase();
         return haystack.indexOf(searchTerm) !== -1;
       });
 
